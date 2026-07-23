@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/svg+xml" href="/static/assets/neuramorphic-mark.svg" />
+<link rel="apple-touch-icon" href="/static/assets/neuramorphic-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<title>PF — Ejecución de Punto de Venta</title>
+<style>
+  :root {
+    --ink:           #0a0a0a;
+    --ink-secondary: #55565a;
+    --ink-muted:      #8d8e92;
+    --surface:       #ffffff;
+    --page:          #f0f0ef;
+    --border:        #e0e0dd;
+    --border-strong: #cfcfcc;
+    --track:         #ececea;
+    --fill:          #0a0a0a;
+    --header-bg:     #000000;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--page);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  svg { display: block; }
+
+  /* ---------- topbar ---------- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--header-bg);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 20px;
+  }
+  .topbar .mark { width: 28px; height: 28px; flex-shrink: 0; }
+  .topbar .title { font-weight: 800; font-size: 16px; letter-spacing: -0.01em; }
+  .topbar .subtitle { font-size: 11.5px; color: #a9a9a6; font-weight: 500; }
+  .topbar .spacer { flex: 1; min-width: 12px; }
+  .live-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11.5px; font-weight: 600; color: #d7d7d4;
+    border: 1px solid #313131; border-radius: 100px; padding: 5px 10px 5px 8px;
+    white-space: nowrap;
+  }
+  .live-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+  .btn-new {
+    display: flex; align-items: center; gap: 6px;
+    background: #fff; color: #000; border: none; border-radius: 7px;
+    padding: 8px 13px; font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn-new svg { width: 15px; height: 15px; }
+  .btn-back {
+    display: flex; align-items: center; gap: 6px;
+    background: transparent; color: #fff; border: 1px solid #313131; border-radius: 7px;
+    padding: 7px 12px; font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-back svg { width: 14px; height: 14px; }
+
+  .shell { max-width: 1080px; margin: 0 auto; padding: 22px 20px 56px; }
+
+  /* ---------- KPI row ---------- */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .kpi-tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; box-shadow: 0 1px 2px rgba(10,10,10,0.03);
+  }
+  .kpi-value { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .kpi-label { font-size: 11px; color: var(--ink-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+
+  /* ---------- section header ---------- */
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .section-head h2 { font-size: 14px; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-secondary); }
+  .section-head .hint { font-size: 12px; color: var(--ink-muted); font-weight: 500; }
+
+  /* ---------- point grid ---------- */
+  .point-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .point-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; cursor: pointer; text-align: left;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.03), 0 10px 24px -18px rgba(10,10,10,0.12);
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .point-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .point-card .row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .point-code { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .status-pill { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; }
+  .status-pill.live { color: var(--ink); }
+  .status-pill.stale { color: var(--ink-muted); }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-pill.live .dot { background: var(--ink); animation: pulse 1.6s ease-in-out infinite; }
+  .status-pill.stale .dot { background: var(--border-strong); }
+  .point-name { font-size: 15.5px; font-weight: 700; margin: 6px 0 12px; letter-spacing: -0.005em; }
+
+  .point-thumb { width: 100%; height: 120px; object-fit: cover; border-radius: 9px; margin-bottom: 12px; border: 1px solid var(--border); background: var(--track); }
+
+  .point-stats { display: flex; gap: 14px; margin-bottom: 12px; }
+  .point-stat .v { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .point-stat .l { font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+
+  .mini-bars { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .mini-bar-row { display: flex; align-items: center; gap: 7px; }
+  .mini-bar-label { flex: 0 0 72px; font-size: 10.5px; color: var(--ink-secondary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-bar-track { flex: 1; height: 6px; border-radius: 3px; background: var(--track); }
+  .mini-bar-fill { height: 100%; border-radius: 3px; background: var(--ink); }
+  .mini-bar-pct { flex: 0 0 34px; font-size: 10.5px; color: var(--ink-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .point-empty { font-size: 12.5px; color: var(--ink-muted); padding: 10px 0 12px; }
+  .point-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--ink-muted); font-weight: 500; }
+  .point-footer .go { display: flex; align-items: center; gap: 4px; color: var(--ink); font-weight: 700; }
+  .point-footer .go svg { width: 13px; height: 13px; }
+
+  .empty-state {
+    grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--ink-muted);
+    border: 1.5px dashed var(--border-strong); border-radius: 14px; background: var(--surface);
+  }
+  .empty-state svg { width: 32px; height: 32px; margin: 0 auto 10px; color: var(--ink-muted); }
+  .empty-state p { margin: 0; font-size: 13.5px; }
+
+  /* ---------- detail view ---------- */
+  #detailView { display: none; }
+  .detail-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; gap: 12px; }
+  .detail-head h1 { margin: 0 0 3px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .detail-head .meta { font-size: 12.5px; color: var(--ink-muted); font-weight: 500; }
+
+  .detail-grid { display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 16px; align-items: start; }
+  @media (max-width: 780px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px; margin-bottom: 14px;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.03), 0 10px 24px -16px rgba(10,10,10,0.10);
+  }
+
+  .capture label {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    border: 1.5px dashed var(--border-strong); border-radius: 10px; padding: 26px 12px;
+    text-align: center; color: var(--ink-secondary); font-size: 13.5px; font-weight: 500; cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .capture label:hover { border-color: var(--ink); background: #fafafa; }
+  .capture label svg { width: 24px; height: 24px; color: var(--ink-muted); }
+  input[type="file"] { display: none; }
+  #preview { display: none; width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; margin-top: 12px; border: 1px solid var(--border); }
+
+  button.primary {
+    width: 100%; margin-top: 12px; padding: 12px; border-radius: 8px; border: none;
+    background: var(--ink); color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 700;
+    letter-spacing: -0.005em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity 0.15s ease;
+  }
+  button.primary:hover:not(:disabled) { opacity: 0.88; }
+  button.primary:disabled { background: #c7c7c4; cursor: default; }
+  button.primary svg { width: 16px; height: 16px; }
+  .spinner { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-secondary); margin-top: 10px; min-height: 16px; font-weight: 500; }
+  .status svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .status.error { color: var(--ink); font-weight: 600; }
+
+  .reading-photo { width: 100%; max-height: 340px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); background: var(--track); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 10px; }
+  .stat-tile { text-align: center; padding: 10px 4px; border: 1px solid var(--border); border-radius: 10px; background: #fbfbfa; }
+  .stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 10px; color: var(--ink-muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+
+  h3.card-title { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-secondary); margin: 0 0 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  h3.card-title svg { width: 13px; height: 13px; color: var(--ink-muted); }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .bar-label { flex: 0 0 108px; font-size: 12px; font-weight: 500; color: var(--ink); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; background: var(--track); border-radius: 5px; height: 18px; }
+  .bar-fill { height: 100%; border-radius: 5px; min-width: 5px; background: var(--fill); }
+  .bar-value { flex: 0 0 70px; font-size: 11.5px; font-weight: 500; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--border); color: var(--ink); }
+  td { font-weight: 500; }
+  th { color: var(--ink-muted); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .oos-flag { display: inline-flex; vertical-align: -2px; }
+  .oos-flag svg { width: 12px; height: 12px; color: var(--ink-muted); }
+
+  .notes { font-size: 11.5px; color: var(--ink-muted); margin-top: 12px; line-height: 1.5; }
+
+  .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+  .history-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer;
+    font-size: 12px; background: #fbfbfa;
+  }
+  .history-item.active { border-color: var(--ink); background: #f4f4f2; }
+  .history-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); background: var(--track); }
+  .history-thumb.placeholder { display: flex; align-items: center; justify-content: center; color: var(--ink-muted); }
+  .history-thumb.placeholder svg { width: 16px; height: 16px; }
+  .history-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .history-item .t { font-weight: 600; }
+  .history-item .n { color: var(--ink-muted); font-variant-numeric: tabular-nums; font-size: 11px; }
+
+  /* ---------- modal ---------- */
+  #modalBackdrop {
+    display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.45);
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal {
+    background: #fff; border-radius: 14px; padding: 22px; width: 100%; max-width: 380px;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.4);
+  }
+  .modal h2 { margin: 0 0 4px; font-size: 17px; font-weight: 800; }
+  .modal p.hint { margin: 0 0 16px; font-size: 12.5px; color: var(--ink-muted); }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .field input {
+    width: 100%; padding: 10px 11px; border-radius: 8px; border: 1px solid var(--border-strong);
+    font-family: inherit; font-size: 14px; color: var(--ink); background: #fafafa;
+  }
+  .field input:focus { outline: none; border-color: var(--ink); background: #fff; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .modal-actions button {
+    flex: 1; padding: 10px; border-radius: 8px; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  }
+  .modal-actions .cancel { background: #fff; border: 1px solid var(--border-strong); color: var(--ink); }
+  .modal-actions .confirm { background: var(--ink); border: none; color: #fff; }
+</style>
+</head>
+<body>
+  <nav class="topbar">
+    <img class="mark" src="/static/assets/neuramorphic-mark.svg" alt="Neuramorphic" />
+    <div>
+      <div class="title">PF</div>
+      <div class="subtitle">Ejecución de Punto de Venta</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn-back" id="backBtn" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Dashboard
+    </button>
+    <div class="live-pill"><span class="dot"></span>En vivo</div>
+    <button class="btn-new" id="newPointBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Nuevo punto
+    </button>
+  </nav>
+
+  <main class="shell">
+    <section id="dashboardView">
+      <div class="kpi-row">
+        <div class="kpi-tile"><div class="kpi-value" id="kpiPoints">0</div><div class="kpi-label">Puntos totales</div></div>
+        <div class="kpi-tile"><div class="kpi-value" id="kpiLive">0</div><div class="kpi-label">En vivo (15 min)</div></div>
+        <div class="kpi-tile"><div class="kpi-value" id="kpiReadings">0</div><div class="kpi-label">Lecturas totales</div></div>
+        <div class="kpi-tile"><div class="kpi-value" id="kpiAvg">0</div><div class="kpi-label">Caras prom. / punto</div></div>
+      </div>
+
+      <div class="section-head">
+        <h2>Puntos de venta</h2>
+        <span class="hint" id="lastPoll">—</span>
+      </div>
+      <div class="point-grid" id="pointGrid"></div>
+    </section>
+
+    <section id="detailView">
+      <div class="detail-head">
+        <div>
+          <h1 id="detailName">—</h1>
+          <div class="meta"><span id="detailCode">—</span> · <span id="detailStatus">—</span></div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div>
+          <div class="card capture">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+              Nueva lectura
+            </h3>
+            <label for="photoInput" id="captureLabel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/>
+                <circle cx="12" cy="12.5" r="3.4"/>
+              </svg>
+              Tomar foto o cargar imagen de la góndola
+            </label>
+            <input type="file" id="photoInput" accept="image/*" capture="environment" />
+            <img id="preview" alt="Vista previa de la góndola" />
+            <button class="primary" id="analyzeBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
+              <span id="analyzeBtnText">Analizar góndola</span>
+            </button>
+            <div class="status" id="statusMsg"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+              Historial de lecturas
+            </h3>
+            <div class="history-list" id="historyList"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" id="photoCard" style="display:none;">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
+              Foto de esta lectura
+            </h3>
+            <img id="readingPhoto" class="reading-photo" alt="Foto de la góndola analizada" />
+          </div>
+
+          <div class="card">
+            <div class="stat-row">
+              <div class="stat-tile"><div class="stat-value" id="statTotalFacings">–</div><div class="stat-label">Caras totales</div></div>
+              <div class="stat-tile"><div class="stat-value" id="statProducts">–</div><div class="stat-label">Productos</div></div>
+              <div class="stat-tile"><div class="stat-value" id="statCategories">–</div><div class="stat-label">Categorías</div></div>
+              <div class="stat-tile"><div class="stat-value" id="statLevels">–</div><div class="stat-label">Niveles</div></div>
+              <div class="stat-tile"><div class="stat-value" id="statEmpty">–</div><div class="stat-label">Espacio vacío</div></div>
+            </div>
+            <div class="notes" id="notesMsg"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M12 19V4M20 19v-7"/></svg>
+              % de participación en la góndola por categoría
+            </h3>
+            <div id="categoryChart"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M9 9.5V20"/></svg>
+              Caras por producto
+            </h3>
+            <table>
+              <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th></tr></thead>
+              <tbody id="productsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop">
+    <div class="modal">
+      <h2>Nuevo punto de venta</h2>
+      <p class="hint">Cada punto acumula su propio historial de lecturas.</p>
+      <div class="field">
+        <label for="newPointName">Nombre del punto</label>
+        <input type="text" id="newPointName" placeholder="Ej: Sucursal Providencia" />
+      </div>
+      <div class="field">
+        <label for="newPointCode">Número de punto / escáner (opcional)</label>
+        <input type="text" id="newPointCode" placeholder="Se asigna automático si lo dejas vacío" />
+      </div>
+      <div class="status" id="modalStatus"></div>
+      <div class="modal-actions">
+        <button class="cancel" id="modalCancel">Cancelar</button>
+        <button class="confirm" id="modalConfirm">Crear punto</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const ICON_WARNING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 16.5h.01M10.4 3.6 2.7 17a1.6 1.6 0 0 0 1.4 2.4h15.8a1.6 1.6 0 0 0 1.4-2.4L13.6 3.6a1.6 1.6 0 0 0-2.8 0Z"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>';
+  const ICON_SPINNER = '<svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9" opacity="0.9"/></svg>';
+  const ICON_SCAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>';
+  const ICON_EMPTY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7"/></svg>';
+  const ICON_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+  const POLL_MS = 5000;
+  const LIVE_WINDOW_MS = 15 * 60 * 1000;
+
+  let points = [];
+  let currentPoint = null;
+  let currentReadingId = null;
+  let pollTimer = null;
+
+  const dashboardView = document.getElementById("dashboardView");
+  const detailView = document.getElementById("detailView");
+  const backBtn = document.getElementById("backBtn");
+
+  function isLive(iso) {
+    if (!iso) return false;
+    return (Date.now() - new Date(iso).getTime()) < LIVE_WINDOW_MS;
+  }
+
+  function relativeTime(iso) {
+    if (!iso) return "sin lecturas";
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const min = Math.floor(diffMs / 60000);
+    if (min < 1) return "hace instantes";
+    if (min < 60) return `hace ${min} min`;
+    const hrs = Math.floor(min / 60);
+    if (hrs < 24) return `hace ${hrs} h`;
+    return `hace ${Math.floor(hrs / 24)} d`;
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  // ---------- dashboard ----------
+  async function fetchPoints() {
+    try {
+      const res = await fetch("/api/points");
+      points = await res.json();
+      renderDashboard();
+      document.getElementById("lastPoll").textContent = "Actualizado " + relativeTime(new Date().toISOString());
+    } catch (e) {
+      document.getElementById("lastPoll").textContent = "Sin conexión con el servidor";
+    }
+  }
+
+  function renderDashboard() {
+    const total = points.length;
+    const live = points.filter((p) => p.latest && isLive(p.latest.created_at)).length;
+    const readingsTotal = points.reduce((s, p) => s + (p.readings_count || 0), 0);
+    const facingsVals = points.filter((p) => p.latest).map((p) => p.latest.total_facings || 0);
+    const avg = facingsVals.length ? Math.round(facingsVals.reduce((a, b) => a + b, 0) / facingsVals.length) : 0;
+
+    document.getElementById("kpiPoints").textContent = total;
+    document.getElementById("kpiLive").textContent = live;
+    document.getElementById("kpiReadings").textContent = readingsTotal;
+    document.getElementById("kpiAvg").textContent = avg;
+
+    const grid = document.getElementById("pointGrid");
+    if (!total) {
+      grid.innerHTML = `<div class="empty-state">${ICON_EMPTY}<p>Todavía no hay puntos de venta. Crea el primero con "Nuevo punto".</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = "";
+    points.forEach((p) => {
+      const live = p.latest && isLive(p.latest.created_at);
+      const card = document.createElement("div");
+      card.className = "point-card";
+      card.addEventListener("click", () => openPoint(p.id));
+
+      let statsHtml = `<div class="point-empty">Sin lecturas todavía — abre el punto para agregar la primera foto.</div>`;
+      let barsHtml = "";
+      let thumbHtml = "";
+      if (p.latest) {
+        if (p.latest.image_url) {
+          thumbHtml = `<img class="point-thumb" src="${p.latest.image_url}" alt="Última foto de ${escapeHtml(p.name)}" loading="lazy" />`;
+        }
+        const cats = (p.latest.categories || []).slice().sort((a, b) => (b.share_pct ?? 0) - (a.share_pct ?? 0)).slice(0, 3);
+        statsHtml = `
+          <div class="point-stats">
+            <div class="point-stat"><div class="v">${p.latest.total_facings ?? "–"}</div><div class="l">Caras</div></div>
+            <div class="point-stat"><div class="v">${(p.latest.products || []).length}</div><div class="l">Productos</div></div>
+            <div class="point-stat"><div class="v">${(p.latest.categories || []).length}</div><div class="l">Categorías</div></div>
+          </div>`;
+        barsHtml = `<div class="mini-bars">${cats.map((c) => `
+            <div class="mini-bar-row">
+              <div class="mini-bar-label" title="${escapeHtml(c.category)}">${escapeHtml(c.category)}</div>
+              <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.max(c.share_pct ?? 0, 0)}%;"></div></div>
+              <div class="mini-bar-pct">${(c.share_pct ?? 0).toFixed(0)}%</div>
+            </div>`).join("")}</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="row-top">
+          <span class="point-code">${escapeHtml(p.id)}</span>
+          <span class="status-pill ${live ? "live" : "stale"}"><span class="dot"></span>${live ? "En vivo" : relativeTime(p.latest ? p.latest.created_at : null)}</span>
+        </div>
+        <div class="point-name">${escapeHtml(p.name)}</div>
+        ${thumbHtml}
+        ${statsHtml}
+        ${barsHtml}
+        <div class="point-footer">
+          <span>${p.readings_count} lectura${p.readings_count === 1 ? "" : "s"}</span>
+          <span class="go">Ver detalle ${ICON_ARROW}</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ---------- detail ----------
+  async function openPoint(pointId) {
+    dashboardView.style.display = "none";
+    detailView.style.display = "block";
+    backBtn.style.display = "flex";
+    location.hash = pointId;
+    await loadPointDetail(pointId);
+  }
+
+  function closeDetail() {
+    detailView.style.display = "none";
+    dashboardView.style.display = "block";
+    backBtn.style.display = "none";
+    currentPoint = null;
+    currentReadingId = null;
+    history.replaceState(null, "", location.pathname);
+    fetchPoints();
+  }
+
+  async function loadPointDetail(pointId) {
+    const res = await fetch(`/api/points/${encodeURIComponent(pointId)}`);
+    if (!res.ok) { closeDetail(); return; }
+    currentPoint = await res.json();
+
+    document.getElementById("detailName").textContent = currentPoint.name;
+    document.getElementById("detailCode").textContent = currentPoint.id;
+    const latest = currentPoint.readings[0];
+    document.getElementById("detailStatus").textContent = latest
+      ? (isLive(latest.created_at) ? "En vivo" : "Última lectura " + relativeTime(latest.created_at))
+      : "Sin lecturas";
+
+    renderHistory();
+    if (currentPoint.readings.length) {
+      selectReading(currentReadingId && currentPoint.readings.some(r => r.id === currentReadingId) ? currentReadingId : currentPoint.readings[0].id);
+    } else {
+      renderReading(null);
+    }
+  }
+
+  function renderHistory() {
+    const list = document.getElementById("historyList");
+    if (!currentPoint.readings.length) {
+      list.innerHTML = `<div class="point-empty">Todavía no hay lecturas para este punto.</div>`;
+      return;
+    }
+    list.innerHTML = "";
+    currentPoint.readings.forEach((r) => {
+      const item = document.createElement("div");
+      item.className = "history-item" + (r.id === currentReadingId ? " active" : "");
+      const thumb = r.image_url
+        ? `<img class="history-thumb" src="${r.image_url}" alt="Foto lectura ${r.id}" loading="lazy" />`
+        : `<div class="history-thumb placeholder">${ICON_EMPTY}</div>`;
+      item.innerHTML = `
+        ${thumb}
+        <div class="history-info">
+          <span class="t">${relativeTime(r.created_at)}</span>
+          <span class="n">${r.total_facings ?? "–"} caras · ${(r.products || []).length} productos</span>
+        </div>
+      `;
+      item.addEventListener("click", () => selectReading(r.id));
+      list.appendChild(item);
+    });
+  }
+
+  function selectReading(readingId) {
+    currentReadingId = readingId;
+    renderHistory();
+    const reading = currentPoint.readings.find((r) => r.id === readingId);
+    renderReading(reading);
+  }
+
+  function renderReading(reading) {
+    const products = reading ? (reading.products || []) : [];
+    const categories = reading ? (reading.categories || []) : [];
+
+    const photoCard = document.getElementById("photoCard");
+    const readingPhoto = document.getElementById("readingPhoto");
+    if (reading && reading.image_url) {
+      readingPhoto.src = reading.image_url;
+      photoCard.style.display = "block";
+    } else {
+      photoCard.style.display = "none";
+    }
+
+    document.getElementById("statTotalFacings").textContent = reading ? (reading.total_facings ?? "–") : "–";
+    document.getElementById("statProducts").textContent = products.length;
+    document.getElementById("statCategories").textContent = categories.length;
+    document.getElementById("statLevels").textContent = reading ? (reading.shelf_levels_detected ?? "–") : "–";
+    document.getElementById("statEmpty").textContent = reading && reading.empty_space_pct != null ? `${reading.empty_space_pct.toFixed ? reading.empty_space_pct.toFixed(0) : reading.empty_space_pct}%` : "–";
+    document.getElementById("notesMsg").textContent = reading ? (reading.notes || "") : "";
+
+    const chart = document.getElementById("categoryChart");
+    chart.innerHTML = "";
+    categories.slice().sort((a, b) => (b.share_pct ?? 0) - (a.share_pct ?? 0)).forEach((cat) => {
+      const row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML = `
+        <div class="bar-label" title="${escapeHtml(cat.category)}">${escapeHtml(cat.category)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(cat.share_pct ?? 0, 0)}%;"></div></div>
+        <div class="bar-value">${(cat.share_pct ?? 0).toFixed(1)}% · ${cat.total_facings ?? 0}</div>
+      `;
+      chart.appendChild(row);
+    });
+    if (!categories.length) chart.innerHTML = `<div class="point-empty">Sube una foto para ver el desglose por categoría.</div>`;
+
+    const tbody = document.getElementById("productsTable");
+    tbody.innerHTML = "";
+    products.slice().sort((a, b) => (b.facings ?? 0) - (a.facings ?? 0)).forEach((p) => {
+      const tr = document.createElement("tr");
+      const label = p.out_of_stock
+        ? `${escapeHtml(p.product)} <span class="oos-flag" title="Quiebre de stock detectado">${ICON_WARNING}</span>`
+        : escapeHtml(p.product);
+      tr.innerHTML = `<td>${label}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---------- capture / analyze ----------
+  const photoInput = document.getElementById("photoInput");
+  const preview = document.getElementById("preview");
+  const analyzeBtn = document.getElementById("analyzeBtn");
+  const analyzeBtnText = document.getElementById("analyzeBtnText");
+  const statusMsg = document.getElementById("statusMsg");
+  let selectedFile = null;
+
+  photoInput.addEventListener("change", () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    selectedFile = file;
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+    analyzeBtn.disabled = false;
+    statusMsg.innerHTML = "";
+    statusMsg.classList.remove("error");
+  });
+
+  analyzeBtn.addEventListener("click", async () => {
+    if (!selectedFile || !currentPoint) return;
+    analyzeBtn.disabled = true;
+    statusMsg.classList.remove("error");
+    statusMsg.innerHTML = `${ICON_SPINNER} Analizando góndola…`;
+    analyzeBtn.querySelector("svg").outerHTML = ICON_SPINNER;
+    analyzeBtnText.textContent = "Analizando…";
+
+    const formData = new FormData();
+    formData.append("image", selectedFile);
+
+    try {
+      const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/analyze`, { method: "POST", body: formData });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+      const reading = await res.json();
+      statusMsg.innerHTML = `${ICON_CHECK} Análisis completo.`;
+      currentReadingId = reading.id;
+      await loadPointDetail(currentPoint.id);
+      preview.style.display = "none";
+      photoInput.value = "";
+      selectedFile = null;
+      analyzeBtn.disabled = true;
+    } catch (e) {
+      statusMsg.innerHTML = `${ICON_WARNING} No se pudo analizar la foto: ${escapeHtml(e.message)}`;
+      statusMsg.classList.add("error");
+    } finally {
+      analyzeBtn.querySelector("svg").outerHTML = ICON_SCAN;
+      analyzeBtnText.textContent = "Analizar góndola";
+    }
+  });
+
+  // ---------- new point modal ----------
+  const modalBackdrop = document.getElementById("modalBackdrop");
+  const modalStatus = document.getElementById("modalStatus");
+
+  document.getElementById("newPointBtn").addEventListener("click", () => {
+    document.getElementById("newPointName").value = "";
+    document.getElementById("newPointCode").value = "";
+    modalStatus.innerHTML = "";
+    modalBackdrop.style.display = "flex";
+  });
+  document.getElementById("modalCancel").addEventListener("click", () => { modalBackdrop.style.display = "none"; });
+  modalBackdrop.addEventListener("click", (e) => { if (e.target === modalBackdrop) modalBackdrop.style.display = "none"; });
+
+  document.getElementById("modalConfirm").addEventListener("click", async () => {
+    const name = document.getElementById("newPointName").value.trim();
+    const code = document.getElementById("newPointCode").value.trim();
+    if (!name) {
+      modalStatus.innerHTML = `${ICON_WARNING} El nombre es obligatorio`;
+      modalStatus.classList.add("error");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("name", name);
+    if (code) formData.append("point_id", code);
+
+    try {
+      const res = await fetch("/api/points", { method: "POST", body: formData });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+      const point = await res.json();
+      modalBackdrop.style.display = "none";
+      await fetchPoints();
+      openPoint(point.id);
+    } catch (e) {
+      modalStatus.classList.add("error");
+      modalStatus.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+    }
+  });
+
+  backBtn.addEventListener("click", closeDetail);
+
+  // ---------- polling ----------
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => {
+      if (detailView.style.display === "block" && currentPoint) {
+        loadPointDetail(currentPoint.id);
+      } else {
+        fetchPoints();
+      }
+    }, POLL_MS);
+  }
+
+  fetchPoints().then(() => {
+    const deepLinkId = location.hash.replace("#", "").trim();
+    if (deepLinkId) openPoint(deepLinkId);
+  });
+  startPolling();
+</script>
+</body>
+</html>
