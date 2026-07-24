@@ -1,3 +1,4 @@
+import shutil
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -77,6 +78,16 @@ def api_get_point(point_id: str):
     if not point:
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     return point
+
+
+@app.delete("/api/points/{point_id}")
+def api_delete_point(point_id: str):
+    if not db.point_exists(point_id):
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
+
+    db.delete_point(point_id)
+    shutil.rmtree(UPLOADS_DIR / point_id, ignore_errors=True)
+    return {"deleted": point_id}
 
 
 @app.post("/api/points/{point_id}/analyze")

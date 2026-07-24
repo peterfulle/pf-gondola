@@ -154,3 +154,9 @@ def get_point(point_id: str):
         "created_at": p["created_at"],
         "readings": [_reading_dict(r) for r in readings],
     }
+
+
+def delete_point(point_id: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM readings WHERE point_id = ?", (point_id,))
+        conn.execute("DELETE FROM points WHERE id = ?", (point_id,))

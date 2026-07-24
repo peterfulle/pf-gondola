@@ -137,6 +137,13 @@
   .detail-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; gap: 12px; }
   .detail-head h1 { margin: 0 0 3px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
   .detail-head .meta { font-size: 12.5px; color: var(--ink-muted); font-weight: 500; }
+  .btn-delete {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    background: #fff; border: 1px solid var(--border-strong); color: var(--ink);
+    border-radius: 7px; padding: 8px 12px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-delete:hover { border-color: var(--ink); background: #fafafa; }
+  .btn-delete svg { width: 14px; height: 14px; }
 
   .detail-grid { display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 16px; align-items: start; }
   @media (max-width: 780px) { .detail-grid { grid-template-columns: 1fr; } }
@@ -281,6 +288,10 @@
           <h1 id="detailName">—</h1>
           <div class="meta"><span id="detailCode">—</span> · <span id="detailStatus">—</span></div>
         </div>
+        <button class="btn-delete" id="deletePointBtn" title="Eliminar punto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a1.5 1.5 0 0 1-1.5 1.4H9.3a1.5 1.5 0 0 1-1.5-1.4L7 7"/></svg>
+          Eliminar punto
+        </button>
       </div>
 
       <div class="detail-grid">
@@ -709,6 +720,22 @@
   });
 
   backBtn.addEventListener("click", closeDetail);
+
+  document.getElementById("deletePointBtn").addEventListener("click", async () => {
+    if (!currentPoint) return;
+    const ok = confirm(`¿Eliminar el punto "${currentPoint.name}" (${currentPoint.id}) y todo su historial de lecturas y fotos? Esta acción no se puede deshacer.`);
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+      closeDetail();
+    } catch (e) {
+      alert("No se pudo eliminar el punto: " + e.message);
+    }
+  });
 
   // ---------- polling ----------
   function startPolling() {
