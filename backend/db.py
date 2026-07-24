@@ -1,10 +1,13 @@
 import json
+import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data.db"
+DATA_DIR = Path(os.environ.get("DATA_DIR", Path(__file__).resolve().parent.parent))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "data.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS points (

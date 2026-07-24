@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
+UPLOADS_DIR = db.DATA_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
