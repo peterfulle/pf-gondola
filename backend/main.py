@@ -1,3 +1,5 @@
+import csv
+import io
 import shutil
 import uuid
 from pathlib import Path
@@ -6,7 +8,7 @@ from typing import List, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import db
@@ -73,6 +75,30 @@ def api_delete_own_brand(name: str):
     return db.list_own_brands()
 
 
+def _rows_to_csv(rows: list) -> str:
+    fieldnames = [
+        "point_id", "point_name", "reading_id", "created_at",
+        "product", "brand", "category", "facings", "shelf_level", "position_index",
+        "out_of_stock", "is_own_brand",
+        "reading_total_facings", "reading_empty_space_pct", "reading_shelf_levels",
+    ]
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    return buf.getvalue()
+
+
+@app.get("/api/export.csv")
+def api_export_all_csv():
+    csv_text = _rows_to_csv(db.export_rows())
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=pf-gondola-export.csv"},
+    )
+
+
 @app.get("/api/points")
 def api_list_points():
     return db.list_points_with_latest()
@@ -98,6 +124,32 @@ def api_get_point(point_id: str):
     if not point:
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     return point
+
+
+@app.get("/api/points/{point_id}/export.csv")
+def api_export_point_csv(point_id: str):
+    if not db.point_exists(point_id):
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
+    csv_text = _rows_to_csv(db.export_rows(point_id))
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=pf-{point_id}-export.csv"},
+    )
+
+
+@app.get("/api/points/{point_id}/daily-metrics")
+def api_daily_metrics(point_id: str):
+    if not db.point_exists(point_id):
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
+    return db.daily_metrics(point_id)
+
+
+@app.get("/api/points/{point_id}/replenishment")
+def api_replenishment(point_id: str):
+    if not db.point_exists(point_id):
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
+    return db.replenishment_signals(point_id)
 
 
 @app.delete("/api/points/{point_id}")

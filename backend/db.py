@@ -237,3 +237,141 @@ def delete_point(point_id: str) -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM readings WHERE point_id = ?", (point_id,))
         conn.execute("DELETE FROM points WHERE id = ?", (point_id,))
+
+
+def export_rows(point_id: str = None) -> list:
+    """Una fila por producto por lectura, para exportar a Excel/Power BI/Looker."""
+    own_brands = list_own_brands()
+    with get_conn() as conn:
+        if point_id:
+            readings = conn.execute(
+                "SELECT r.*, p.name AS point_name FROM readings r JOIN points p ON p.id = r.point_id "
+                "WHERE r.point_id = ? ORDER BY r.id",
+                (point_id,),
+            ).fetchall()
+        else:
+            readings = conn.execute(
+                "SELECT r.*, p.name AS point_name FROM readings r JOIN points p ON p.id = r.point_id ORDER BY r.id"
+            ).fetchall()
+
+    rows = []
+    for r in readings:
+        products = _tag_products(json.loads(r["products_json"] or "[]"), own_brands)
+        if not products:
+            continue
+        for p in products:
+            rows.append(
+                {
+                    "point_id": r["point_id"],
+                    "point_name": r["point_name"],
+                    "reading_id": r["id"],
+                    "created_at": r["created_at"],
+                    "product": p.get("product"),
+                    "brand": p.get("brand"),
+                    "category": p.get("category"),
+                    "facings": p.get("facings"),
+                    "shelf_level": p.get("shelf_level"),
+                    "position_index": p.get("position_index"),
+                    "out_of_stock": p.get("out_of_stock"),
+                    "is_own_brand": p.get("is_own_brand"),
+                    "reading_total_facings": r["total_facings"],
+                    "reading_empty_space_pct": r["empty_space_pct"],
+                    "reading_shelf_levels": r["shelf_levels_detected"],
+                }
+            )
+    return rows
+
+
+def daily_metrics(point_id: str) -> list:
+    own_brands = list_own_brands()
+    with get_conn() as conn:
+        readings = conn.execute(
+            "SELECT * FROM readings WHERE point_id = ? ORDER BY id", (point_id,)
+        ).fetchall()
+
+    by_day = {}
+    for r in readings:
+        day = r["created_at"][:10]
+        products = _tag_products(json.loads(r["products_json"] or "[]"), own_brands)
+        bench = _benchmark_summary(products)
+        bucket = by_day.setdefault(
+            day, {"date": day, "readings": 0, "facings_sum": 0, "empty_space_sum": 0.0,
+                  "empty_space_n": 0, "own_share_sum": 0.0, "own_share_n": 0}
+        )
+        bucket["readings"] += 1
+        bucket["facings_sum"] += r["total_facings"] or 0
+        if r["empty_space_pct"] is not None:
+            bucket["empty_space_sum"] += r["empty_space_pct"]
+            bucket["empty_space_n"] += 1
+        if bench["own_share_pct"] is not None:
+            bucket["own_share_sum"] += bench["own_share_pct"]
+            bucket["own_share_n"] += 1
+
+    result = []
+    for day, b in sorted(by_day.items()):
+        result.append(
+            {
+                "date": day,
+                "readings": b["readings"],
+                "avg_total_facings": round(b["facings_sum"] / b["readings"], 1) if b["readings"] else None,
+                "avg_empty_space_pct": round(b["empty_space_sum"] / b["empty_space_n"], 1) if b["empty_space_n"] else None,
+                "avg_own_share_pct": round(b["own_share_sum"] / b["own_share_n"], 1) if b["own_share_n"] else None,
+            }
+        )
+    return result
+
+
+def replenishment_signals(point_id: str, lookback: int = 10) -> dict:
+    own_brands = list_own_brands()
+    with get_conn() as conn:
+        readings = conn.execute(
+            "SELECT * FROM readings WHERE point_id = ? ORDER BY id DESC LIMIT ?",
+            (point_id, lookback),
+        ).fetchall()
+    readings = list(reversed(readings))
+
+    empty_space_trend = [
+        {"date": r["created_at"][:10], "created_at": r["created_at"], "empty_space_pct": r["empty_space_pct"]}
+        for r in readings
+    ]
+    empty_vals = [r["empty_space_pct"] for r in readings if r["empty_space_pct"] is not None]
+    avg_empty = round(sum(empty_vals) / len(empty_vals), 1) if empty_vals else None
+    trend_delta = None
+    if len(empty_vals) >= 2:
+        trend_delta = round(empty_vals[-1] - empty_vals[0], 1)
+
+    stockout_counts = {}
+    seen_counts = {}
+    product_meta = {}
+    for r in readings:
+        products = _tag_products(json.loads(r["products_json"] or "[]"), own_brands)
+        for p in products:
+            key = (p.get("brand") or "").strip().lower() + "|" + (p.get("product") or "").strip().lower()
+            seen_counts[key] = seen_counts.get(key, 0) + 1
+            product_meta[key] = p
+            if p.get("out_of_stock"):
+                stockout_counts[key] = stockout_counts.get(key, 0) + 1
+
+    recurring = []
+    for key, times_out in stockout_counts.items():
+        times_seen = seen_counts.get(key, 1)
+        meta = product_meta[key]
+        recurring.append(
+            {
+                "product": meta.get("product"),
+                "brand": meta.get("brand"),
+                "category": meta.get("category"),
+                "is_own_brand": meta.get("is_own_brand"),
+                "times_out_of_stock": times_out,
+                "times_seen": times_seen,
+                "urgency_pct": round(times_out / times_seen * 100, 0),
+            }
+        )
+    recurring.sort(key=lambda x: (-x["urgency_pct"], -x["times_out_of_stock"]))
+
+    return {
+        "empty_space_trend": empty_space_trend,
+        "avg_empty_space_pct": avg_empty,
+        "empty_space_trend_delta": trend_delta,
+        "recurring_stockouts": recurring,
+    }

@@ -41,6 +41,7 @@ Si SÍ es una góndola de supermercado válida, devuelve este esquema exacto:
       "category": "categoría del producto",
       "facings": <entero, caras visibles>,
       "shelf_level": <entero, nivel de estante contado desde arriba empezando en 1>,
+      "position_index": <entero, orden de izquierda a derecha del producto DENTRO de su nivel de estante, empezando en 1>,
       "out_of_stock": <true/false, true si hay un hueco vacío evidente donde debería ir ese producto>
     }
   ],
@@ -64,6 +65,7 @@ Reglas:
 - Agrupa por categoría de producto usando nombres cortos y consistentes.
 - share_pct de cada categoría = (total_facings de la categoría / total_facings general) * 100, redondeado a 1 decimal. La suma de todos los share_pct debe ser ~100.
 - Si no puedes distinguir el producto exacto, usa la marca visible o una descripción corta (ej: "botella azul sin etiqueta legible").
+- position_index ordena los productos dentro de un mismo shelf_level de izquierda a derecha tal como aparecen físicamente (1 = más a la izquierda). Es independiente entre niveles distintos.
 - No inventes productos que no estén en la imagen. No agregues texto fuera del JSON.
 
 MÚLTIPLES FOTOS DE LA MISMA GÓNDOLA:

@@ -198,6 +198,7 @@
     display: flex; align-items: center; gap: 6px; flex-shrink: 0;
     background: #fff; border: 1px solid var(--border-strong); color: var(--ink);
     border-radius: 7px; padding: 8px 12px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    text-decoration: none;
   }
   .btn-delete:hover { border-color: var(--ink); background: #fafafa; }
   .btn-delete svg { width: 14px; height: 14px; }
@@ -297,6 +298,33 @@
 
   .notes { font-size: 11.5px; color: var(--ink-muted); margin-top: 12px; line-height: 1.5; }
 
+  /* ---------- daily metrics ---------- */
+  .daily-table-wrap { max-height: 260px; overflow-y: auto; }
+  table.daily { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  table.daily th, table.daily td { text-align: right; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+  table.daily th:first-child, table.daily td:first-child { text-align: left; }
+  table.daily th { color: var(--ink-muted); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.03em; }
+  table.daily td { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  /* ---------- replenishment ---------- */
+  .replen-summary { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 14px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+  .replen-summary .v { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .replen-summary .l { font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+  .replen-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: #fbfbfa; margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .replen-item .name { font-weight: 600; }
+  .replen-item .meta { color: var(--ink-muted); font-size: 11px; }
+  .replen-urgency { font-weight: 800; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+  /* ---------- 3D shelf ---------- */
+  #shelf3d { width: 100%; height: 320px; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; background: var(--page); }
+  #shelf3d canvas { display: block; }
+  .shelf3d-info { margin-top: 10px; font-size: 12.5px; color: var(--ink-secondary); min-height: 18px; }
+  .shelf3d-info b { color: var(--ink); }
+
   .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
   .history-item {
     display: flex; align-items: center; gap: 10px;
@@ -353,6 +381,14 @@
   .modal-actions .cancel { background: #fff; border: 1px solid var(--border-strong); color: var(--ink); }
   .modal-actions .confirm { background: var(--ink); border: none; color: #fff; }
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+  }
+}
+</script>
 </head>
 <body>
   <nav class="topbar">
@@ -404,7 +440,13 @@
 
       <div class="section-head">
         <h2>Puntos de venta</h2>
-        <span class="hint" id="lastPoll">—</span>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="hint" id="lastPoll">—</span>
+          <a class="btn-delete" href="/api/export.csv" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+            Descargar CSV
+          </a>
+        </div>
       </div>
       <div class="point-grid" id="pointGrid"></div>
     </section>
@@ -415,10 +457,16 @@
           <h1 id="detailName">—</h1>
           <div class="meta"><span id="detailCode">—</span> · <span id="detailStatus">—</span></div>
         </div>
-        <button class="btn-delete" id="deletePointBtn" title="Eliminar punto">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a1.5 1.5 0 0 1-1.5 1.4H9.3a1.5 1.5 0 0 1-1.5-1.4L7 7"/></svg>
-          Eliminar punto
-        </button>
+        <div style="display:flex; gap:8px;">
+          <a class="btn-delete" id="exportPointBtn" href="#" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+            Exportar CSV
+          </a>
+          <button class="btn-delete" id="deletePointBtn" title="Eliminar punto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a1.5 1.5 0 0 1-1.5 1.4H9.3a1.5 1.5 0 0 1-1.5-1.4L7 7"/></svg>
+            Eliminar punto
+          </button>
+        </div>
       </div>
 
       <div class="detail-grid">
@@ -451,6 +499,22 @@
               Historial de lecturas
             </h3>
             <div class="history-list" id="historyList"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M8 4v3M16 4v3"/></svg>
+              Métricas por día
+            </h3>
+            <div id="dailyMetrics"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
+              Reabastecimiento (estimado desde fotos)
+            </h3>
+            <div id="replenishmentBlock"></div>
           </div>
         </div>
 
@@ -503,6 +567,16 @@
               <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th></tr></thead>
               <tbody id="productsTable"></tbody>
             </table>
+          </div>
+
+          <div class="card" id="shelf3dCard" style="display:none;">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>
+              Posicionamiento 3D (aproximado)
+            </h3>
+            <p class="capture-hint" style="margin:0 0 10px;">Reconstrucción aproximada a partir de la foto — no son coordenadas exactas. Arrastra para rotar, scroll para acercar. Negro = PF, gris = competencia.</p>
+            <div id="shelf3d"></div>
+            <div id="shelf3dInfo" class="shelf3d-info"></div>
           </div>
         </div>
       </div>
@@ -751,6 +825,7 @@
 
     document.getElementById("detailName").textContent = currentPoint.name;
     document.getElementById("detailCode").textContent = currentPoint.id;
+    document.getElementById("exportPointBtn").href = `/api/points/${encodeURIComponent(currentPoint.id)}/export.csv`;
     const latest = currentPoint.readings[0];
     document.getElementById("detailStatus").textContent = latest
       ? (isLive(latest.created_at) ? "En vivo" : "Última lectura " + relativeTime(latest.created_at))
@@ -762,6 +837,8 @@
     } else {
       renderReading(null);
     }
+    loadDailyMetrics(pointId);
+    loadReplenishment(pointId);
   }
 
   function renderHistory() {
@@ -866,6 +943,14 @@
       tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td>`;
       tbody.appendChild(tr);
     });
+
+    const shelf3dCard = document.getElementById("shelf3dCard");
+    if (products.length) {
+      shelf3dCard.style.display = "block";
+      if (window.render3DShelf) window.render3DShelf(reading);
+    } else {
+      shelf3dCard.style.display = "none";
+    }
   }
 
   function renderBenchmarkBlock(reading) {
@@ -904,6 +989,73 @@
         <span class="comp-l"><span class="swatch"></span>Competencia</span>
       </div>
     `;
+  }
+
+  // ---------- métricas diarias ----------
+  async function loadDailyMetrics(pointId) {
+    const el = document.getElementById("dailyMetrics");
+    try {
+      const res = await fetch(`/api/points/${encodeURIComponent(pointId)}/daily-metrics`);
+      const days = await res.json();
+      if (!days.length) {
+        el.innerHTML = `<div class="point-empty">Todavía no hay suficientes lecturas para agrupar por día.</div>`;
+        return;
+      }
+      el.innerHTML = `
+        <div class="daily-table-wrap">
+          <table class="daily">
+            <thead><tr><th>Día</th><th>Lecturas</th><th>Caras prom.</th><th>Espacio vacío</th><th>Participación PF</th></tr></thead>
+            <tbody>
+              ${days.slice().reverse().map((d) => `
+                <tr>
+                  <td>${escapeHtml(d.date)}</td>
+                  <td>${d.readings}</td>
+                  <td>${d.avg_total_facings ?? "–"}</td>
+                  <td>${d.avg_empty_space_pct != null ? d.avg_empty_space_pct.toFixed(0) + "%" : "–"}</td>
+                  <td>${d.avg_own_share_pct != null ? d.avg_own_share_pct.toFixed(0) + "%" : "–"}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+    } catch (e) {
+      el.innerHTML = `<div class="point-empty">No se pudieron cargar las métricas diarias.</div>`;
+    }
+  }
+
+  // ---------- reabastecimiento ----------
+  async function loadReplenishment(pointId) {
+    const el = document.getElementById("replenishmentBlock");
+    try {
+      const res = await fetch(`/api/points/${encodeURIComponent(pointId)}/replenishment`);
+      const data = await res.json();
+      const avgEmpty = data.avg_empty_space_pct;
+      const delta = data.empty_space_trend_delta;
+      let deltaHtml = "";
+      if (delta != null && delta !== 0) {
+        const dir = delta > 0 ? "down" : "up";
+        deltaHtml = `<span class="delta-badge ${dir}">${ICON_TRIANGLE}${delta > 0 ? "+" : ""}${delta} pts</span>`;
+      }
+      let html = `
+        <div class="replen-summary">
+          <div><div class="v">${avgEmpty != null ? avgEmpty.toFixed(0) + "%" : "–"}</div><div class="l">Espacio vacío prom.</div></div>
+          ${deltaHtml}
+        </div>`;
+      if (!data.recurring_stockouts.length) {
+        html += `<div class="point-empty">Sin quiebres de stock recurrentes detectados en las últimas lecturas.</div>`;
+      } else {
+        html += data.recurring_stockouts.map((r) => `
+          <div class="replen-item">
+            <div>
+              <div class="name">${r.is_own_brand ? `<span class="own-flag" title="Marca propia (PF)">${ICON_DOT}</span>` : ""}${escapeHtml(r.product)}</div>
+              <div class="meta">${escapeHtml(r.brand || "")} · ${escapeHtml(r.category || "")} · quiebre en ${r.times_out_of_stock}/${r.times_seen} lecturas</div>
+            </div>
+            <div class="replen-urgency">${r.urgency_pct.toFixed(0)}%</div>
+          </div>`).join("");
+      }
+      el.innerHTML = html;
+    } catch (e) {
+      el.innerHTML = `<div class="point-empty">No se pudo cargar el estimado de reabastecimiento.</div>`;
+    }
   }
 
   // ---------- capture / analyze (multi-foto) ----------
@@ -1165,6 +1317,152 @@
     if (deepLinkId) openPoint(deepLinkId);
   });
   startPolling();
+</script>
+
+<script type="module">
+  import * as THREE from "three";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+  const OWN_COLOR = 0x0a0a0a;
+  const COMPETITOR_COLOR = 0xcfcfcc;
+  const SHELF_COLOR = 0xb5b5b1;
+
+  let scene, camera, renderer, controls, raycaster, pointer;
+  let productMeshes = [];
+
+  function initScene() {
+    const container = document.getElementById("shelf3d");
+    if (!container || scene) return;
+    const width = container.clientWidth || 400;
+    const height = 320;
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f0ef);
+
+    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera.position.set(5, 4, 9);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(width, height);
+    container.innerHTML = "";
+    container.appendChild(renderer.domElement);
+
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(2, -0.5, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(6, 10, 8);
+    scene.add(dirLight);
+
+    raycaster = new THREE.Raycaster();
+    pointer = new THREE.Vector2();
+    renderer.domElement.addEventListener("click", onCanvasClick);
+
+    animate();
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    if (controls) controls.update();
+    if (renderer && scene && camera) renderer.render(scene, camera);
+  }
+
+  function clearScene() {
+    if (!scene) return;
+    [...scene.children].forEach((child) => {
+      if (child.userData && (child.userData.isProductBox || child.userData.isShelf)) {
+        scene.remove(child);
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      }
+    });
+    productMeshes = [];
+  }
+
+  function onCanvasClick(event) {
+    if (!camera || !productMeshes.length) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(productMeshes);
+    const info = document.getElementById("shelf3dInfo");
+    if (!info) return;
+    if (hits.length) {
+      const p = hits[0].object.userData.product;
+      const tag = p.is_own_brand ? "PF" : "Competencia";
+      info.innerHTML = `<b>${p.product || "—"}</b> · ${p.brand || "—"} · ${p.category || "—"} · ${p.facings ?? 0} caras · nivel ${p.shelf_level ?? "—"} · ${tag}`;
+    } else {
+      info.textContent = "";
+    }
+  }
+
+  window.render3DShelf = function (reading) {
+    initScene();
+    if (!scene) return;
+    clearScene();
+    document.getElementById("shelf3dInfo").textContent = "";
+
+    const products = (reading && reading.products) || [];
+    if (!products.length) return;
+
+    const levels = {};
+    products.forEach((p, i) => {
+      const lvl = p.shelf_level || 1;
+      levels[lvl] = levels[lvl] || [];
+      levels[lvl].push({ ...p, _originalIndex: i });
+    });
+    const levelKeys = Object.keys(levels).map(Number).sort((a, b) => a - b);
+
+    const unitWidth = 0.5;
+    const boxHeight = 0.85;
+    const boxDepth = 0.5;
+    const levelGap = 1.15;
+    let maxTotalWidth = 1;
+
+    levelKeys.forEach((lvl, li) => {
+      const items = levels[lvl].slice().sort((a, b) => {
+        const ai = a.position_index ?? a._originalIndex;
+        const bi = b.position_index ?? b._originalIndex;
+        return ai - bi;
+      });
+      const y = -li * levelGap;
+      let xCursor = 0;
+      const widths = items.map((p) => Math.max(1, p.facings || 1) * unitWidth);
+      const totalWidth = widths.reduce((s, w) => s + w, 0) + items.length * 0.06;
+      maxTotalWidth = Math.max(maxTotalWidth, totalWidth);
+
+      const shelfGeo = new THREE.BoxGeometry(Math.max(totalWidth, 1), 0.06, boxDepth + 0.3);
+      const shelfMesh = new THREE.Mesh(shelfGeo, new THREE.MeshStandardMaterial({ color: SHELF_COLOR }));
+      shelfMesh.position.set(totalWidth / 2, y - boxHeight / 2 - 0.05, 0);
+      shelfMesh.userData.isShelf = true;
+      scene.add(shelfMesh);
+
+      items.forEach((p, i) => {
+        const width = widths[i];
+        const geo = new THREE.BoxGeometry(width * 0.9, boxHeight, boxDepth);
+        const color = p.is_own_brand ? OWN_COLOR : COMPETITOR_COLOR;
+        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color }));
+        mesh.position.set(xCursor + width / 2, y, 0);
+        mesh.userData.isProductBox = true;
+        mesh.userData.product = p;
+        scene.add(mesh);
+        productMeshes.push(mesh);
+        xCursor += width + 0.06;
+      });
+    });
+
+    if (camera && controls) {
+      const centerX = maxTotalWidth / 2;
+      const centerY = -(levelKeys.length - 1) * levelGap / 2;
+      const dist = Math.max(maxTotalWidth, levelKeys.length * levelGap) * 1.15 + 3;
+      camera.position.set(centerX + dist * 0.35, dist * 0.4, dist * 0.75);
+      controls.target.set(centerX, centerY, 0);
+      camera.updateProjectionMatrix();
+    }
+  };
 </script>
 </body>
 </html>
