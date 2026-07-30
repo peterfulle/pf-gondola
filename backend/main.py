@@ -1,7 +1,7 @@
 import shutil
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import db
-from vision import analyze_shelf
+from vision import MAX_IMAGES, analyze_shelf
 
 load_dotenv()
 db.init_db()
@@ -91,21 +91,34 @@ def api_delete_point(point_id: str):
 
 
 @app.post("/api/points/{point_id}/analyze")
-async def api_analyze(point_id: str, image: UploadFile = File(...)):
+async def api_analyze(point_id: str, images: List[UploadFile] = File(...)):
     if not db.point_exists(point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
 
-    if not image.content_type or not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
+    if not images:
+        raise HTTPException(status_code=400, detail="Debes subir al menos una foto")
+    if len(images) > MAX_IMAGES:
+        raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGES} fotos por lectura")
 
-    image_bytes = await image.read()
-    if not image_bytes:
-        raise HTTPException(status_code=400, detail="Imagen vacía")
+    loaded = []
+    for image in images:
+        if not image.content_type or not image.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Todos los archivos deben ser imágenes")
+        image_bytes = await image.read()
+        if not image_bytes:
+            raise HTTPException(status_code=400, detail="Una de las imágenes está vacía")
+        loaded.append((image_bytes, image.content_type))
 
     try:
-        analysis = analyze_shelf(image_bytes, image.content_type)
+        analysis = analyze_shelf(loaded)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Error al analizar la imagen: {exc}") from exc
 
-    image_path = save_upload(point_id, image_bytes, image.content_type)
-    return db.add_reading(point_id, analysis, image_path)
+    if not analysis.get("is_supermarket_shelf", True):
+        reason = analysis.get("rejection_reason") or "La imagen no parece ser una góndola de supermercado."
+        raise HTTPException(status_code=422, detail=reason)
+
+    image_paths = [
+        save_upload(point_id, image_bytes, content_type) for image_bytes, content_type in loaded
+    ]
+    return db.add_reading(point_id, analysis, image_paths)

@@ -32,13 +32,20 @@
     -webkit-font-smoothing: antialiased;
   }
   svg { display: block; }
+  ::selection { background: var(--ink); color: #fff; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .view-fade { animation: fadeUp 0.28s cubic-bezier(.16,1,.3,1); }
 
   /* ---------- topbar ---------- */
   .topbar {
     position: sticky;
     top: 0;
     z-index: 20;
-    background: var(--header-bg);
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
     color: #fff;
     display: flex;
     align-items: center;
@@ -61,15 +68,18 @@
     display: flex; align-items: center; gap: 6px;
     background: #fff; color: #000; border: none; border-radius: 7px;
     padding: 8px 13px; font-family: inherit; font-size: 13px; font-weight: 700;
-    cursor: pointer; white-space: nowrap;
+    cursor: pointer; white-space: nowrap; transition: transform 0.12s ease, opacity 0.12s ease;
   }
+  .btn-new:hover { opacity: 0.85; }
+  .btn-new:active { transform: scale(0.96); }
   .btn-new svg { width: 15px; height: 15px; }
   .btn-back {
     display: flex; align-items: center; gap: 6px;
     background: transparent; color: #fff; border: 1px solid #313131; border-radius: 7px;
     padding: 7px 12px; font-family: inherit; font-size: 13px; font-weight: 600;
-    cursor: pointer;
+    cursor: pointer; transition: border-color 0.12s ease;
   }
+  .btn-back:hover { border-color: #666; }
   .btn-back svg { width: 14px; height: 14px; }
 
   .shell { max-width: 1080px; margin: 0 auto; padding: 22px 20px 56px; }
@@ -79,7 +89,10 @@
   .kpi-tile {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 14px 16px; box-shadow: 0 1px 2px rgba(10,10,10,0.03);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
   }
+  .kpi-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--page); display: flex; align-items: center; justify-content: center; flex-shrink: 0; order: 2; }
+  .kpi-icon svg { width: 15px; height: 15px; color: var(--ink-muted); }
   .kpi-value { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
   .kpi-label { font-size: 11px; color: var(--ink-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
 
@@ -89,14 +102,14 @@
   .section-head .hint { font-size: 12px; color: var(--ink-muted); font-weight: 500; }
 
   /* ---------- point grid ---------- */
-  .point-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .point-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
   .point-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
     padding: 16px; cursor: pointer; text-align: left;
     box-shadow: 0 1px 2px rgba(10,10,10,0.03), 0 10px 24px -18px rgba(10,10,10,0.12);
-    transition: border-color 0.15s ease, transform 0.1s ease;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
-  .point-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .point-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(10,10,10,0.05), 0 16px 32px -16px rgba(10,10,10,0.18); }
   .point-card .row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .point-code { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
   .status-pill { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; }
@@ -107,11 +120,26 @@
   .status-pill.stale .dot { background: var(--border-strong); }
   .point-name { font-size: 15.5px; font-weight: 700; margin: 6px 0 12px; letter-spacing: -0.005em; }
 
-  .point-thumb { width: 100%; height: 120px; object-fit: cover; border-radius: 9px; margin-bottom: 12px; border: 1px solid var(--border); background: var(--track); }
+  .point-thumb-wrap { position: relative; margin-bottom: 12px; }
+  .point-thumb { width: 100%; height: 120px; object-fit: cover; border-radius: 9px; display: block; border: 1px solid var(--border); background: var(--track); }
+  .photo-count-badge {
+    position: absolute; bottom: 6px; right: 6px; background: rgba(10,10,10,0.72); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 3px 6px; border-radius: 5px; display: flex; align-items: center; gap: 3px;
+  }
+  .photo-count-badge svg { width: 10px; height: 10px; }
 
-  .point-stats { display: flex; gap: 14px; margin-bottom: 12px; }
+  .point-stats { display: flex; gap: 14px; margin-bottom: 10px; }
   .point-stat .v { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
   .point-stat .l { font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+
+  .trend-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sparkline { flex-shrink: 0; }
+  .sparkline path.line { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .sparkline path.area { fill: var(--ink); opacity: 0.06; stroke: none; }
+  .delta-badge { display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--ink-secondary); }
+  .delta-badge svg { width: 10px; height: 10px; }
+  .delta-badge.up svg { transform: rotate(0deg); }
+  .delta-badge.down svg { transform: rotate(180deg); }
 
   .mini-bars { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
   .mini-bar-row { display: flex; align-items: center; gap: 7px; }
@@ -123,7 +151,8 @@
   .point-empty { font-size: 12.5px; color: var(--ink-muted); padding: 10px 0 12px; }
   .point-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--ink-muted); font-weight: 500; }
   .point-footer .go { display: flex; align-items: center; gap: 4px; color: var(--ink); font-weight: 700; }
-  .point-footer .go svg { width: 13px; height: 13px; }
+  .point-footer .go svg { width: 13px; height: 13px; transition: transform 0.15s ease; }
+  .point-card:hover .point-footer .go svg { transform: translateX(2px); }
 
   .empty-state {
     grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--ink-muted);
@@ -162,16 +191,38 @@
   }
   .capture label:hover { border-color: var(--ink); background: #fafafa; }
   .capture label svg { width: 24px; height: 24px; color: var(--ink-muted); }
+  .capture-hint { font-size: 11.5px; color: var(--ink-muted); margin: 10px 0 0; line-height: 1.5; }
   input[type="file"] { display: none; }
-  #preview { display: none; width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; margin-top: 12px; border: 1px solid var(--border); }
+
+  .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px; margin-bottom: 4px; }
+  .photo-strip-item { position: relative; flex-shrink: 0; width: 76px; height: 76px; }
+  .photo-strip-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+  .photo-strip-item .order-badge {
+    position: absolute; top: 3px; left: 3px; background: rgba(10,10,10,0.72); color: #fff;
+    font-size: 9.5px; font-weight: 700; border-radius: 4px; padding: 1px 5px;
+  }
+  .photo-strip-item .remove-btn {
+    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--ink); color: #fff; border: 2px solid #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .photo-strip-item .remove-btn svg { width: 10px; height: 10px; }
+  .photo-strip-add {
+    flex-shrink: 0; width: 76px; height: 76px; border-radius: 8px; border: 1.5px dashed var(--border-strong);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink-muted);
+    background: none; transition: border-color 0.15s ease;
+  }
+  .photo-strip-add:hover { border-color: var(--ink); color: var(--ink); }
+  .photo-strip-add svg { width: 20px; height: 20px; }
 
   button.primary {
     width: 100%; margin-top: 12px; padding: 12px; border-radius: 8px; border: none;
     background: var(--ink); color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 700;
     letter-spacing: -0.005em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s ease, transform 0.1s ease;
   }
   button.primary:hover:not(:disabled) { opacity: 0.88; }
+  button.primary:active:not(:disabled) { transform: scale(0.985); }
   button.primary:disabled { background: #c7c7c4; cursor: default; }
   button.primary svg { width: 16px; height: 16px; }
   .spinner { animation: spin 0.8s linear infinite; }
@@ -181,7 +232,18 @@
   .status svg { width: 13px; height: 13px; flex-shrink: 0; }
   .status.error { color: var(--ink); font-weight: 600; }
 
-  .reading-photo { width: 100%; max-height: 340px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); background: var(--track); }
+  .reading-photo-main { position: relative; }
+  .reading-photo { width: 100%; max-height: 340px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); background: var(--track); display: block; }
+  .reading-photo-count {
+    position: absolute; top: 8px; right: 8px; background: rgba(10,10,10,0.72); color: #fff;
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 100px;
+  }
+  .reading-photo-nav { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .reading-photo-nav img {
+    width: 48px; height: 48px; object-fit: cover; border-radius: 6px; cursor: pointer;
+    border: 1.5px solid var(--border); opacity: 0.6; transition: opacity 0.15s ease, border-color 0.15s ease;
+  }
+  .reading-photo-nav img.active { opacity: 1; border-color: var(--ink); }
 
   .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 10px; }
   .stat-tile { text-align: center; padding: 10px 4px; border: 1px solid var(--border); border-radius: 10px; background: #fbfbfa; }
@@ -194,7 +256,7 @@
   .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
   .bar-label { flex: 0 0 108px; font-size: 12px; font-weight: 500; color: var(--ink); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bar-track { flex: 1; background: var(--track); border-radius: 5px; height: 18px; }
-  .bar-fill { height: 100%; border-radius: 5px; min-width: 5px; background: var(--fill); }
+  .bar-fill { height: 100%; border-radius: 5px; min-width: 5px; background: var(--fill); transition: width 0.4s cubic-bezier(.16,1,.3,1); }
   .bar-value { flex: 0 0 70px; font-size: 11.5px; font-weight: 500; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
 
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -211,12 +273,18 @@
   .history-item {
     display: flex; align-items: center; gap: 10px;
     padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer;
-    font-size: 12px; background: #fbfbfa;
+    font-size: 12px; background: #fbfbfa; transition: border-color 0.12s ease, background 0.12s ease;
   }
+  .history-item:hover { border-color: var(--border-strong); }
   .history-item.active { border-color: var(--ink); background: #f4f4f2; }
-  .history-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); background: var(--track); }
+  .history-thumb-wrap { position: relative; flex-shrink: 0; }
+  .history-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; display: block; border: 1px solid var(--border); background: var(--track); }
   .history-thumb.placeholder { display: flex; align-items: center; justify-content: center; color: var(--ink-muted); }
   .history-thumb.placeholder svg { width: 16px; height: 16px; }
+  .history-multi-badge {
+    position: absolute; bottom: -3px; right: -3px; background: var(--ink); color: #fff;
+    font-size: 8.5px; font-weight: 700; border-radius: 4px; padding: 1px 3px; line-height: 1.3;
+  }
   .history-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .history-item .t { font-weight: 600; }
   .history-item .n { color: var(--ink-muted); font-variant-numeric: tabular-nums; font-size: 11px; }
@@ -269,10 +337,22 @@
   <main class="shell">
     <section id="dashboardView">
       <div class="kpi-row">
-        <div class="kpi-tile"><div class="kpi-value" id="kpiPoints">0</div><div class="kpi-label">Puntos totales</div></div>
-        <div class="kpi-tile"><div class="kpi-value" id="kpiLive">0</div><div class="kpi-label">En vivo (15 min)</div></div>
-        <div class="kpi-tile"><div class="kpi-value" id="kpiReadings">0</div><div class="kpi-label">Lecturas totales</div></div>
-        <div class="kpi-tile"><div class="kpi-value" id="kpiAvg">0</div><div class="kpi-label">Caras prom. / punto</div></div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="kpiPoints">0</div><div class="kpi-label">Puntos totales</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg></div>
+        </div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="kpiLive">0</div><div class="kpi-label">En vivo (15 min)</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5v5l3 3"/></svg></div>
+        </div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="kpiReadings">0</div><div class="kpi-label">Lecturas totales</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.2"/></svg></div>
+        </div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="kpiAvg">0</div><div class="kpi-label">Caras prom. / punto</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M12 19V4M20 19v-7"/></svg></div>
+        </div>
       </div>
 
       <div class="section-head">
@@ -308,8 +388,9 @@
               </svg>
               Tomar foto o cargar imagen de la góndola
             </label>
-            <input type="file" id="photoInput" accept="image/*" capture="environment" />
-            <img id="preview" alt="Vista previa de la góndola" />
+            <div class="photo-strip" id="photoStrip" style="display:none;"></div>
+            <input type="file" id="photoInput" accept="image/*" capture="environment" multiple />
+            <p class="capture-hint">¿Góndola más ancha que el encuadre? Agrega hasta 6 fotos, en orden de izquierda a derecha — se combinan en una sola lectura.</p>
             <button class="primary" id="analyzeBtn" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
               <span id="analyzeBtnText">Analizar góndola</span>
@@ -332,7 +413,11 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
               Foto de esta lectura
             </h3>
-            <img id="readingPhoto" class="reading-photo" alt="Foto de la góndola analizada" />
+            <div class="reading-photo-main">
+              <img id="readingPhoto" class="reading-photo" alt="Foto de la góndola analizada" />
+              <span class="reading-photo-count" id="readingPhotoCount" style="display:none;"></span>
+            </div>
+            <div class="reading-photo-nav" id="readingPhotoNav"></div>
           </div>
 
           <div class="card">
@@ -396,9 +481,14 @@
   const ICON_SCAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>';
   const ICON_EMPTY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7"/></svg>';
   const ICON_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  const ICON_LAYERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"/><path d="m4 12 8 4.5 8-4.5"/></svg>';
+  const ICON_REMOVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  const ICON_TRIANGLE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 12H5z"/></svg>';
 
   const POLL_MS = 5000;
   const LIVE_WINDOW_MS = 15 * 60 * 1000;
+  const MAX_IMAGES = 6;
 
   let points = [];
   let currentPoint = null;
@@ -431,13 +521,40 @@
     }[c]));
   }
 
+  function sparklineSvg(values) {
+    if (!values || values.filter((v) => v != null).length < 2) return "";
+    const w = 72, h = 26, pad = 3;
+    const vals = values.map((v) => v ?? 0);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const range = max - min || 1;
+    const step = (w - pad * 2) / (vals.length - 1);
+    const points = vals.map((v, i) => {
+      const x = pad + i * step;
+      const y = pad + (1 - (v - min) / range) * (h - pad * 2);
+      return [x, y];
+    });
+    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+    const areaPath = `${linePath} L${points[points.length - 1][0].toFixed(1)},${h} L${points[0][0].toFixed(1)},${h} Z`;
+    return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><path class="area" d="${areaPath}"/><path class="line" d="${linePath}"/></svg>`;
+  }
+
+  function deltaBadge(values) {
+    if (!values || values.length < 2) return "";
+    const prev = values[values.length - 2] ?? 0;
+    const curr = values[values.length - 1] ?? 0;
+    const diff = curr - prev;
+    if (diff === 0) return `<span class="delta-badge">· sin cambio</span>`;
+    const dir = diff > 0 ? "up" : "down";
+    return `<span class="delta-badge ${dir}">${ICON_TRIANGLE}${diff > 0 ? "+" : ""}${diff} vs. anterior</span>`;
+  }
+
   // ---------- dashboard ----------
   async function fetchPoints() {
     try {
       const res = await fetch("/api/points");
       points = await res.json();
       renderDashboard();
-      document.getElementById("lastPoll").textContent = "Actualizado " + relativeTime(new Date().toISOString());
+      document.getElementById("lastPoll").textContent = "Actualizado hace instantes";
     } catch (e) {
       document.getElementById("lastPoll").textContent = "Sin conexión con el servidor";
     }
@@ -465,15 +582,18 @@
     points.forEach((p) => {
       const live = p.latest && isLive(p.latest.created_at);
       const card = document.createElement("div");
-      card.className = "point-card";
+      card.className = "point-card view-fade";
       card.addEventListener("click", () => openPoint(p.id));
 
       let statsHtml = `<div class="point-empty">Sin lecturas todavía — abre el punto para agregar la primera foto.</div>`;
       let barsHtml = "";
       let thumbHtml = "";
+      let trendHtml = "";
       if (p.latest) {
-        if (p.latest.image_url) {
-          thumbHtml = `<img class="point-thumb" src="${p.latest.image_url}" alt="Última foto de ${escapeHtml(p.name)}" loading="lazy" />`;
+        const urls = p.latest.image_urls || [];
+        if (urls.length) {
+          const badge = urls.length > 1 ? `<span class="photo-count-badge">${ICON_LAYERS}${urls.length}</span>` : "";
+          thumbHtml = `<div class="point-thumb-wrap"><img class="point-thumb" src="${urls[0]}" alt="Última foto de ${escapeHtml(p.name)}" loading="lazy" />${badge}</div>`;
         }
         const cats = (p.latest.categories || []).slice().sort((a, b) => (b.share_pct ?? 0) - (a.share_pct ?? 0)).slice(0, 3);
         statsHtml = `
@@ -488,6 +608,8 @@
               <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.max(c.share_pct ?? 0, 0)}%;"></div></div>
               <div class="mini-bar-pct">${(c.share_pct ?? 0).toFixed(0)}%</div>
             </div>`).join("")}</div>`;
+        const spark = sparklineSvg(p.recent_facings);
+        if (spark) trendHtml = `<div class="trend-row">${spark}${deltaBadge(p.recent_facings)}</div>`;
       }
 
       card.innerHTML = `
@@ -498,6 +620,7 @@
         <div class="point-name">${escapeHtml(p.name)}</div>
         ${thumbHtml}
         ${statsHtml}
+        ${trendHtml}
         ${barsHtml}
         <div class="point-footer">
           <span>${p.readings_count} lectura${p.readings_count === 1 ? "" : "s"}</span>
@@ -512,14 +635,17 @@
   async function openPoint(pointId) {
     dashboardView.style.display = "none";
     detailView.style.display = "block";
+    detailView.classList.add("view-fade");
     backBtn.style.display = "flex";
     location.hash = pointId;
+    resetCapture();
     await loadPointDetail(pointId);
   }
 
   function closeDetail() {
     detailView.style.display = "none";
     dashboardView.style.display = "block";
+    dashboardView.classList.add("view-fade");
     backBtn.style.display = "none";
     currentPoint = null;
     currentReadingId = null;
@@ -557,8 +683,10 @@
     currentPoint.readings.forEach((r) => {
       const item = document.createElement("div");
       item.className = "history-item" + (r.id === currentReadingId ? " active" : "");
-      const thumb = r.image_url
-        ? `<img class="history-thumb" src="${r.image_url}" alt="Foto lectura ${r.id}" loading="lazy" />`
+      const urls = r.image_urls || [];
+      const badge = urls.length > 1 ? `<span class="history-multi-badge">${urls.length}</span>` : "";
+      const thumb = urls.length
+        ? `<div class="history-thumb-wrap"><img class="history-thumb" src="${urls[0]}" alt="Foto lectura ${r.id}" loading="lazy" />${badge}</div>`
         : `<div class="history-thumb placeholder">${ICON_EMPTY}</div>`;
       item.innerHTML = `
         ${thumb}
@@ -582,12 +710,35 @@
   function renderReading(reading) {
     const products = reading ? (reading.products || []) : [];
     const categories = reading ? (reading.categories || []) : [];
+    const urls = reading ? (reading.image_urls || []) : [];
 
     const photoCard = document.getElementById("photoCard");
     const readingPhoto = document.getElementById("readingPhoto");
-    if (reading && reading.image_url) {
-      readingPhoto.src = reading.image_url;
+    const readingPhotoCount = document.getElementById("readingPhotoCount");
+    const readingPhotoNav = document.getElementById("readingPhotoNav");
+    if (urls.length) {
+      readingPhoto.src = urls[0];
       photoCard.style.display = "block";
+      if (urls.length > 1) {
+        readingPhotoCount.style.display = "block";
+        readingPhotoCount.textContent = `1 / ${urls.length}`;
+        readingPhotoNav.innerHTML = "";
+        urls.forEach((u, i) => {
+          const thumb = document.createElement("img");
+          thumb.src = u;
+          thumb.className = i === 0 ? "active" : "";
+          thumb.addEventListener("click", () => {
+            readingPhoto.src = u;
+            readingPhotoCount.textContent = `${i + 1} / ${urls.length}`;
+            readingPhotoNav.querySelectorAll("img").forEach((el) => el.classList.remove("active"));
+            thumb.classList.add("active");
+          });
+          readingPhotoNav.appendChild(thumb);
+        });
+      } else {
+        readingPhotoCount.style.display = "none";
+        readingPhotoNav.innerHTML = "";
+      }
     } else {
       photoCard.style.display = "none";
     }
@@ -625,27 +776,81 @@
     });
   }
 
-  // ---------- capture / analyze ----------
+  // ---------- capture / analyze (multi-foto) ----------
   const photoInput = document.getElementById("photoInput");
-  const preview = document.getElementById("preview");
+  const captureLabel = document.getElementById("captureLabel");
+  const photoStrip = document.getElementById("photoStrip");
   const analyzeBtn = document.getElementById("analyzeBtn");
   const analyzeBtnText = document.getElementById("analyzeBtnText");
   const statusMsg = document.getElementById("statusMsg");
-  let selectedFile = null;
+  let selectedFiles = [];
 
-  photoInput.addEventListener("change", () => {
-    const file = photoInput.files[0];
-    if (!file) return;
-    selectedFile = file;
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "block";
-    analyzeBtn.disabled = false;
+  function resetCapture() {
+    selectedFiles = [];
+    photoInput.value = "";
     statusMsg.innerHTML = "";
     statusMsg.classList.remove("error");
+    renderPhotoStrip();
+  }
+
+  function renderPhotoStrip() {
+    if (!selectedFiles.length) {
+      photoStrip.style.display = "none";
+      captureLabel.style.display = "flex";
+      analyzeBtn.disabled = true;
+      analyzeBtnText.textContent = "Analizar góndola";
+      return;
+    }
+    captureLabel.style.display = "none";
+    photoStrip.style.display = "flex";
+    photoStrip.innerHTML = "";
+    selectedFiles.forEach((file, i) => {
+      const item = document.createElement("div");
+      item.className = "photo-strip-item";
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      item.appendChild(img);
+      const badge = document.createElement("span");
+      badge.className = "order-badge";
+      badge.textContent = i + 1;
+      item.appendChild(badge);
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "remove-btn";
+      removeBtn.innerHTML = ICON_REMOVE;
+      removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectedFiles.splice(i, 1);
+        renderPhotoStrip();
+      });
+      item.appendChild(removeBtn);
+      photoStrip.appendChild(item);
+    });
+    if (selectedFiles.length < MAX_IMAGES) {
+      const addTile = document.createElement("button");
+      addTile.className = "photo-strip-add";
+      addTile.innerHTML = ICON_PLUS;
+      addTile.title = "Agregar otra foto";
+      addTile.addEventListener("click", () => photoInput.click());
+      photoStrip.appendChild(addTile);
+    }
+    analyzeBtn.disabled = false;
+    analyzeBtnText.textContent = `Analizar góndola (${selectedFiles.length} foto${selectedFiles.length === 1 ? "" : "s"})`;
+  }
+
+  photoInput.addEventListener("change", () => {
+    const files = Array.from(photoInput.files || []);
+    for (const f of files) {
+      if (selectedFiles.length >= MAX_IMAGES) break;
+      selectedFiles.push(f);
+    }
+    photoInput.value = "";
+    statusMsg.innerHTML = "";
+    statusMsg.classList.remove("error");
+    renderPhotoStrip();
   });
 
   analyzeBtn.addEventListener("click", async () => {
-    if (!selectedFile || !currentPoint) return;
+    if (!selectedFiles.length || !currentPoint) return;
     analyzeBtn.disabled = true;
     statusMsg.classList.remove("error");
     statusMsg.innerHTML = `${ICON_SPINNER} Analizando góndola…`;
@@ -653,7 +858,7 @@
     analyzeBtnText.textContent = "Analizando…";
 
     const formData = new FormData();
-    formData.append("image", selectedFile);
+    selectedFiles.forEach((f) => formData.append("images", f));
 
     try {
       const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/analyze`, { method: "POST", body: formData });
@@ -665,16 +870,17 @@
       statusMsg.innerHTML = `${ICON_CHECK} Análisis completo.`;
       currentReadingId = reading.id;
       await loadPointDetail(currentPoint.id);
-      preview.style.display = "none";
-      photoInput.value = "";
-      selectedFile = null;
-      analyzeBtn.disabled = true;
+      resetCapture();
     } catch (e) {
-      statusMsg.innerHTML = `${ICON_WARNING} No se pudo analizar la foto: ${escapeHtml(e.message)}`;
+      statusMsg.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
       statusMsg.classList.add("error");
     } finally {
-      analyzeBtn.querySelector("svg").outerHTML = ICON_SCAN;
-      analyzeBtnText.textContent = "Analizar góndola";
+      analyzeBtn.disabled = selectedFiles.length === 0;
+      const svg = analyzeBtn.querySelector("svg");
+      if (svg) svg.outerHTML = ICON_SCAN;
+      analyzeBtnText.textContent = selectedFiles.length
+        ? `Analizar góndola (${selectedFiles.length} foto${selectedFiles.length === 1 ? "" : "s"})`
+        : "Analizar góndola";
     }
   });
 

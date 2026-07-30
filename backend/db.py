@@ -45,6 +45,10 @@ def get_conn():
 def init_db():
     with get_conn() as conn:
         conn.executescript(SCHEMA)
+        try:
+            conn.execute("ALTER TABLE readings ADD COLUMN image_paths_json TEXT")
+        except sqlite3.OperationalError:
+            pass
 
 
 def now_iso():
@@ -78,11 +82,11 @@ def create_point(point_id: str, name: str) -> None:
         )
 
 
-def add_reading(point_id: str, analysis: dict, image_path: str = None) -> dict:
+def add_reading(point_id: str, analysis: dict, image_paths: list) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
             "INSERT INTO readings (point_id, created_at, total_facings, shelf_levels_detected, "
-            "empty_space_pct, products_json, categories_json, notes, image_path) "
+            "empty_space_pct, products_json, categories_json, notes, image_paths_json) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 point_id,
@@ -93,7 +97,7 @@ def add_reading(point_id: str, analysis: dict, image_path: str = None) -> dict:
                 json.dumps(analysis.get("products", [])),
                 json.dumps(analysis.get("categories", [])),
                 analysis.get("notes", ""),
-                image_path,
+                json.dumps(image_paths or []),
             ),
         )
         reading_id = cur.lastrowid
@@ -102,6 +106,15 @@ def add_reading(point_id: str, analysis: dict, image_path: str = None) -> dict:
 
 
 def _reading_dict(row: sqlite3.Row) -> dict:
+    keys = row.keys()
+    paths_json = row["image_paths_json"] if "image_paths_json" in keys else None
+    if paths_json:
+        paths = json.loads(paths_json)
+    elif "image_path" in keys and row["image_path"]:
+        paths = [row["image_path"]]
+    else:
+        paths = []
+
     return {
         "id": row["id"],
         "point_id": row["point_id"],
@@ -112,7 +125,7 @@ def _reading_dict(row: sqlite3.Row) -> dict:
         "products": json.loads(row["products_json"] or "[]"),
         "categories": json.loads(row["categories_json"] or "[]"),
         "notes": row["notes"],
-        "image_url": f"/uploads/{row['image_path']}" if row["image_path"] else None,
+        "image_urls": [f"/uploads/{p}" for p in paths],
     }
 
 
@@ -128,6 +141,11 @@ def list_points_with_latest() -> list:
             count_row = conn.execute(
                 "SELECT COUNT(*) AS c FROM readings WHERE point_id = ?", (p["id"],)
             ).fetchone()
+            recent_rows = conn.execute(
+                "SELECT total_facings FROM readings WHERE point_id = ? ORDER BY id DESC LIMIT 8",
+                (p["id"],),
+            ).fetchall()
+            recent_facings = [r["total_facings"] for r in reversed(recent_rows)]
             result.append(
                 {
                     "id": p["id"],
@@ -135,6 +153,7 @@ def list_points_with_latest() -> list:
                     "created_at": p["created_at"],
                     "readings_count": count_row["c"],
                     "latest": _reading_dict(latest_row) if latest_row else None,
+                    "recent_facings": recent_facings,
                 }
             )
     return result
