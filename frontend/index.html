@@ -320,10 +320,50 @@
   .replen-urgency { font-weight: 800; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 
   /* ---------- 3D shelf ---------- */
-  #shelf3d { width: 100%; height: 320px; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; background: var(--page); }
+  h3.card-title { position: relative; }
+  .expand-btn {
+    margin-left: auto; display: flex; align-items: center; gap: 5px;
+    background: #fff; border: 1px solid var(--border-strong); color: var(--ink-secondary);
+    border-radius: 6px; padding: 5px 9px; font-family: inherit; font-size: 10.5px; font-weight: 700;
+    text-transform: none; letter-spacing: normal; cursor: pointer;
+  }
+  .expand-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .expand-btn svg { width: 12px; height: 12px; margin: 0; }
+
+  .shelf3d-legend { display: flex; gap: 14px; margin-bottom: 10px; font-size: 11px; color: var(--ink-secondary); font-weight: 600; }
+  .shelf3d-legend span { display: flex; align-items: center; gap: 5px; }
+  .shelf3d-legend .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .shelf3d-legend .swatch.own { background: #0a0a0a; }
+  .shelf3d-legend .swatch.competitor { background: #cfcfcc; }
+  .shelf3d-legend .swatch.ghost { background: repeating-linear-gradient(45deg, #8d8e92 0 2px, transparent 2px 4px); border: 1px solid var(--border-strong); }
+
+  #shelf3d { width: 100%; height: 320px; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; background: var(--page); cursor: grab; }
   #shelf3d canvas { display: block; }
-  .shelf3d-info { margin-top: 10px; font-size: 12.5px; color: var(--ink-secondary); min-height: 18px; }
-  .shelf3d-info b { color: var(--ink); }
+  #shelf3d.hovering { cursor: pointer; }
+
+  .shelf3d-info { margin-top: 10px; font-size: 12.5px; color: var(--ink-muted); min-height: 18px; }
+  .shelf3d-detail-card {
+    border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 14px; background: #fbfbfa;
+  }
+  .s3d-title { font-size: 14px; font-weight: 800; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .s3d-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .s3d-grid .s3d-l { display: block; font-size: 9.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; }
+  .s3d-grid .s3d-v { display: block; font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 1px; }
+
+  #shelf3dModalBackdrop {
+    display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.6); z-index: 60;
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .shelf3d-modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 1200px; height: 88vh;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(0,0,0,0.5);
+  }
+  .shelf3d-modal-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .shelf3d-modal-head strong { font-size: 15px; margin-right: 8px; }
+  #shelf3dModalHost { flex: 1; padding: 16px 20px 20px; display: flex; flex-direction: column; min-height: 0; }
+  #shelf3dModalHost #shelf3dHost { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #shelf3dModalHost #shelf3d { flex: 1; height: auto; min-height: 0; }
+  #shelf3dModalHost .shelf3d-info { flex: 0 0 auto; }
 
   .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
   .history-item {
@@ -573,10 +613,21 @@
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>
               Posicionamiento 3D (aproximado)
+              <button class="expand-btn" id="expand3dBtn" title="Ver en pantalla completa">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4"/></svg>
+                Pantalla completa
+              </button>
             </h3>
-            <p class="capture-hint" style="margin:0 0 10px;">Reconstrucción aproximada a partir de la foto — no son coordenadas exactas. Arrastra para rotar, scroll para acercar. Negro = PF, gris = competencia.</p>
-            <div id="shelf3d"></div>
-            <div id="shelf3dInfo" class="shelf3d-info"></div>
+            <p class="capture-hint" style="margin:0 0 10px;">Reconstrucción aproximada a partir de la foto — no son coordenadas exactas. Arrastra para rotar, scroll para acercar, clic en una caja para ver su detalle.</p>
+            <div class="shelf3d-legend">
+              <span><span class="swatch own"></span>PF</span>
+              <span><span class="swatch competitor"></span>Competencia</span>
+              <span><span class="swatch ghost"></span>Quiebre de stock</span>
+            </div>
+            <div id="shelf3dHost">
+              <div id="shelf3d"></div>
+              <div id="shelf3dInfo" class="shelf3d-info">Haz clic en una caja para ver su detalle.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -619,6 +670,22 @@
       <div class="modal-actions">
         <button class="cancel" id="brandsCloseBtn">Cerrar</button>
       </div>
+    </div>
+  </div>
+
+  <div id="shelf3dModalBackdrop">
+    <div class="shelf3d-modal">
+      <div class="shelf3d-modal-head">
+        <div>
+          <strong>Posicionamiento 3D</strong>
+          <span class="hint" id="shelf3dModalSubtitle"></span>
+        </div>
+        <button class="btn-delete" id="closeShelf3dModal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          Cerrar
+        </button>
+      </div>
+      <div id="shelf3dModalHost"></div>
     </div>
   </div>
 
@@ -1261,6 +1328,24 @@
   document.getElementById("brandsCloseBtn").addEventListener("click", () => { brandsModalBackdrop.style.display = "none"; refreshCurrentView(); });
   brandsModalBackdrop.addEventListener("click", (e) => { if (e.target === brandsModalBackdrop) { brandsModalBackdrop.style.display = "none"; refreshCurrentView(); } });
 
+  // ---------- posicionamiento 3D: pantalla completa ----------
+  const shelf3dModalBackdrop = document.getElementById("shelf3dModalBackdrop");
+  document.getElementById("expand3dBtn").addEventListener("click", () => {
+    document.getElementById("shelf3dModalSubtitle").textContent = currentPoint ? `— ${currentPoint.name}` : "";
+    if (window.expandShelf3D) window.expandShelf3D();
+  });
+  document.getElementById("closeShelf3dModal").addEventListener("click", () => {
+    if (window.collapseShelf3D) window.collapseShelf3D();
+  });
+  shelf3dModalBackdrop.addEventListener("click", (e) => {
+    if (e.target === shelf3dModalBackdrop && window.collapseShelf3D) window.collapseShelf3D();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && shelf3dModalBackdrop.style.display === "flex" && window.collapseShelf3D) {
+      window.collapseShelf3D();
+    }
+  });
+
   document.getElementById("addBrandBtn").addEventListener("click", async () => {
     const input = document.getElementById("newBrandName");
     const name = input.value.trim();
@@ -1323,44 +1408,84 @@
   import * as THREE from "three";
   import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-  const OWN_COLOR = 0x0a0a0a;
-  const COMPETITOR_COLOR = 0xcfcfcc;
+  const OWN_COLOR = new THREE.Color(0x0a0a0a);
+  const COMPETITOR_COLOR = new THREE.Color(0xcfcfcc);
   const SHELF_COLOR = 0xb5b5b1;
+  const FLOOR_COLOR = 0xe6e6e3;
+  const HOVER_LIGHTEN = 0.22;
+  const ICON_DOT_S3D = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px;display:inline-block;vertical-align:-1px;"><circle cx="12" cy="12" r="7"/></svg>';
+
+  function escapeHtmlS3D(str) {
+    return String(str ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
 
   let scene, camera, renderer, controls, raycaster, pointer;
   let productMeshes = [];
+  let hoveredMesh = null;
+  let selectedMesh = null;
+  let selectionOutline = null;
+  let lastReading = null;
+  let lastDims = null;
+  let isExpanded = false;
 
   function initScene() {
-    const container = document.getElementById("shelf3d");
-    if (!container || scene) return;
-    const width = container.clientWidth || 400;
-    const height = 320;
+    const canvasHost = document.getElementById("shelf3d");
+    if (!canvasHost || scene) return;
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf0f0ef);
+    scene.fog = new THREE.Fog(0xf0f0ef, 14, 30);
 
-    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(5, 4, 9);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
-    container.innerHTML = "";
-    container.appendChild(renderer.domElement);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    canvasHost.appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(2, -0.5, 0);
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 2;
+    controls.maxDistance = 40;
+    controls.maxPolarAngle = Math.PI * 0.52;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(6, 10, 8);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xcccccc, 0.55));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    dirLight.position.set(7, 12, 8);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(1024, 1024);
+    dirLight.shadow.camera.near = 1;
+    dirLight.shadow.camera.far = 40;
     scene.add(dirLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
 
     raycaster = new THREE.Raycaster();
     pointer = new THREE.Vector2();
     renderer.domElement.addEventListener("click", onCanvasClick);
+    renderer.domElement.addEventListener("pointermove", onCanvasMove);
+    renderer.domElement.addEventListener("pointerleave", () => setHovered(null));
 
+    resizeRenderer();
     animate();
+  }
+
+  function currentCanvasHost() {
+    return document.getElementById("shelf3d");
+  }
+
+  function resizeRenderer() {
+    const host = currentCanvasHost();
+    if (!host || !renderer) return;
+    host.style.height = isExpanded ? "" : "320px";
+    const width = host.clientWidth || 400;
+    const height = isExpanded ? Math.max(host.clientHeight, 360) : 320;
+    renderer.setSize(width, height, true);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
   }
 
   function animate() {
@@ -1369,44 +1494,122 @@
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
 
+  function makeLabelSprite(text) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 96;
+    const ctx = canvas.getContext("2d");
+    ctx.font = "700 46px Inter, system-ui, sans-serif";
+    ctx.fillStyle = "#55565a";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, 0, 52);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(1.3, 0.5, 1);
+    sprite.userData.isShelf = true;
+    return sprite;
+  }
+
   function clearScene() {
     if (!scene) return;
     [...scene.children].forEach((child) => {
       if (child.userData && (child.userData.isProductBox || child.userData.isShelf)) {
         scene.remove(child);
         if (child.geometry) child.geometry.dispose();
+        if (child.material && child.material.map) child.material.map.dispose();
         if (child.material) child.material.dispose();
       }
     });
     productMeshes = [];
+    hoveredMesh = null;
+    selectedMesh = null;
+    if (selectionOutline) { scene.remove(selectionOutline); selectionOutline = null; }
   }
 
-  function onCanvasClick(event) {
-    if (!camera || !productMeshes.length) return;
+  function setHovered(mesh) {
+    if (hoveredMesh === mesh) return;
+    if (hoveredMesh && hoveredMesh !== selectedMesh) {
+      hoveredMesh.material.color.copy(hoveredMesh.userData.baseColor);
+    }
+    hoveredMesh = mesh;
+    if (hoveredMesh && hoveredMesh !== selectedMesh) {
+      hoveredMesh.material.color.copy(hoveredMesh.userData.baseColor).offsetHSL(0, 0, HOVER_LIGHTEN);
+    }
+    const host = currentCanvasHost();
+    if (host) host.classList.toggle("hovering", !!mesh);
+  }
+
+  function setSelected(mesh) {
+    if (selectedMesh) {
+      selectedMesh.material.color.copy(selectedMesh.userData.baseColor);
+    }
+    if (selectionOutline) {
+      scene.remove(selectionOutline);
+      selectionOutline = null;
+    }
+    selectedMesh = mesh;
+    if (selectedMesh) {
+      selectedMesh.material.color.copy(selectedMesh.userData.baseColor).offsetHSL(0, 0, HOVER_LIGHTEN * 0.6);
+      selectionOutline = new THREE.BoxHelper(selectedMesh, 0xffffff);
+      selectionOutline.material.linewidth = 2;
+      selectionOutline.userData.isProductBox = true;
+      scene.add(selectionOutline);
+    }
+    renderInfoPanel(mesh ? mesh.userData.product : null);
+  }
+
+  function renderInfoPanel(p) {
+    const info = document.getElementById("shelf3dInfo");
+    if (!info) return;
+    if (!p) {
+      info.innerHTML = "Haz clic en una caja para ver su detalle.";
+      return;
+    }
+    const ownTag = p.is_own_brand
+      ? `<span class="own-flag" title="Marca propia (PF)">${ICON_DOT_S3D}</span>PF`
+      : "Competencia";
+    info.innerHTML = `
+      <div class="shelf3d-detail-card">
+        <div class="s3d-title">${escapeHtmlS3D(p.product || "—")}</div>
+        <div class="s3d-grid">
+          <div><span class="s3d-l">Marca</span><span class="s3d-v">${escapeHtmlS3D(p.brand || "—")}</span></div>
+          <div><span class="s3d-l">Categoría</span><span class="s3d-v">${escapeHtmlS3D(p.category || "—")}</span></div>
+          <div><span class="s3d-l">Caras</span><span class="s3d-v">${p.facings ?? "—"}</span></div>
+          <div><span class="s3d-l">Nivel</span><span class="s3d-v">${p.shelf_level ?? "—"}</span></div>
+          <div><span class="s3d-l">Posición</span><span class="s3d-v">${p.position_index ?? "—"}</span></div>
+          <div><span class="s3d-l">Estado</span><span class="s3d-v">${p.out_of_stock ? "Quiebre" : "Disponible"}</span></div>
+        </div>
+        <div class="notes" style="margin-top:8px; margin-bottom:0;">${ownTag}</div>
+      </div>`;
+  }
+
+  function pickAtEvent(event) {
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(productMeshes);
-    const info = document.getElementById("shelf3dInfo");
-    if (!info) return;
-    if (hits.length) {
-      const p = hits[0].object.userData.product;
-      const tag = p.is_own_brand ? "PF" : "Competencia";
-      info.innerHTML = `<b>${p.product || "—"}</b> · ${p.brand || "—"} · ${p.category || "—"} · ${p.facings ?? 0} caras · nivel ${p.shelf_level ?? "—"} · ${tag}`;
-    } else {
-      info.textContent = "";
-    }
+    return hits.length ? hits[0].object : null;
   }
 
-  window.render3DShelf = function (reading) {
-    initScene();
-    if (!scene) return;
+  function onCanvasClick(event) {
+    if (!camera || !productMeshes.length) return;
+    setSelected(pickAtEvent(event));
+  }
+
+  function onCanvasMove(event) {
+    if (!camera || !productMeshes.length) return;
+    setHovered(pickAtEvent(event));
+  }
+
+  function buildScene(reading) {
     clearScene();
-    document.getElementById("shelf3dInfo").textContent = "";
+    renderInfoPanel(null);
 
     const products = (reading && reading.products) || [];
-    if (!products.length) return;
+    if (!products.length) return { maxTotalWidth: 1, levelCount: 0 };
 
     const levels = {};
     products.forEach((p, i) => {
@@ -1435,33 +1638,93 @@
       maxTotalWidth = Math.max(maxTotalWidth, totalWidth);
 
       const shelfGeo = new THREE.BoxGeometry(Math.max(totalWidth, 1), 0.06, boxDepth + 0.3);
-      const shelfMesh = new THREE.Mesh(shelfGeo, new THREE.MeshStandardMaterial({ color: SHELF_COLOR }));
+      const shelfMesh = new THREE.Mesh(shelfGeo, new THREE.MeshStandardMaterial({ color: SHELF_COLOR, roughness: 0.85 }));
       shelfMesh.position.set(totalWidth / 2, y - boxHeight / 2 - 0.05, 0);
+      shelfMesh.receiveShadow = true;
       shelfMesh.userData.isShelf = true;
       scene.add(shelfMesh);
 
+      const label = makeLabelSprite(`N${lvl}`);
+      label.position.set(-0.85, y, 0);
+      scene.add(label);
+
       items.forEach((p, i) => {
         const width = widths[i];
+        const baseColor = (p.is_own_brand ? OWN_COLOR : COMPETITOR_COLOR).clone();
         const geo = new THREE.BoxGeometry(width * 0.9, boxHeight, boxDepth);
-        const color = p.is_own_brand ? OWN_COLOR : COMPETITOR_COLOR;
-        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color }));
+        const isGhost = !!p.out_of_stock;
+        const mat = isGhost
+          ? new THREE.MeshStandardMaterial({ color: baseColor, wireframe: true, transparent: true, opacity: 0.55 })
+          : new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.55, metalness: 0.04 });
+        const mesh = new THREE.Mesh(geo, mat);
         mesh.position.set(xCursor + width / 2, y, 0);
+        mesh.castShadow = !isGhost;
+        mesh.receiveShadow = true;
         mesh.userData.isProductBox = true;
         mesh.userData.product = p;
+        mesh.userData.baseColor = baseColor;
         scene.add(mesh);
         productMeshes.push(mesh);
         xCursor += width + 0.06;
       });
     });
 
-    if (camera && controls) {
-      const centerX = maxTotalWidth / 2;
-      const centerY = -(levelKeys.length - 1) * levelGap / 2;
-      const dist = Math.max(maxTotalWidth, levelKeys.length * levelGap) * 1.15 + 3;
-      camera.position.set(centerX + dist * 0.35, dist * 0.4, dist * 0.75);
-      controls.target.set(centerX, centerY, 0);
-      camera.updateProjectionMatrix();
-    }
+    const floorGeo = new THREE.PlaneGeometry(200, 200);
+    const floorMesh = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({ color: FLOOR_COLOR, roughness: 1 }));
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.position.set(0, -levelKeys.length * levelGap - 0.35, 0);
+    floorMesh.receiveShadow = true;
+    floorMesh.userData.isShelf = true;
+    scene.add(floorMesh);
+
+    return { maxTotalWidth, levelCount: levelKeys.length, levelGap };
+  }
+
+  function frameCamera(dims) {
+    if (!camera || !controls) return;
+    const { maxTotalWidth, levelCount, levelGap } = dims;
+    const centerX = maxTotalWidth / 2;
+    const centerY = -(Math.max(levelCount, 1) - 1) * (levelGap || 1.15) / 2;
+    const dist = Math.max(maxTotalWidth, Math.max(levelCount, 1) * (levelGap || 1.15)) * (isExpanded ? 1.4 : 1.15) + 3;
+    camera.position.set(centerX + dist * 0.35, dist * 0.42, dist * 0.78);
+    controls.target.set(centerX, centerY, 0);
+  }
+
+  window.render3DShelf = function (reading) {
+    lastReading = reading;
+    initScene();
+    if (!scene) return;
+    resizeRenderer();
+    lastDims = buildScene(reading);
+    frameCamera(lastDims);
+  };
+
+  window.expandShelf3D = function () {
+    const host = document.getElementById("shelf3dHost");
+    const modalHost = document.getElementById("shelf3dModalHost");
+    const backdrop = document.getElementById("shelf3dModalBackdrop");
+    if (!host || !modalHost || !backdrop) return;
+    modalHost.appendChild(host);
+    backdrop.style.display = "flex";
+    isExpanded = true;
+    requestAnimationFrame(() => {
+      resizeRenderer();
+      if (lastDims) frameCamera(lastDims);
+    });
+  };
+
+  window.collapseShelf3D = function () {
+    const card = document.getElementById("shelf3dCard");
+    const backdrop = document.getElementById("shelf3dModalBackdrop");
+    const host = document.getElementById("shelf3dHost");
+    if (!card || !host) return;
+    card.appendChild(host);
+    if (backdrop) backdrop.style.display = "none";
+    isExpanded = false;
+    requestAnimationFrame(() => {
+      resizeRenderer();
+      if (lastDims) frameCamera(lastDims);
+    });
   };
 </script>
 </body>
