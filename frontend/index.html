@@ -85,7 +85,7 @@
   .shell { max-width: 1080px; margin: 0 auto; padding: 22px 20px 56px; }
 
   /* ---------- KPI row ---------- */
-  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
   .kpi-tile {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 14px 16px; box-shadow: 0 1px 2px rgba(10,10,10,0.03);
@@ -147,6 +147,34 @@
   .mini-bar-track { flex: 1; height: 6px; border-radius: 3px; background: var(--track); }
   .mini-bar-fill { height: 100%; border-radius: 3px; background: var(--ink); }
   .mini-bar-pct { flex: 0 0 34px; font-size: 10.5px; color: var(--ink-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ---------- benchmark PF vs competencia ---------- */
+  .benchmark-block { margin-bottom: 12px; }
+  .benchmark-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  .benchmark-head .label { font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; }
+  .benchmark-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--track); }
+  .benchmark-bar .own { background: var(--ink); }
+  .benchmark-bar .competitor { background: var(--border-strong); }
+  .benchmark-legend { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; font-weight: 600; }
+  .benchmark-legend .own-l { color: var(--ink); display: flex; align-items: center; gap: 4px; }
+  .benchmark-legend .comp-l { color: var(--ink-muted); display: flex; align-items: center; gap: 4px; }
+  .benchmark-legend .swatch { width: 7px; height: 7px; border-radius: 2px; }
+  .benchmark-legend .own-l .swatch { background: var(--ink); }
+  .benchmark-legend .comp-l .swatch { background: var(--border-strong); }
+  .benchmark-empty { font-size: 11.5px; color: var(--ink-muted); }
+  .benchmark-empty button { background: none; border: none; text-decoration: underline; color: var(--ink); font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; }
+
+  .benchmark-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .benchmark-tile { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .benchmark-tile.own { background: var(--ink); border-color: var(--ink); }
+  .benchmark-tile.own .bt-value, .benchmark-tile.own .bt-label { color: #fff; }
+  .benchmark-tile.competitor { background: #fbfbfa; }
+  .bt-value { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .bt-label { font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; margin-top: 2px; }
+  .bt-sub { font-size: 11px; color: var(--ink-muted); margin-top: 6px; }
+  .benchmark-tile.own .bt-sub { color: #c9c9c6; }
+  .own-flag { display: inline-flex; vertical-align: -2px; margin-right: 3px; }
+  .own-flag svg { width: 11px; height: 11px; color: var(--ink); }
 
   .point-empty { font-size: 12.5px; color: var(--ink-muted); padding: 10px 0 12px; }
   .point-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--ink-muted); font-weight: 500; }
@@ -290,7 +318,7 @@
   .history-item .n { color: var(--ink-muted); font-variant-numeric: tabular-nums; font-size: 11px; }
 
   /* ---------- modal ---------- */
-  #modalBackdrop {
+  #modalBackdrop, #brandsModalBackdrop {
     display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.45);
     align-items: center; justify-content: center; z-index: 50; padding: 20px;
   }
@@ -298,6 +326,17 @@
     background: #fff; border-radius: 14px; padding: 22px; width: 100%; max-width: 380px;
     box-shadow: 0 24px 60px -20px rgba(0,0,0,0.4);
   }
+  .brand-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .brand-chip {
+    display: flex; align-items: center; gap: 6px; background: var(--page); border: 1px solid var(--border-strong);
+    border-radius: 100px; padding: 5px 6px 5px 12px; font-size: 12.5px; font-weight: 600; color: var(--ink);
+  }
+  .brand-chip button {
+    display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--border-strong); border: none; color: #fff; cursor: pointer; padding: 0;
+  }
+  .brand-chip button svg { width: 9px; height: 9px; }
+  .brand-chips-empty { font-size: 12.5px; color: var(--ink-muted); padding: 4px 0 8px; }
   .modal h2 { margin: 0 0 4px; font-size: 17px; font-weight: 800; }
   .modal p.hint { margin: 0 0 16px; font-size: 12.5px; color: var(--ink-muted); }
   .field { margin-bottom: 12px; }
@@ -328,6 +367,10 @@
       Dashboard
     </button>
     <div class="live-pill"><span class="dot"></span>En vivo</div>
+    <button class="btn-back" id="brandsBtn" style="display:flex;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
+      Marcas propias
+    </button>
     <button class="btn-new" id="newPointBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       Nuevo punto
@@ -352,6 +395,10 @@
         <div class="kpi-tile">
           <div><div class="kpi-value" id="kpiAvg">0</div><div class="kpi-label">Caras prom. / punto</div></div>
           <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M12 19V4M20 19v-7"/></svg></div>
+        </div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="kpiBenchmark">—</div><div class="kpi-label">Participación PF</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg></div>
         </div>
       </div>
 
@@ -433,6 +480,14 @@
 
           <div class="card">
             <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
+              PF vs. Competencia
+            </h3>
+            <div id="benchmarkBlock"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M12 19V4M20 19v-7"/></svg>
               % de participación en la góndola por categoría
             </h3>
@@ -474,6 +529,25 @@
     </div>
   </div>
 
+  <div id="brandsModalBackdrop">
+    <div class="modal">
+      <h2>Marcas propias (PF)</h2>
+      <p class="hint">Los productos cuya marca coincida con esta lista se marcan como "propios" para calcular tu participación vs. la competencia en cada góndola.</p>
+      <div class="brand-chips" id="brandChips"></div>
+      <div class="field" style="margin-top:10px;">
+        <label for="newBrandName">Agregar marca</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="newBrandName" placeholder="Ej: Nestlé, Watts, Carozzi…" style="flex:1;" />
+          <button class="confirm" id="addBrandBtn" style="flex:0 0 auto; padding:10px 14px;">Agregar</button>
+        </div>
+      </div>
+      <div class="status" id="brandsStatus"></div>
+      <div class="modal-actions">
+        <button class="cancel" id="brandsCloseBtn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const ICON_WARNING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 16.5h.01M10.4 3.6 2.7 17a1.6 1.6 0 0 0 1.4 2.4h15.8a1.6 1.6 0 0 0 1.4-2.4L13.6 3.6a1.6 1.6 0 0 0-2.8 0Z"/></svg>';
   const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>';
@@ -485,6 +559,7 @@
   const ICON_REMOVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   const ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_TRIANGLE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 12H5z"/></svg>';
+  const ICON_DOT = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>';
 
   const POLL_MS = 5000;
   const LIVE_WINDOW_MS = 15 * 60 * 1000;
@@ -566,11 +641,16 @@
     const readingsTotal = points.reduce((s, p) => s + (p.readings_count || 0), 0);
     const facingsVals = points.filter((p) => p.latest).map((p) => p.latest.total_facings || 0);
     const avg = facingsVals.length ? Math.round(facingsVals.reduce((a, b) => a + b, 0) / facingsVals.length) : 0;
+    const shareVals = points
+      .map((p) => p.latest && p.latest.benchmark ? p.latest.benchmark.own_share_pct : null)
+      .filter((v) => v != null);
+    const avgShare = shareVals.length ? (shareVals.reduce((a, b) => a + b, 0) / shareVals.length) : null;
 
     document.getElementById("kpiPoints").textContent = total;
     document.getElementById("kpiLive").textContent = live;
     document.getElementById("kpiReadings").textContent = readingsTotal;
     document.getElementById("kpiAvg").textContent = avg;
+    document.getElementById("kpiBenchmark").textContent = avgShare != null ? `${avgShare.toFixed(0)}%` : "—";
 
     const grid = document.getElementById("pointGrid");
     if (!total) {
@@ -612,6 +692,16 @@
         if (spark) trendHtml = `<div class="trend-row">${spark}${deltaBadge(p.recent_facings)}</div>`;
       }
 
+      let benchmarkHtml = "";
+      if (ownBrands.length && p.latest && p.latest.benchmark && p.latest.benchmark.own_share_pct != null) {
+        const ownPct = p.latest.benchmark.own_share_pct;
+        benchmarkHtml = `
+          <div class="benchmark-block">
+            <div class="benchmark-head"><span class="label">PF vs. competencia</span><span>${ownPct.toFixed(0)}%</span></div>
+            <div class="benchmark-bar"><div class="own" style="width:${ownPct}%;"></div><div class="competitor" style="width:${Math.max(0, 100 - ownPct)}%;"></div></div>
+          </div>`;
+      }
+
       card.innerHTML = `
         <div class="row-top">
           <span class="point-code">${escapeHtml(p.id)}</span>
@@ -621,6 +711,7 @@
         ${thumbHtml}
         ${statsHtml}
         ${trendHtml}
+        ${benchmarkHtml}
         ${barsHtml}
         <div class="point-footer">
           <span>${p.readings_count} lectura${p.readings_count === 1 ? "" : "s"}</span>
@@ -743,6 +834,8 @@
       photoCard.style.display = "none";
     }
 
+    renderBenchmarkBlock(reading);
+
     document.getElementById("statTotalFacings").textContent = reading ? (reading.total_facings ?? "–") : "–";
     document.getElementById("statProducts").textContent = products.length;
     document.getElementById("statCategories").textContent = categories.length;
@@ -768,12 +861,49 @@
     tbody.innerHTML = "";
     products.slice().sort((a, b) => (b.facings ?? 0) - (a.facings ?? 0)).forEach((p) => {
       const tr = document.createElement("tr");
-      const label = p.out_of_stock
-        ? `${escapeHtml(p.product)} <span class="oos-flag" title="Quiebre de stock detectado">${ICON_WARNING}</span>`
-        : escapeHtml(p.product);
-      tr.innerHTML = `<td>${label}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td>`;
+      const ownFlag = p.is_own_brand ? `<span class="own-flag" title="Marca propia (PF)">${ICON_DOT}</span>` : "";
+      const oosFlag = p.out_of_stock ? ` <span class="oos-flag" title="Quiebre de stock detectado">${ICON_WARNING}</span>` : "";
+      tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td>`;
       tbody.appendChild(tr);
     });
+  }
+
+  function renderBenchmarkBlock(reading) {
+    const el = document.getElementById("benchmarkBlock");
+    if (!ownBrands.length) {
+      el.innerHTML = `<div class="benchmark-empty">Todavía no defines qué marcas son "PF". <button id="benchmarkConfigBtn">Configurar marcas propias</button></div>`;
+      el.querySelector("#benchmarkConfigBtn").addEventListener("click", () => document.getElementById("brandsBtn").click());
+      return;
+    }
+    const bench = reading ? reading.benchmark : null;
+    if (!bench || bench.own_share_pct == null) {
+      el.innerHTML = `<div class="benchmark-empty">No se detectaron productos propios ni de competencia en esta lectura.</div>`;
+      return;
+    }
+    const ownPct = bench.own_share_pct;
+    const compPct = Math.max(0, 100 - ownPct);
+    el.innerHTML = `
+      <div class="benchmark-tiles">
+        <div class="benchmark-tile own">
+          <div class="bt-value">${ownPct.toFixed(1)}%</div>
+          <div class="bt-label">Mi participación (PF)</div>
+          <div class="bt-sub">${bench.own_facings} caras · ${bench.own_product_count} producto${bench.own_product_count === 1 ? "" : "s"}</div>
+        </div>
+        <div class="benchmark-tile competitor">
+          <div class="bt-value">${compPct.toFixed(1)}%</div>
+          <div class="bt-label">Competencia</div>
+          <div class="bt-sub">${bench.competitor_facings} caras · ${bench.competitor_product_count} producto${bench.competitor_product_count === 1 ? "" : "s"}</div>
+        </div>
+      </div>
+      <div class="benchmark-bar">
+        <div class="own" style="width:${ownPct}%;"></div>
+        <div class="competitor" style="width:${compPct}%;"></div>
+      </div>
+      <div class="benchmark-legend">
+        <span class="own-l"><span class="swatch"></span>PF</span>
+        <span class="comp-l"><span class="swatch"></span>Competencia</span>
+      </div>
+    `;
   }
 
   // ---------- capture / analyze (multi-foto) ----------
@@ -925,6 +1055,81 @@
     }
   });
 
+  // ---------- own brands (PF vs. competencia) ----------
+  let ownBrands = [];
+  const brandsModalBackdrop = document.getElementById("brandsModalBackdrop");
+  const brandsStatus = document.getElementById("brandsStatus");
+  const brandChips = document.getElementById("brandChips");
+
+  async function fetchOwnBrands() {
+    try {
+      const res = await fetch("/api/own-brands");
+      ownBrands = await res.json();
+    } catch (e) {
+      ownBrands = [];
+    }
+    return ownBrands;
+  }
+
+  function renderBrandChips() {
+    if (!ownBrands.length) {
+      brandChips.innerHTML = `<div class="brand-chips-empty">Todavía no defines qué marcas son "PF". Sin esto, el benchmark no puede distinguir tus productos de la competencia.</div>`;
+      return;
+    }
+    brandChips.innerHTML = "";
+    ownBrands.forEach((name) => {
+      const chip = document.createElement("span");
+      chip.className = "brand-chip";
+      chip.innerHTML = `${escapeHtml(name)} <button title="Quitar">${ICON_REMOVE}</button>`;
+      chip.querySelector("button").addEventListener("click", async () => {
+        await fetch(`/api/own-brands/${encodeURIComponent(name)}`, { method: "DELETE" });
+        await fetchOwnBrands();
+        renderBrandChips();
+        refreshCurrentView();
+      });
+      brandChips.appendChild(chip);
+    });
+  }
+
+  function refreshCurrentView() {
+    if (detailView.style.display === "block" && currentPoint) {
+      loadPointDetail(currentPoint.id);
+    } else {
+      fetchPoints();
+    }
+  }
+
+  document.getElementById("brandsBtn").addEventListener("click", async () => {
+    brandsStatus.innerHTML = "";
+    document.getElementById("newBrandName").value = "";
+    await fetchOwnBrands();
+    renderBrandChips();
+    brandsModalBackdrop.style.display = "flex";
+  });
+  document.getElementById("brandsCloseBtn").addEventListener("click", () => { brandsModalBackdrop.style.display = "none"; refreshCurrentView(); });
+  brandsModalBackdrop.addEventListener("click", (e) => { if (e.target === brandsModalBackdrop) { brandsModalBackdrop.style.display = "none"; refreshCurrentView(); } });
+
+  document.getElementById("addBrandBtn").addEventListener("click", async () => {
+    const input = document.getElementById("newBrandName");
+    const name = input.value.trim();
+    if (!name) return;
+    const formData = new FormData();
+    formData.append("name", name);
+    try {
+      const res = await fetch("/api/own-brands", { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      ownBrands = await res.json();
+      input.value = "";
+      renderBrandChips();
+    } catch (e) {
+      brandsStatus.classList.add("error");
+      brandsStatus.innerHTML = `${ICON_WARNING} No se pudo agregar la marca`;
+    }
+  });
+  document.getElementById("newBrandName").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); document.getElementById("addBrandBtn").click(); }
+  });
+
   backBtn.addEventListener("click", closeDetail);
 
   document.getElementById("deletePointBtn").addEventListener("click", async () => {
@@ -955,7 +1160,7 @@
     }, POLL_MS);
   }
 
-  fetchPoints().then(() => {
+  fetchOwnBrands().then(() => fetchPoints()).then(() => {
     const deepLinkId = location.hash.replace("#", "").trim();
     if (deepLinkId) openPoint(deepLinkId);
   });

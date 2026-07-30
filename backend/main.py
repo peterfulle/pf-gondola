@@ -53,6 +53,26 @@ def index():
     return FileResponse(FRONTEND_DIR / "index.html")
 
 
+@app.get("/api/own-brands")
+def api_list_own_brands():
+    return db.list_own_brands()
+
+
+@app.post("/api/own-brands")
+def api_add_own_brand(name: str = Form(...)):
+    name = name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="El nombre de la marca es obligatorio")
+    db.add_own_brand(name)
+    return db.list_own_brands()
+
+
+@app.delete("/api/own-brands/{name}")
+def api_delete_own_brand(name: str):
+    db.delete_own_brand(name)
+    return db.list_own_brands()
+
+
 @app.get("/api/points")
 def api_list_points():
     return db.list_points_with_latest()

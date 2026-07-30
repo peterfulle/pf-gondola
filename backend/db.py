@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS readings (
   image_path TEXT,
   FOREIGN KEY (point_id) REFERENCES points(id)
 );
+CREATE TABLE IF NOT EXISTS own_brands (
+  name TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL
+);
 """
 
 
@@ -53,6 +57,49 @@ def init_db():
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
+
+
+def list_own_brands() -> list:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT name FROM own_brands ORDER BY name").fetchall()
+    return [r["name"] for r in rows]
+
+
+def add_own_brand(name: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO own_brands (name, created_at) VALUES (?, ?)",
+            (name, now_iso()),
+        )
+
+
+def delete_own_brand(name: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM own_brands WHERE name = ?", (name,))
+
+
+def _is_own_brand(product: dict, own_brands: list) -> bool:
+    haystack = f"{product.get('brand', '')} {product.get('product', '')}".lower()
+    return any(b.lower() in haystack for b in own_brands if b.strip())
+
+
+def _tag_products(products: list, own_brands: list) -> list:
+    if not own_brands:
+        return [{**p, "is_own_brand": False} for p in products]
+    return [{**p, "is_own_brand": _is_own_brand(p, own_brands)} for p in products]
+
+
+def _benchmark_summary(products: list) -> dict:
+    own_facings = sum(p.get("facings", 0) or 0 for p in products if p.get("is_own_brand"))
+    competitor_facings = sum(p.get("facings", 0) or 0 for p in products if not p.get("is_own_brand"))
+    total = own_facings + competitor_facings
+    return {
+        "own_facings": own_facings,
+        "competitor_facings": competitor_facings,
+        "own_share_pct": round(own_facings / total * 100, 1) if total else None,
+        "own_product_count": sum(1 for p in products if p.get("is_own_brand")),
+        "competitor_product_count": sum(1 for p in products if not p.get("is_own_brand")),
+    }
 
 
 def point_exists(point_id: str) -> bool:
@@ -102,10 +149,10 @@ def add_reading(point_id: str, analysis: dict, image_paths: list) -> dict:
         )
         reading_id = cur.lastrowid
         row = conn.execute("SELECT * FROM readings WHERE id = ?", (reading_id,)).fetchone()
-    return _reading_dict(row)
+    return _reading_dict(row, list_own_brands())
 
 
-def _reading_dict(row: sqlite3.Row) -> dict:
+def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
     keys = row.keys()
     paths_json = row["image_paths_json"] if "image_paths_json" in keys else None
     if paths_json:
@@ -115,6 +162,8 @@ def _reading_dict(row: sqlite3.Row) -> dict:
     else:
         paths = []
 
+    products = _tag_products(json.loads(row["products_json"] or "[]"), own_brands or [])
+
     return {
         "id": row["id"],
         "point_id": row["point_id"],
@@ -122,14 +171,16 @@ def _reading_dict(row: sqlite3.Row) -> dict:
         "total_facings": row["total_facings"],
         "shelf_levels_detected": row["shelf_levels_detected"],
         "empty_space_pct": row["empty_space_pct"],
-        "products": json.loads(row["products_json"] or "[]"),
+        "products": products,
         "categories": json.loads(row["categories_json"] or "[]"),
         "notes": row["notes"],
         "image_urls": [f"/uploads/{p}" for p in paths],
+        "benchmark": _benchmark_summary(products),
     }
 
 
 def list_points_with_latest() -> list:
+    own_brands = list_own_brands()
     with get_conn() as conn:
         points = conn.execute("SELECT * FROM points ORDER BY id").fetchall()
         result = []
@@ -142,24 +193,31 @@ def list_points_with_latest() -> list:
                 "SELECT COUNT(*) AS c FROM readings WHERE point_id = ?", (p["id"],)
             ).fetchone()
             recent_rows = conn.execute(
-                "SELECT total_facings FROM readings WHERE point_id = ? ORDER BY id DESC LIMIT 8",
+                "SELECT total_facings, products_json FROM readings WHERE point_id = ? ORDER BY id DESC LIMIT 8",
                 (p["id"],),
             ).fetchall()
-            recent_facings = [r["total_facings"] for r in reversed(recent_rows)]
+            recent_rows = list(reversed(recent_rows))
+            recent_facings = [r["total_facings"] for r in recent_rows]
+            recent_own_share = [
+                _benchmark_summary(_tag_products(json.loads(r["products_json"] or "[]"), own_brands))["own_share_pct"]
+                for r in recent_rows
+            ]
             result.append(
                 {
                     "id": p["id"],
                     "name": p["name"],
                     "created_at": p["created_at"],
                     "readings_count": count_row["c"],
-                    "latest": _reading_dict(latest_row) if latest_row else None,
+                    "latest": _reading_dict(latest_row, own_brands) if latest_row else None,
                     "recent_facings": recent_facings,
+                    "recent_own_share": recent_own_share,
                 }
             )
     return result
 
 
 def get_point(point_id: str):
+    own_brands = list_own_brands()
     with get_conn() as conn:
         p = conn.execute("SELECT * FROM points WHERE id = ?", (point_id,)).fetchone()
         if not p:
@@ -171,7 +229,7 @@ def get_point(point_id: str):
         "id": p["id"],
         "name": p["name"],
         "created_at": p["created_at"],
-        "readings": [_reading_dict(r) for r in readings],
+        "readings": [_reading_dict(r, own_brands) for r in readings],
     }
 
 
