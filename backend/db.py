@@ -9,6 +9,10 @@ DATA_DIR = Path(os.environ.get("DATA_DIR", Path(__file__).resolve().parent.paren
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "data.db"
 
+# Altura promedio asumida por nivel de estante (metros). Es un supuesto de referencia,
+# no una medición: la altura real de cada góndola varía por retailer y categoría.
+LEVEL_HEIGHT_M = 0.35
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS points (
   id TEXT PRIMARY KEY,
@@ -52,6 +56,7 @@ def init_db():
         for statement in (
             "ALTER TABLE readings ADD COLUMN image_paths_json TEXT",
             "ALTER TABLE readings ADD COLUMN linear_meters REAL",
+            "ALTER TABLE readings ADD COLUMN depth_units INTEGER",
         ):
             try:
                 conn.execute(statement)
@@ -133,12 +138,18 @@ def create_point(point_id: str, name: str) -> None:
         )
 
 
-def add_reading(point_id: str, analysis: dict, image_paths: list, linear_meters: float = None) -> dict:
+def add_reading(
+    point_id: str,
+    analysis: dict,
+    image_paths: list,
+    linear_meters: float = None,
+    depth_units: int = None,
+) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
             "INSERT INTO readings (point_id, created_at, total_facings, shelf_levels_detected, "
-            "empty_space_pct, products_json, categories_json, notes, image_paths_json, linear_meters) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "empty_space_pct, products_json, categories_json, notes, image_paths_json, linear_meters, depth_units) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 point_id,
                 now_iso(),
@@ -150,6 +161,7 @@ def add_reading(point_id: str, analysis: dict, image_paths: list, linear_meters:
                 analysis.get("notes", ""),
                 json.dumps(image_paths or []),
                 linear_meters,
+                depth_units,
             ),
         )
         reading_id = cur.lastrowid
@@ -169,7 +181,13 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
 
     products = _tag_products(json.loads(row["products_json"] or "[]"), own_brands or [])
     linear_meters = row["linear_meters"] if "linear_meters" in keys else None
+    depth_units = row["depth_units"] if "depth_units" in keys else None
     total_facings = row["total_facings"] or 0
+    levels = row["shelf_levels_detected"] or 0
+
+    vertical_meters = round(levels * LEVEL_HEIGHT_M, 2) if levels else None
+    display_area_m2 = round(linear_meters * vertical_meters, 2) if linear_meters and vertical_meters else None
+    total_units_estimate = total_facings * depth_units if depth_units else None
 
     return {
         "id": row["id"],
@@ -185,6 +203,10 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
         "benchmark": _benchmark_summary(products),
         "linear_meters": linear_meters,
         "facings_per_linear_meter": round(total_facings / linear_meters, 1) if linear_meters else None,
+        "vertical_meters": vertical_meters,
+        "display_area_m2": display_area_m2,
+        "depth_units": depth_units,
+        "total_units_estimate": total_units_estimate,
     }
 
 
@@ -287,6 +309,12 @@ def export_rows(point_id: str = None) -> list:
                     "reading_empty_space_pct": r["empty_space_pct"],
                     "reading_shelf_levels": r["shelf_levels_detected"],
                     "reading_linear_meters": r["linear_meters"] if "linear_meters" in r.keys() else None,
+                    "reading_depth_units": r["depth_units"] if "depth_units" in r.keys() else None,
+                    "reading_total_units_estimate": (
+                        (r["total_facings"] or 0) * r["depth_units"]
+                        if "depth_units" in r.keys() and r["depth_units"]
+                        else None
+                    ),
                 }
             )
     return rows

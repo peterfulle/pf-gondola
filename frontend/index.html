@@ -221,6 +221,15 @@
   .capture label:hover { border-color: var(--ink); background: #fafafa; }
   .capture label svg { width: 15px; height: 15px; color: var(--ink-muted); }
   .capture-hint { font-size: 11.5px; color: var(--ink-muted); margin: 10px 0 0; line-height: 1.5; }
+
+  .depth-picker-wrap { margin-top: 12px; }
+  .depth-picker-label { display: block; font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+  .depth-picker { display: flex; gap: 6px; }
+  .depth-picker button {
+    flex: 1; background: #fff; border: 1px solid var(--border-strong); color: var(--ink-secondary); border-radius: 8px;
+    padding: 7px 10px; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  }
+  .depth-picker button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
   input[type="file"] { display: none; }
 
   .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px; margin-bottom: 4px; }
@@ -648,6 +657,15 @@
             <div class="photo-strip" id="photoStrip" style="display:none;"></div>
             <input type="file" id="photoInput" accept="image/*" multiple />
             <p class="capture-hint">La cámara en vivo muestra líneas guía para encuadrar 1 módulo de góndola (0.90 / 1.00 / 1.20 m). ¿Góndola más ancha? Agrega hasta 6 fotos en orden de izquierda a derecha — se combinan en una sola lectura.</p>
+            <div class="depth-picker-wrap">
+              <label class="depth-picker-label" for="depthPicker">Profundidad estimada (unidades detrás de cada cara — es una estimación tuya, no se mide desde la foto)</label>
+              <div class="depth-picker" id="depthPicker">
+                <button type="button" data-depth="1" class="active">1</button>
+                <button type="button" data-depth="2">2</button>
+                <button type="button" data-depth="3">3</button>
+                <button type="button" data-depth="4">4+</button>
+              </div>
+            </div>
             <button class="primary" id="analyzeBtn" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
               <span id="analyzeBtnText">Analizar góndola</span>
@@ -701,6 +719,8 @@
               <div class="stat-tile"><div class="stat-value" id="statLevels">–</div><div class="stat-label">Niveles</div></div>
               <div class="stat-tile"><div class="stat-value" id="statEmpty">–</div><div class="stat-label">Espacio vacío</div></div>
               <div class="stat-tile"><div class="stat-value" id="statPerMeter">–</div><div class="stat-label">Caras / m lineal</div></div>
+              <div class="stat-tile"><div class="stat-value" id="statUnits">–</div><div class="stat-label">Unidades (est.)</div></div>
+              <div class="stat-tile"><div class="stat-value" id="statArea">–</div><div class="stat-label">m² exhibición</div></div>
             </div>
             <div class="notes" id="notesMsg"></div>
           </div>
@@ -1150,6 +1170,8 @@
     document.getElementById("statLevels").textContent = reading ? (reading.shelf_levels_detected ?? "–") : "–";
     document.getElementById("statEmpty").textContent = reading && reading.empty_space_pct != null ? `${reading.empty_space_pct.toFixed ? reading.empty_space_pct.toFixed(0) : reading.empty_space_pct}%` : "–";
     document.getElementById("statPerMeter").textContent = reading && reading.facings_per_linear_meter != null ? reading.facings_per_linear_meter : "–";
+    document.getElementById("statUnits").textContent = reading && reading.total_units_estimate != null ? reading.total_units_estimate : "–";
+    document.getElementById("statArea").textContent = reading && reading.display_area_m2 != null ? `${reading.display_area_m2} m²` : "–";
     document.getElementById("notesMsg").textContent = reading ? (reading.notes || "") : "";
 
     const chart = document.getElementById("categoryChart");
@@ -1299,6 +1321,15 @@
   const statusMsg = document.getElementById("statusMsg");
   let selectedFiles = [];
   let selectedWidths = []; // metros lineales por foto (null si viene de galería)
+  let currentDepthUnits = 1;
+
+  document.getElementById("depthPicker").querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentDepthUnits = parseInt(btn.dataset.depth, 10);
+      document.getElementById("depthPicker").querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
 
   function resetCapture() {
     selectedFiles = [];
@@ -1380,6 +1411,7 @@
     selectedFiles.forEach((f) => formData.append("images", f));
     const totalMeters = selectedWidths.reduce((s, w) => s + (w || 0), 0);
     if (totalMeters > 0) formData.append("linear_meters", totalMeters.toFixed(2));
+    formData.append("depth_units", currentDepthUnits);
 
     try {
       const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/analyze`, { method: "POST", body: formData });
