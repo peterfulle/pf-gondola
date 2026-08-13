@@ -42,7 +42,8 @@ Si SÍ es una góndola de supermercado válida, devuelve este esquema exacto:
       "facings": <entero, caras visibles>,
       "shelf_level": <entero, nivel de estante contado desde arriba empezando en 1>,
       "position_index": <entero, orden de izquierda a derecha del producto DENTRO de su nivel de estante, empezando en 1>,
-      "out_of_stock": <true/false, true si hay un hueco vacío evidente donde debería ir ese producto>
+      "out_of_stock": <true/false, true si hay un hueco vacío evidente donde debería ir ese producto>,
+      "estimated_depth": <entero ≥1, estimación de cuántas unidades de este producto hay apiladas en profundidad detrás de la cara visible>
     }
   ],
   "categories": [
@@ -66,6 +67,7 @@ Reglas:
 - share_pct de cada categoría = (total_facings de la categoría / total_facings general) * 100, redondeado a 1 decimal. La suma de todos los share_pct debe ser ~100.
 - Si no puedes distinguir el producto exacto, usa la marca visible o una descripción corta (ej: "botella azul sin etiqueta legible").
 - position_index ordena los productos dentro de un mismo shelf_level de izquierda a derecha tal como aparecen físicamente (1 = más a la izquierda). Es independiente entre niveles distintos.
+- estimated_depth es tu mejor estimación de cuántas unidades hay en fondo detrás de cada cara visible, específica para CADA producto (distintos productos en la misma foto pueden tener profundidades distintas). Ninguna foto frontal puede ver físicamente lo que hay detrás de la primera unidad, así que esto es una estimación basada en: el tamaño/tipo de envase visible (ej. una lata o botella individual suele ir en fondos de 2-4 unidades; una caja grande de cereal o un pack grande suele ir en fondos de 1-2 unidades), la profundidad típica de ese tipo de estante, y cualquier pista de profundidad visible en el ángulo de la foto. Nunca devuelvas 0 ni null; si no tienes ninguna base para estimar, usa 1.
 - No inventes productos que no estén en la imagen. No agregues texto fuera del JSON.
 
 MÚLTIPLES FOTOS DE LA MISMA GÓNDOLA:

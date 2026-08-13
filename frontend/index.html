@@ -30,6 +30,8 @@
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    width: 100%;
   }
   svg { display: block; }
   ::selection { background: var(--ink); color: #fff; }
@@ -221,15 +223,6 @@
   .capture label:hover { border-color: var(--ink); background: #fafafa; }
   .capture label svg { width: 15px; height: 15px; color: var(--ink-muted); }
   .capture-hint { font-size: 11.5px; color: var(--ink-muted); margin: 10px 0 0; line-height: 1.5; }
-
-  .depth-picker-wrap { margin-top: 12px; }
-  .depth-picker-label { display: block; font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
-  .depth-picker { display: flex; gap: 6px; }
-  .depth-picker button {
-    flex: 1; background: #fff; border: 1px solid var(--border-strong); color: var(--ink-secondary); border-radius: 8px;
-    padding: 7px 10px; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
-  }
-  .depth-picker button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
   input[type="file"] { display: none; }
 
   .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px; margin-bottom: 4px; }
@@ -308,7 +301,8 @@
   .notes { font-size: 11.5px; color: var(--ink-muted); margin-top: 12px; line-height: 1.5; }
 
   /* ---------- daily metrics ---------- */
-  .daily-table-wrap { max-height: 260px; overflow-y: auto; }
+  .daily-table-wrap { max-height: 260px; overflow-y: auto; overflow-x: auto; }
+  .table-scroll { overflow-x: auto; }
   table.daily { width: 100%; border-collapse: collapse; font-size: 11.5px; }
   table.daily th, table.daily td { text-align: right; padding: 6px 4px; border-bottom: 1px solid var(--border); }
   table.daily th:first-child, table.daily td:first-child { text-align: left; }
@@ -539,7 +533,8 @@
     .detail-head > div:last-child > * { flex: 1; }
     .detail-head h1 { font-size: 19px; }
 
-    .stat-row { grid-template-columns: repeat(3, 1fr); }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .stat-value { font-size: 20px; }
 
     .benchmark-tiles { grid-template-columns: 1fr; }
     .s3d-grid { grid-template-columns: repeat(2, 1fr); }
@@ -656,16 +651,7 @@
             </label>
             <div class="photo-strip" id="photoStrip" style="display:none;"></div>
             <input type="file" id="photoInput" accept="image/*" multiple />
-            <p class="capture-hint">La cámara en vivo muestra líneas guía para encuadrar 1 módulo de góndola (0.90 / 1.00 / 1.20 m). ¿Góndola más ancha? Agrega hasta 6 fotos en orden de izquierda a derecha — se combinan en una sola lectura.</p>
-            <div class="depth-picker-wrap">
-              <label class="depth-picker-label" for="depthPicker">Profundidad estimada (unidades detrás de cada cara — es una estimación tuya, no se mide desde la foto)</label>
-              <div class="depth-picker" id="depthPicker">
-                <button type="button" data-depth="1" class="active">1</button>
-                <button type="button" data-depth="2">2</button>
-                <button type="button" data-depth="3">3</button>
-                <button type="button" data-depth="4">4+</button>
-              </div>
-            </div>
+            <p class="capture-hint">La cámara en vivo muestra líneas guía para encuadrar 1 módulo de góndola (0.90 / 1.00 / 1.20 m). ¿Góndola más ancha? Agrega hasta 6 fotos en orden de izquierda a derecha — se combinan en una sola lectura. La profundidad (unidades detrás de cada cara) la estima la IA por producto, no se ingresa manual.</p>
             <button class="primary" id="analyzeBtn" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
               <span id="analyzeBtnText">Analizar góndola</span>
@@ -746,10 +732,12 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M9 9.5V20"/></svg>
               Caras por producto
             </h3>
-            <table>
-              <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th></tr></thead>
-              <tbody id="productsTable"></tbody>
-            </table>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th><th class="num">Prof. est.</th><th class="num">Unidades est.</th></tr></thead>
+                <tbody id="productsTable"></tbody>
+              </table>
+            </div>
           </div>
 
           <div class="card" id="shelf3dCard" style="display:none;">
@@ -1194,7 +1182,9 @@
       const tr = document.createElement("tr");
       const ownFlag = p.is_own_brand ? `<span class="own-flag" title="Marca propia (PF)">${ICON_DOT}</span>` : "";
       const oosFlag = p.out_of_stock ? ` <span class="oos-flag" title="Quiebre de stock detectado">${ICON_WARNING}</span>` : "";
-      tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td>`;
+      const depth = p.estimated_depth || 1;
+      const unitsEst = (p.facings ?? 0) * depth;
+      tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td><td class="num">${depth}</td><td class="num">${unitsEst}</td>`;
       tbody.appendChild(tr);
     });
 
@@ -1321,15 +1311,6 @@
   const statusMsg = document.getElementById("statusMsg");
   let selectedFiles = [];
   let selectedWidths = []; // metros lineales por foto (null si viene de galería)
-  let currentDepthUnits = 1;
-
-  document.getElementById("depthPicker").querySelectorAll("button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      currentDepthUnits = parseInt(btn.dataset.depth, 10);
-      document.getElementById("depthPicker").querySelectorAll("button").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-    });
-  });
 
   function resetCapture() {
     selectedFiles = [];
@@ -1411,7 +1392,6 @@
     selectedFiles.forEach((f) => formData.append("images", f));
     const totalMeters = selectedWidths.reduce((s, w) => s + (w || 0), 0);
     if (totalMeters > 0) formData.append("linear_meters", totalMeters.toFixed(2));
-    formData.append("depth_units", currentDepthUnits);
 
     try {
       const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/analyze`, { method: "POST", body: formData });
