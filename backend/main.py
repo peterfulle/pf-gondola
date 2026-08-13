@@ -80,7 +80,7 @@ def _rows_to_csv(rows: list) -> str:
         "point_id", "point_name", "reading_id", "created_at",
         "product", "brand", "category", "facings", "shelf_level", "position_index",
         "out_of_stock", "is_own_brand",
-        "reading_total_facings", "reading_empty_space_pct", "reading_shelf_levels",
+        "reading_total_facings", "reading_empty_space_pct", "reading_shelf_levels", "reading_linear_meters",
     ]
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
@@ -163,7 +163,11 @@ def api_delete_point(point_id: str):
 
 
 @app.post("/api/points/{point_id}/analyze")
-async def api_analyze(point_id: str, images: List[UploadFile] = File(...)):
+async def api_analyze(
+    point_id: str,
+    images: List[UploadFile] = File(...),
+    linear_meters: Optional[float] = Form(default=None),
+):
     if not db.point_exists(point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
 
@@ -193,4 +197,4 @@ async def api_analyze(point_id: str, images: List[UploadFile] = File(...)):
     image_paths = [
         save_upload(point_id, image_bytes, content_type) for image_bytes, content_type in loaded
     ]
-    return db.add_reading(point_id, analysis, image_paths)
+    return db.add_reading(point_id, analysis, image_paths, linear_meters)

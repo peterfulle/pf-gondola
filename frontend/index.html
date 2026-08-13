@@ -213,13 +213,13 @@
   }
 
   .capture label {
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
-    border: 1.5px dashed var(--border-strong); border-radius: 10px; padding: 26px 12px;
-    text-align: center; color: var(--ink-secondary); font-size: 13.5px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1.5px dashed var(--border-strong); border-radius: 8px; padding: 11px 12px; margin-top: 8px;
+    text-align: center; color: var(--ink-secondary); font-size: 12.5px; font-weight: 600; cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
   .capture label:hover { border-color: var(--ink); background: #fafafa; }
-  .capture label svg { width: 24px; height: 24px; color: var(--ink-muted); }
+  .capture label svg { width: 15px; height: 15px; color: var(--ink-muted); }
   .capture-hint { font-size: 11.5px; color: var(--ink-muted); margin: 10px 0 0; line-height: 1.5; }
   input[type="file"] { display: none; }
 
@@ -364,6 +364,69 @@
   #shelf3dModalHost #shelf3dHost { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   #shelf3dModalHost #shelf3d { flex: 1; height: auto; min-height: 0; }
   #shelf3dModalHost .shelf3d-info { flex: 0 0 auto; }
+
+  /* ---------- cámara en vivo ---------- */
+  #cameraModalBackdrop {
+    display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.85); z-index: 60;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .camera-modal {
+    background: #0a0a0a; border-radius: 16px; width: 100%; max-width: 620px; height: 92vh; max-height: 820px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
+  }
+  .camera-modal-head { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 16px; color: #fff; }
+  .camera-modal-head strong { font-size: 14px; display: block; }
+  .camera-modal-head .hint { font-size: 11px; color: #a9a9a6; }
+  .camera-modal-head .btn-delete { background: transparent; border: 1px solid #313131; color: #fff; }
+  .camera-modal-head .btn-delete:hover { border-color: #666; background: transparent; }
+
+  .camera-stage { position: relative; flex: 1; min-height: 0; background: #000; overflow: hidden; }
+  .camera-stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .camera-overlay { position: absolute; inset: 0; pointer-events: none; }
+  .guide-line {
+    position: absolute; top: 8%; bottom: 8%; width: 2px; background: rgba(255,255,255,0.85);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4); transition: left 0.2s ease, right 0.2s ease;
+  }
+  .guide-line::before, .guide-line::after {
+    content: ""; position: absolute; left: 50%; width: 16px; height: 2px; background: rgba(255,255,255,0.85);
+    transform: translateX(-50%);
+  }
+  .guide-line::before { top: 0; }
+  .guide-line::after { bottom: 0; }
+  .guide-line.left { left: 12%; }
+  .guide-line.right { right: 12%; }
+  .guide-rail {
+    position: absolute; left: 12%; right: 12%; top: 62%; height: 1px;
+    background: repeating-linear-gradient(90deg, rgba(177,226,39,0.9) 0 8px, transparent 8px 14px);
+  }
+  .guide-label-top {
+    position: absolute; top: 4%; left: 0; right: 0; text-align: center;
+    color: #fff; font-size: 12px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .guide-label-width {
+    position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+    color: #fff; font-size: 13px; font-weight: 800; background: rgba(10,10,10,0.55);
+    padding: 4px 10px; border-radius: 100px;
+  }
+  .camera-error {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; color: #fff; font-size: 13px; background: rgba(10,10,10,0.9);
+  }
+
+  .camera-controls { padding: 14px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .module-width-picker { display: flex; gap: 6px; }
+  .module-width-picker button {
+    background: transparent; border: 1px solid #313131; color: #a9a9a6; border-radius: 100px;
+    padding: 6px 12px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .module-width-picker button.active { background: #fff; color: #000; border-color: #fff; }
+  .shutter-btn {
+    width: 62px; height: 62px; border-radius: 50%; border: 3px solid #fff; background: transparent;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+  }
+  .shutter-btn span { width: 48px; height: 48px; border-radius: 50%; background: #fff; transition: transform 0.1s ease; }
+  .shutter-btn:active span { transform: scale(0.88); }
+  .camera-hint { color: #a9a9a6; font-size: 11px; }
 
   .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
   .history-item {
@@ -516,16 +579,20 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
               Nueva lectura
             </h3>
-            <label for="photoInput" id="captureLabel">
+            <button class="primary" id="openCameraBtn" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/>
                 <circle cx="12" cy="12.5" r="3.4"/>
               </svg>
-              Tomar foto o cargar imagen de la góndola
+              Abrir cámara en vivo
+            </button>
+            <label for="photoInput" id="captureLabel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16.5v2A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+              Subir desde galería
             </label>
             <div class="photo-strip" id="photoStrip" style="display:none;"></div>
-            <input type="file" id="photoInput" accept="image/*" capture="environment" multiple />
-            <p class="capture-hint">¿Góndola más ancha que el encuadre? Agrega hasta 6 fotos, en orden de izquierda a derecha — se combinan en una sola lectura.</p>
+            <input type="file" id="photoInput" accept="image/*" multiple />
+            <p class="capture-hint">La cámara en vivo muestra líneas guía para encuadrar 1 módulo de góndola (0.90 / 1.00 / 1.20 m). ¿Góndola más ancha? Agrega hasta 6 fotos en orden de izquierda a derecha — se combinan en una sola lectura.</p>
             <button class="primary" id="analyzeBtn" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
               <span id="analyzeBtnText">Analizar góndola</span>
@@ -578,6 +645,7 @@
               <div class="stat-tile"><div class="stat-value" id="statCategories">–</div><div class="stat-label">Categorías</div></div>
               <div class="stat-tile"><div class="stat-value" id="statLevels">–</div><div class="stat-label">Niveles</div></div>
               <div class="stat-tile"><div class="stat-value" id="statEmpty">–</div><div class="stat-label">Espacio vacío</div></div>
+              <div class="stat-tile"><div class="stat-value" id="statPerMeter">–</div><div class="stat-label">Caras / m lineal</div></div>
             </div>
             <div class="notes" id="notesMsg"></div>
           </div>
@@ -686,6 +754,43 @@
         </button>
       </div>
       <div id="shelf3dModalHost"></div>
+    </div>
+  </div>
+
+  <div id="cameraModalBackdrop">
+    <div class="camera-modal">
+      <div class="camera-modal-head">
+        <div>
+          <strong>Cámara en vivo</strong>
+          <span class="hint">Alinea los bordes del módulo con las líneas guía</span>
+        </div>
+        <button class="btn-delete" id="closeCameraModal" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          Cerrar
+        </button>
+      </div>
+      <div class="camera-stage">
+        <video id="cameraVideo" playsinline muted autoplay></video>
+        <div class="camera-overlay">
+          <div class="guide-line left"></div>
+          <div class="guide-line right"></div>
+          <div class="guide-rail"></div>
+          <div class="guide-label-top">Encuadra 1 módulo de góndola</div>
+          <div class="guide-label-width" id="guideWidthLabel">1.20 m</div>
+        </div>
+        <div class="camera-error" id="cameraError" style="display:none;"></div>
+      </div>
+      <div class="camera-controls">
+        <div class="module-width-picker" id="moduleWidthPicker">
+          <button type="button" data-width="0.9">0.90 m</button>
+          <button type="button" data-width="1.0">1.00 m</button>
+          <button type="button" data-width="1.2" class="active">1.20 m</button>
+        </div>
+        <button class="shutter-btn" id="shutterBtn" type="button" title="Capturar foto">
+          <span></span>
+        </button>
+        <div class="camera-hint">Foto <span id="cameraShotCount">0</span>/6 · toca el disparador para agregar a la lectura</div>
+      </div>
     </div>
   </div>
 
@@ -875,6 +980,7 @@
   }
 
   function closeDetail() {
+    if (typeof closeCamera === "function") closeCamera();
     detailView.style.display = "none";
     dashboardView.style.display = "block";
     dashboardView.classList.add("view-fade");
@@ -985,6 +1091,7 @@
     document.getElementById("statCategories").textContent = categories.length;
     document.getElementById("statLevels").textContent = reading ? (reading.shelf_levels_detected ?? "–") : "–";
     document.getElementById("statEmpty").textContent = reading && reading.empty_space_pct != null ? `${reading.empty_space_pct.toFixed ? reading.empty_space_pct.toFixed(0) : reading.empty_space_pct}%` : "–";
+    document.getElementById("statPerMeter").textContent = reading && reading.facings_per_linear_meter != null ? reading.facings_per_linear_meter : "–";
     document.getElementById("notesMsg").textContent = reading ? (reading.notes || "") : "";
 
     const chart = document.getElementById("categoryChart");
@@ -1133,9 +1240,11 @@
   const analyzeBtnText = document.getElementById("analyzeBtnText");
   const statusMsg = document.getElementById("statusMsg");
   let selectedFiles = [];
+  let selectedWidths = []; // metros lineales por foto (null si viene de galería)
 
   function resetCapture() {
     selectedFiles = [];
+    selectedWidths = [];
     photoInput.value = "";
     statusMsg.innerHTML = "";
     statusMsg.classList.remove("error");
@@ -1161,7 +1270,7 @@
       item.appendChild(img);
       const badge = document.createElement("span");
       badge.className = "order-badge";
-      badge.textContent = i + 1;
+      badge.textContent = selectedWidths[i] ? `${i + 1} · ${selectedWidths[i]}m` : i + 1;
       item.appendChild(badge);
       const removeBtn = document.createElement("button");
       removeBtn.className = "remove-btn";
@@ -1169,6 +1278,7 @@
       removeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         selectedFiles.splice(i, 1);
+        selectedWidths.splice(i, 1);
         renderPhotoStrip();
       });
       item.appendChild(removeBtn);
@@ -1191,6 +1301,7 @@
     for (const f of files) {
       if (selectedFiles.length >= MAX_IMAGES) break;
       selectedFiles.push(f);
+      selectedWidths.push(null);
     }
     photoInput.value = "";
     statusMsg.innerHTML = "";
@@ -1208,6 +1319,8 @@
 
     const formData = new FormData();
     selectedFiles.forEach((f) => formData.append("images", f));
+    const totalMeters = selectedWidths.reduce((s, w) => s + (w || 0), 0);
+    if (totalMeters > 0) formData.append("linear_meters", totalMeters.toFixed(2));
 
     try {
       const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/analyze`, { method: "POST", body: formData });
@@ -1231,6 +1344,84 @@
         ? `Analizar góndola (${selectedFiles.length} foto${selectedFiles.length === 1 ? "" : "s"})`
         : "Analizar góndola";
     }
+  });
+
+  // ---------- cámara en vivo ----------
+  const cameraModalBackdrop = document.getElementById("cameraModalBackdrop");
+  const cameraVideo = document.getElementById("cameraVideo");
+  const cameraError = document.getElementById("cameraError");
+  const moduleWidthPicker = document.getElementById("moduleWidthPicker");
+  const guideWidthLabel = document.getElementById("guideWidthLabel");
+  const guideLineLeft = document.querySelector(".guide-line.left");
+  const guideLineRight = document.querySelector(".guide-line.right");
+  const GUIDE_INSETS = { "0.9": 18, "1.0": 15, "1.2": 10 };
+  let mediaStream = null;
+  let currentModuleWidth = 1.2;
+
+  function updateGuideWidth(w) {
+    const inset = GUIDE_INSETS[w.toFixed(1)] ?? 12;
+    guideLineLeft.style.left = inset + "%";
+    guideLineRight.style.right = inset + "%";
+    guideWidthLabel.textContent = w.toFixed(2).replace(/0$/, "") + " m";
+  }
+
+  moduleWidthPicker.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentModuleWidth = parseFloat(btn.dataset.width);
+      moduleWidthPicker.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      updateGuideWidth(currentModuleWidth);
+    });
+  });
+
+  async function openCamera() {
+    cameraError.style.display = "none";
+    cameraModalBackdrop.style.display = "flex";
+    updateGuideWidth(currentModuleWidth);
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      cameraVideo.srcObject = mediaStream;
+    } catch (e) {
+      cameraError.style.display = "flex";
+      cameraError.innerHTML = `${ICON_WARNING} No se pudo acceder a la cámara (${escapeHtml(e.message || e.name || "permiso denegado")}). Cierra esta ventana y usa "Subir desde galería".`;
+    }
+  }
+
+  function closeCamera() {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((t) => t.stop());
+      mediaStream = null;
+    }
+    cameraModalBackdrop.style.display = "none";
+  }
+
+  document.getElementById("openCameraBtn").addEventListener("click", openCamera);
+  document.getElementById("closeCameraModal").addEventListener("click", closeCamera);
+  cameraModalBackdrop.addEventListener("click", (e) => { if (e.target === cameraModalBackdrop) closeCamera(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && cameraModalBackdrop.style.display === "flex") closeCamera();
+  });
+
+  document.getElementById("shutterBtn").addEventListener("click", () => {
+    if (!cameraVideo.videoWidth || selectedFiles.length >= MAX_IMAGES) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = cameraVideo.videoWidth;
+    canvas.height = cameraVideo.videoHeight;
+    canvas.getContext("2d").drawImage(cameraVideo, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `gondola-${Date.now()}.jpg`, { type: "image/jpeg" });
+      selectedFiles.push(file);
+      selectedWidths.push(currentModuleWidth);
+      renderPhotoStrip();
+      document.getElementById("cameraShotCount").textContent = selectedFiles.length;
+      statusMsg.innerHTML = "";
+      statusMsg.classList.remove("error");
+      if (selectedFiles.length >= MAX_IMAGES) closeCamera();
+    }, "image/jpeg", 0.9);
   });
 
   // ---------- new point modal ----------

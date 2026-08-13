@@ -49,10 +49,14 @@ def get_conn():
 def init_db():
     with get_conn() as conn:
         conn.executescript(SCHEMA)
-        try:
-            conn.execute("ALTER TABLE readings ADD COLUMN image_paths_json TEXT")
-        except sqlite3.OperationalError:
-            pass
+        for statement in (
+            "ALTER TABLE readings ADD COLUMN image_paths_json TEXT",
+            "ALTER TABLE readings ADD COLUMN linear_meters REAL",
+        ):
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass
 
 
 def now_iso():
@@ -129,12 +133,12 @@ def create_point(point_id: str, name: str) -> None:
         )
 
 
-def add_reading(point_id: str, analysis: dict, image_paths: list) -> dict:
+def add_reading(point_id: str, analysis: dict, image_paths: list, linear_meters: float = None) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
             "INSERT INTO readings (point_id, created_at, total_facings, shelf_levels_detected, "
-            "empty_space_pct, products_json, categories_json, notes, image_paths_json) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "empty_space_pct, products_json, categories_json, notes, image_paths_json, linear_meters) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 point_id,
                 now_iso(),
@@ -145,6 +149,7 @@ def add_reading(point_id: str, analysis: dict, image_paths: list) -> dict:
                 json.dumps(analysis.get("categories", [])),
                 analysis.get("notes", ""),
                 json.dumps(image_paths or []),
+                linear_meters,
             ),
         )
         reading_id = cur.lastrowid
@@ -163,6 +168,8 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
         paths = []
 
     products = _tag_products(json.loads(row["products_json"] or "[]"), own_brands or [])
+    linear_meters = row["linear_meters"] if "linear_meters" in keys else None
+    total_facings = row["total_facings"] or 0
 
     return {
         "id": row["id"],
@@ -176,6 +183,8 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
         "notes": row["notes"],
         "image_urls": [f"/uploads/{p}" for p in paths],
         "benchmark": _benchmark_summary(products),
+        "linear_meters": linear_meters,
+        "facings_per_linear_meter": round(total_facings / linear_meters, 1) if linear_meters else None,
     }
 
 
@@ -277,6 +286,7 @@ def export_rows(point_id: str = None) -> list:
                     "reading_total_facings": r["total_facings"],
                     "reading_empty_space_pct": r["empty_space_pct"],
                     "reading_shelf_levels": r["shelf_levels_detected"],
+                    "reading_linear_meters": r["linear_meters"] if "linear_meters" in r.keys() else None,
                 }
             )
     return rows
