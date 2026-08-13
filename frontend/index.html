@@ -412,8 +412,26 @@
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     text-align: center; padding: 24px; color: #fff; font-size: 13px; background: rgba(10,10,10,0.9);
   }
+  .camera-flash {
+    position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease-out;
+  }
+  .camera-flash.active { opacity: 0.85; transition: opacity 0.05s ease-out; }
+  .camera-toast {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%) translateY(-12px);
+    display: flex; align-items: center; gap: 6px; background: rgba(20,20,18,0.92); color: #fff;
+    font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 100px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .camera-toast.active { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .camera-toast svg { width: 15px; height: 15px; color: #b1e227; flex-shrink: 0; }
 
   .camera-controls { padding: 14px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .camera-shots-strip { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 2px; }
+  .camera-shots-strip img {
+    width: 44px; height: 44px; object-fit: cover; border-radius: 6px; flex-shrink: 0;
+    border: 1.5px solid rgba(255,255,255,0.5);
+  }
   .module-width-picker { display: flex; gap: 6px; }
   .module-width-picker button {
     background: transparent; border: 1px solid #313131; color: #a9a9a6; border-radius: 100px;
@@ -423,9 +441,11 @@
   .shutter-btn {
     width: 62px; height: 62px; border-radius: 50%; border: 3px solid #fff; background: transparent;
     display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+    transition: transform 0.1s ease;
   }
   .shutter-btn span { width: 48px; height: 48px; border-radius: 50%; background: #fff; transition: transform 0.1s ease; }
   .shutter-btn:active span { transform: scale(0.88); }
+  .shutter-btn.flashing { transform: scale(0.9); }
   .camera-hint { color: #a9a9a6; font-size: 11px; }
 
   .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
@@ -483,6 +503,41 @@
   }
   .modal-actions .cancel { background: #fff; border: 1px solid var(--border-strong); color: var(--ink); }
   .modal-actions .confirm { background: var(--ink); border: none; color: #fff; }
+
+  /* ---------- responsive móvil ---------- */
+  @media (max-width: 640px) {
+    .shell { padding: 16px 14px 40px; }
+
+    .topbar { flex-wrap: wrap; row-gap: 8px; padding: 11px 14px; gap: 8px; }
+    .topbar .subtitle { display: none; }
+    .topbar .spacer { min-width: 6px; }
+    .topbar .btn-back, .topbar .btn-new { padding: 7px 9px; font-size: 11.5px; gap: 5px; }
+    .topbar .live-pill { padding: 4px 8px 4px 7px; font-size: 10.5px; }
+    #brandsBtn .btn-label { display: none; }
+
+    .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .kpi-tile { padding: 11px 12px; }
+    .kpi-value { font-size: 21px; }
+    .kpi-icon { width: 24px; height: 24px; }
+
+    .section-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .section-head > div { width: 100%; justify-content: space-between; }
+
+    .point-grid { grid-template-columns: 1fr; }
+
+    .detail-head { flex-direction: column; align-items: stretch; }
+    .detail-head > div:last-child { display: flex; gap: 8px; }
+    .detail-head > div:last-child > * { flex: 1; }
+    .detail-head h1 { font-size: 19px; }
+
+    .stat-row { grid-template-columns: repeat(3, 1fr); }
+
+    .benchmark-tiles { grid-template-columns: 1fr; }
+    .s3d-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .camera-modal { height: 96vh; border-radius: 12px; }
+    .shelf3d-modal { height: 94vh; border-radius: 12px; }
+  }
 </style>
 <script type="importmap">
 {
@@ -506,9 +561,9 @@
       Dashboard
     </button>
     <div class="live-pill"><span class="dot"></span>En vivo</div>
-    <button class="btn-back" id="brandsBtn" style="display:flex;">
+    <button class="btn-back" id="brandsBtn" style="display:flex;" title="Marcas propias">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
-      Marcas propias
+      <span class="btn-label">Marcas propias</span>
     </button>
     <button class="btn-new" id="newPointBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -779,8 +834,11 @@
           <div class="guide-label-width" id="guideWidthLabel">1.20 m</div>
         </div>
         <div class="camera-error" id="cameraError" style="display:none;"></div>
+        <div class="camera-flash" id="cameraFlash"></div>
+        <div class="camera-toast" id="cameraToast"></div>
       </div>
       <div class="camera-controls">
+        <div class="camera-shots-strip" id="cameraShotsStrip" style="display:none;"></div>
         <div class="module-width-picker" id="moduleWidthPicker">
           <button type="button" data-width="0.9">0.90 m</button>
           <button type="button" data-width="1.0">1.00 m</button>
@@ -1252,6 +1310,7 @@
   }
 
   function renderPhotoStrip() {
+    if (typeof renderCameraShotsStrip === "function") renderCameraShotsStrip();
     if (!selectedFiles.length) {
       photoStrip.style.display = "none";
       captureLabel.style.display = "flex";
@@ -1378,6 +1437,8 @@
     cameraError.style.display = "none";
     cameraModalBackdrop.style.display = "flex";
     updateGuideWidth(currentModuleWidth);
+    document.getElementById("cameraShotCount").textContent = selectedFiles.length;
+    renderCameraShotsStrip();
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
@@ -1405,22 +1466,69 @@
     if (e.key === "Escape" && cameraModalBackdrop.style.display === "flex") closeCamera();
   });
 
-  document.getElementById("shutterBtn").addEventListener("click", () => {
-    if (!cameraVideo.videoWidth || selectedFiles.length >= MAX_IMAGES) return;
+  const cameraFlash = document.getElementById("cameraFlash");
+  const cameraToast = document.getElementById("cameraToast");
+  const cameraShotsStrip = document.getElementById("cameraShotsStrip");
+  const shutterBtn = document.getElementById("shutterBtn");
+  let cameraToastTimer = null;
+
+  function flashCamera() {
+    cameraFlash.classList.add("active");
+    shutterBtn.classList.add("flashing");
+    setTimeout(() => cameraFlash.classList.remove("active"), 60);
+    setTimeout(() => shutterBtn.classList.remove("flashing"), 120);
+  }
+
+  function showCameraToast(text, isError) {
+    cameraToast.innerHTML = `${isError ? ICON_WARNING : ICON_CHECK} ${escapeHtml(text)}`;
+    cameraToast.classList.add("active");
+    if (cameraToastTimer) clearTimeout(cameraToastTimer);
+    cameraToastTimer = setTimeout(() => cameraToast.classList.remove("active"), 1600);
+  }
+
+  function renderCameraShotsStrip() {
+    if (!selectedFiles.length) {
+      cameraShotsStrip.style.display = "none";
+      return;
+    }
+    cameraShotsStrip.style.display = "flex";
+    cameraShotsStrip.innerHTML = "";
+    selectedFiles.forEach((file) => {
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      cameraShotsStrip.appendChild(img);
+    });
+    cameraShotsStrip.scrollLeft = cameraShotsStrip.scrollWidth;
+  }
+
+  shutterBtn.addEventListener("click", () => {
+    if (selectedFiles.length >= MAX_IMAGES) {
+      showCameraToast(`Ya agregaste el máximo de ${MAX_IMAGES} fotos`, true);
+      return;
+    }
+    if (!cameraVideo.videoWidth) {
+      showCameraToast("La cámara todavía está cargando, espera un segundo", true);
+      return;
+    }
+    flashCamera();
     const canvas = document.createElement("canvas");
     canvas.width = cameraVideo.videoWidth;
     canvas.height = cameraVideo.videoHeight;
     canvas.getContext("2d").drawImage(cameraVideo, 0, 0);
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) {
+        showCameraToast("No se pudo capturar la foto, intenta de nuevo", true);
+        return;
+      }
       const file = new File([blob], `gondola-${Date.now()}.jpg`, { type: "image/jpeg" });
       selectedFiles.push(file);
       selectedWidths.push(currentModuleWidth);
       renderPhotoStrip();
       document.getElementById("cameraShotCount").textContent = selectedFiles.length;
+      showCameraToast(`Foto ${selectedFiles.length}/${MAX_IMAGES} agregada`);
       statusMsg.innerHTML = "";
       statusMsg.classList.remove("error");
-      if (selectedFiles.length >= MAX_IMAGES) closeCamera();
+      if (selectedFiles.length >= MAX_IMAGES) setTimeout(closeCamera, 700);
     }, "image/jpeg", 0.9);
   });
 
