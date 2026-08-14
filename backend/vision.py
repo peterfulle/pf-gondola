@@ -121,12 +121,15 @@ def analyze_shelf(images: list) -> dict:
 
     message = client.messages.create(
         model=MODEL,
-        max_tokens=4096,
+        max_tokens=6000,
         system=SYSTEM_PROMPT,
+        thinking={"type": "disabled"},
         messages=[{"role": "user", "content": content}],
     )
 
     raw_text = "".join(block.text for block in message.content if block.type == "text")
+    if not raw_text:
+        raise RuntimeError(f"Respuesta vacía del modelo (stop_reason={message.stop_reason})")
     return _parse_json(raw_text)
 
 
