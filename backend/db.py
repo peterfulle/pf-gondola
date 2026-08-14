@@ -36,6 +36,12 @@ CREATE TABLE IF NOT EXISTS own_brands (
   name TEXT PRIMARY KEY,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS users (
+  username TEXT PRIMARY KEY,
+  password_hash TEXT NOT NULL,
+  salt TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 """
 
 
@@ -84,6 +90,32 @@ def add_own_brand(name: str) -> None:
 def delete_own_brand(name: str) -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM own_brands WHERE name = ?", (name,))
+
+
+def user_exists(username: str) -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone()
+    return row is not None
+
+
+def create_user(username: str, password_hash: str, salt: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO users (username, password_hash, salt, created_at) VALUES (?, ?, ?, ?)",
+            (username, password_hash, salt, now_iso()),
+        )
+
+
+def get_user(username: str):
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+    return dict(row) if row else None
+
+
+def any_users_exist() -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT 1 FROM users LIMIT 1").fetchone()
+    return row is not None
 
 
 def _is_own_brand(product: dict, own_brands: list) -> bool:

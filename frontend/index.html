@@ -507,6 +507,43 @@
   .modal-actions .cancel { background: #fff; border: 1px solid var(--border-strong); color: var(--ink); }
   .modal-actions .confirm { background: var(--ink); border: none; color: #fff; }
 
+  /* ---------- auth ---------- */
+  #authView {
+    display: flex; min-height: 100vh; align-items: center; justify-content: center;
+    background: var(--page); padding: 20px;
+  }
+  .auth-shell { width: 100%; max-width: 380px; }
+  .auth-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px 28px; text-align: center;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.03), 0 20px 48px -24px rgba(10,10,10,0.14);
+  }
+  .auth-mark { width: 40px; height: 40px; margin: 0 auto 12px; }
+  .auth-card h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .auth-subtitle { margin: 2px 0 22px; font-size: 12.5px; color: var(--ink-muted); font-weight: 500; }
+  .auth-card .field { text-align: left; }
+  .auth-card .status { justify-content: center; text-align: center; }
+
+  .auth-tabs { display: flex; gap: 6px; background: var(--page); border-radius: 9px; padding: 3px; margin-bottom: 18px; }
+  .auth-tab {
+    flex: 1; background: none; border: none; border-radius: 7px; padding: 8px; cursor: pointer;
+    font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink-muted);
+  }
+  .auth-tab.active { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(10,10,10,0.08); }
+
+  .auth-remember {
+    display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-secondary);
+    font-weight: 500; margin: -2px 0 4px; cursor: pointer;
+  }
+  .auth-remember input { width: 14px; height: 14px; accent-color: var(--ink); cursor: pointer; }
+
+  #quickAccessBlock { margin-bottom: 18px; }
+  .auth-divider {
+    display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 11px;
+    color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700;
+  }
+  .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
   /* ---------- responsive móvil ---------- */
   @media (max-width: 640px) {
     .shell { padding: 16px 14px 40px; }
@@ -516,7 +553,7 @@
     .topbar .spacer { min-width: 6px; }
     .topbar .btn-back, .topbar .btn-new { padding: 7px 9px; font-size: 11.5px; gap: 5px; }
     .topbar .live-pill { padding: 4px 8px 4px 7px; font-size: 10.5px; }
-    #brandsBtn .btn-label { display: none; }
+    #brandsBtn .btn-label, #logoutBtn .btn-label { display: none; }
 
     .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .kpi-tile { padding: 11px 12px; }
@@ -553,6 +590,47 @@
 </script>
 </head>
 <body>
+  <section id="authView">
+    <div class="auth-shell">
+      <div class="auth-card">
+        <img class="auth-mark" src="/static/assets/neuramorphic-mark.svg" alt="" />
+        <h1>PF</h1>
+        <p class="auth-subtitle">Ejecución de Punto de Venta</p>
+
+        <div id="quickAccessBlock" style="display:none;">
+          <button class="primary" id="quickAccessBtn" type="button"></button>
+          <div class="auth-divider">o ingresa manualmente</div>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-mode="login" type="button">Iniciar sesión</button>
+          <button class="auth-tab" data-mode="register" type="button">Crear cuenta</button>
+        </div>
+
+        <form id="authForm">
+          <div class="field">
+            <label for="authUsername">Usuario</label>
+            <input type="text" id="authUsername" autocomplete="username" minlength="3" required />
+          </div>
+          <div class="field">
+            <label for="authPassword">Contraseña</label>
+            <input type="password" id="authPassword" autocomplete="current-password" minlength="6" required />
+          </div>
+          <label class="auth-remember">
+            <input type="checkbox" id="authRemember" checked />
+            Recordar acceso en este dispositivo
+          </label>
+          <div class="status" id="authStatus"></div>
+          <button class="primary" type="submit" id="authSubmitBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+            <span id="authSubmitText">Iniciar sesión</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div id="appRoot" style="display:none;">
   <nav class="topbar">
     <img class="mark" src="/static/assets/neuramorphic-mark.svg" alt="Neuramorphic" />
     <div>
@@ -568,6 +646,10 @@
     <button class="btn-back" id="brandsBtn" style="display:flex;" title="Marcas propias">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
       <span class="btn-label">Marcas propias</span>
+    </button>
+    <button class="btn-back" id="logoutBtn" title="Cerrar sesión">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l-5-5 5-5M5 12h13"/></svg>
+      <span class="btn-label" id="currentUsername">Salir</span>
     </button>
     <button class="btn-new" id="newPointBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -764,6 +846,7 @@
       </div>
     </section>
   </main>
+  </div>
 
   <div id="modalBackdrop">
     <div class="modal">
@@ -1708,11 +1791,152 @@
     }, POLL_MS);
   }
 
-  fetchOwnBrands().then(() => fetchPoints()).then(() => {
-    const deepLinkId = location.hash.replace("#", "").trim();
-    if (deepLinkId) openPoint(deepLinkId);
+  function initApp() {
+    fetchOwnBrands().then(() => fetchPoints()).then(() => {
+      const deepLinkId = location.hash.replace("#", "").trim();
+      if (deepLinkId) openPoint(deepLinkId);
+    });
+    startPolling();
+  }
+
+  // ---------- autenticación ----------
+  const REMEMBER_KEY = "pf_remember_creds";
+  const authView = document.getElementById("authView");
+  const appRoot = document.getElementById("appRoot");
+  const authForm = document.getElementById("authForm");
+  const authUsername = document.getElementById("authUsername");
+  const authPassword = document.getElementById("authPassword");
+  const authRemember = document.getElementById("authRemember");
+  const authStatus = document.getElementById("authStatus");
+  const authSubmitBtn = document.getElementById("authSubmitBtn");
+  const authSubmitText = document.getElementById("authSubmitText");
+  const quickAccessBlock = document.getElementById("quickAccessBlock");
+  const quickAccessBtn = document.getElementById("quickAccessBtn");
+  let authMode = "login";
+
+  function getRememberedCreds() {
+    try {
+      const raw = localStorage.getItem(REMEMBER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveRememberedCreds(username, password) {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username, password }));
+  }
+
+  function clearRememberedCreds() {
+    localStorage.removeItem(REMEMBER_KEY);
+  }
+
+  function refreshQuickAccessBlock() {
+    const creds = getRememberedCreds();
+    if (creds && creds.username) {
+      quickAccessBlock.style.display = "block";
+      quickAccessBtn.innerHTML = `${ICON_CHECK} Acceso directo como ${escapeHtml(creds.username)}`;
+    } else {
+      quickAccessBlock.style.display = "none";
+    }
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    document.querySelectorAll(".auth-tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
+    authSubmitText.textContent = mode === "login" ? "Iniciar sesión" : "Crear cuenta";
+    authPassword.setAttribute("autocomplete", mode === "login" ? "current-password" : "new-password");
+    authStatus.innerHTML = "";
+    authStatus.classList.remove("error");
+  }
+
+  document.querySelectorAll(".auth-tab").forEach((tab) => {
+    tab.addEventListener("click", () => setAuthMode(tab.dataset.mode));
   });
-  startPolling();
+
+  function showAuthView() {
+    appRoot.style.display = "none";
+    authView.style.display = "flex";
+    refreshQuickAccessBlock();
+  }
+
+  function showAppRoot(username) {
+    authView.style.display = "none";
+    appRoot.style.display = "block";
+    document.getElementById("currentUsername").textContent = username;
+    initApp();
+  }
+
+  async function submitAuth(username, password) {
+    authSubmitBtn.disabled = true;
+    authStatus.classList.remove("error");
+    authStatus.innerHTML = `${ICON_SPINNER} Un momento…`;
+    try {
+      const res = await fetch(`/api/auth/${authMode === "login" ? "login" : "register"}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+
+      if (authRemember.checked) {
+        saveRememberedCreds(username, password);
+      } else {
+        clearRememberedCreds();
+      }
+      authStatus.innerHTML = "";
+      showAppRoot(data.username);
+    } catch (e) {
+      authStatus.classList.add("error");
+      authStatus.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+    } finally {
+      authSubmitBtn.disabled = false;
+    }
+  }
+
+  authForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const username = authUsername.value.trim();
+    const password = authPassword.value;
+    if (!username || !password) return;
+    submitAuth(username, password);
+  });
+
+  quickAccessBtn.addEventListener("click", () => {
+    const creds = getRememberedCreds();
+    if (!creds) return;
+    authUsername.value = creds.username;
+    authPassword.value = creds.password;
+    setAuthMode("login");
+    submitAuth(creds.username, creds.password);
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      // ignora errores de red al cerrar sesión
+    }
+    location.hash = "";
+    showAuthView();
+  });
+
+  async function checkAuthAndStart() {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        showAppRoot(data.username);
+        return;
+      }
+    } catch (e) {
+      // sin conexión: cae a la vista de login
+    }
+    showAuthView();
+  }
+
+  checkAuthAndStart();
 </script>
 
 <script type="module">
