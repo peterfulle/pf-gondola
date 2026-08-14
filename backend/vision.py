@@ -6,6 +6,9 @@ import anthropic
 
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 MAX_IMAGES = 6
+# Góndolas reales con muchos productos (varias fotos) generan respuestas JSON largas;
+# con thinking desactivado todo el presupuesto de salida va al JSON final.
+MAX_OUTPUT_TOKENS = 16000
 
 SYSTEM_PROMPT = """Eres un analista de ejecución de punto de venta (trade marketing) \
 especializado en auditoría de góndolas de supermercado. Analizas entre 1 y varias fotos \
@@ -121,7 +124,7 @@ def analyze_shelf(images: list) -> dict:
 
     message = client.messages.create(
         model=MODEL,
-        max_tokens=6000,
+        max_tokens=MAX_OUTPUT_TOKENS,
         system=SYSTEM_PROMPT,
         thinking={"type": "disabled"},
         messages=[{"role": "user", "content": content}],
@@ -130,6 +133,11 @@ def analyze_shelf(images: list) -> dict:
     raw_text = "".join(block.text for block in message.content if block.type == "text")
     if not raw_text:
         raise RuntimeError(f"Respuesta vacía del modelo (stop_reason={message.stop_reason})")
+    if message.stop_reason == "max_tokens":
+        raise RuntimeError(
+            "La góndola tiene demasiados productos para analizarla en una sola lectura. "
+            "Intenta con menos fotos por lectura (o encuadra un tramo más angosto) y vuelve a intentar."
+        )
     return _parse_json(raw_text)
 
 
@@ -139,4 +147,10 @@ def _parse_json(raw_text: str) -> dict:
         text = text.strip("`")
         if text.startswith("json"):
             text = text[4:]
-    return json.loads(text.strip())
+    text = text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "El modelo devolvió una respuesta incompleta o mal formada. Vuelve a intentar la lectura."
+        ) from exc
