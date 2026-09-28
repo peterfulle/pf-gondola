@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import shutil
 import uuid
 from pathlib import Path
@@ -42,6 +43,11 @@ class CreateUserPayload(BaseModel):
 
 class UpdateRolePayload(BaseModel):
     role: str
+
+
+class BootstrapPromotePayload(BaseModel):
+    username: str
+    secret: str
 
 
 ROLE_LABELS = {"admin": "Administrador", "analista": "Analista", "reponedor": "Reponedor"}
@@ -154,6 +160,21 @@ def api_me(username: str = Depends(require_auth)):
     user = db.get_user(username)
     role = user.get("role", "reponedor")
     return {"username": username, "role": role, "role_label": ROLE_LABELS.get(role, role)}
+
+
+@app.post("/api/admin/bootstrap-promote")
+def api_bootstrap_promote(payload: BootstrapPromotePayload):
+    """Rescate puntual: promueve a admin a un usuario existente, validado contra
+    BOOTSTRAP_SECRET (variable de entorno). Pensado para retirarse después de usarse
+    una vez — no reemplaza la gestión normal de roles vía /api/admin/users."""
+    secret = os.environ.get("BOOTSTRAP_SECRET")
+    if not secret or payload.secret != secret:
+        raise HTTPException(status_code=403, detail="Secreto inválido")
+    username = payload.username.strip().lower()
+    if not db.user_exists(username):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    db.update_user_role(username, "admin")
+    return {"username": username, "role": "admin"}
 
 
 @app.get("/api/admin/users")
