@@ -56,17 +56,34 @@ def get_conn():
         conn.close()
 
 
+VALID_ROLES = ("admin", "analista", "reponedor")
+
+
 def init_db():
     with get_conn() as conn:
         conn.executescript(SCHEMA)
         for statement in (
             "ALTER TABLE readings ADD COLUMN image_paths_json TEXT",
             "ALTER TABLE readings ADD COLUMN linear_meters REAL",
+            "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'reponedor'",
         ):
             try:
                 conn.execute(statement)
             except sqlite3.OperationalError:
                 pass
+
+        # Bootstrap: si ya hay usuarios pero ninguno es admin todavía (por ejemplo,
+        # justo después de agregar la columna role), promovemos al primero creado
+        # para que la suite de administración nunca quede sin un admin.
+        has_admin = conn.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1").fetchone()
+        if not has_admin:
+            first_user = conn.execute(
+                "SELECT username FROM users ORDER BY created_at LIMIT 1"
+            ).fetchone()
+            if first_user:
+                conn.execute(
+                    "UPDATE users SET role = 'admin' WHERE username = ?", (first_user["username"],)
+                )
 
 
 def now_iso():
@@ -98,11 +115,11 @@ def user_exists(username: str) -> bool:
     return row is not None
 
 
-def create_user(username: str, password_hash: str, salt: str) -> None:
+def create_user(username: str, password_hash: str, salt: str, role: str = "reponedor") -> None:
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO users (username, password_hash, salt, created_at) VALUES (?, ?, ?, ?)",
-            (username, password_hash, salt, now_iso()),
+            "INSERT INTO users (username, password_hash, salt, created_at, role) VALUES (?, ?, ?, ?, ?)",
+            (username, password_hash, salt, now_iso(), role),
         )
 
 
@@ -116,6 +133,30 @@ def any_users_exist() -> bool:
     with get_conn() as conn:
         row = conn.execute("SELECT 1 FROM users LIMIT 1").fetchone()
     return row is not None
+
+
+def list_users() -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT username, role, created_at FROM users ORDER BY created_at"
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def count_admins() -> int:
+    with get_conn() as conn:
+        row = conn.execute("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'").fetchone()
+    return row["c"]
+
+
+def update_user_role(username: str, role: str) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE users SET role = ? WHERE username = ?", (role, username))
+
+
+def delete_user(username: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM users WHERE username = ?", (username,))
 
 
 def _is_own_brand(product: dict, own_brands: list) -> bool:

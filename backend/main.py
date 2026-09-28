@@ -34,12 +34,37 @@ class AuthPayload(BaseModel):
     password: str
 
 
+class CreateUserPayload(BaseModel):
+    username: str
+    password: str
+    role: str
+
+
+class UpdateRolePayload(BaseModel):
+    role: str
+
+
+ROLE_LABELS = {"admin": "Administrador", "analista": "Analista", "reponedor": "Reponedor"}
+
+
 def require_auth(request: Request) -> str:
     token = request.cookies.get(auth.SESSION_COOKIE)
     username = auth.verify_session_token(token) if token else None
     if not username or not db.user_exists(username):
         raise HTTPException(status_code=401, detail="Sesión inválida o expirada")
     return username
+
+
+def require_role(*roles: str):
+    def _checker(request: Request) -> dict:
+        username = require_auth(request)
+        user = db.get_user(username)
+        role = user.get("role", "reponedor")
+        if role not in roles:
+            raise HTTPException(status_code=403, detail="No tienes permiso para realizar esta acción")
+        return {"username": username, "role": role}
+
+    return _checker
 
 
 def _set_session_cookie(response: Response, username: str, request: Request) -> None:
@@ -95,10 +120,15 @@ def api_register(payload: AuthPayload, request: Request, response: Response):
     if db.user_exists(username):
         raise HTTPException(status_code=409, detail="Ese usuario ya existe")
 
+    # El primer usuario que se registra en una instalación nueva queda como
+    # admin automáticamente, para que la suite nunca arranque sin nadie que
+    # pueda gestionar roles. Los siguientes se crean como reponedor por defecto
+    # y un admin los puede ascender desde el panel de administración.
+    role = "reponedor" if db.any_users_exist() else "admin"
     password_hash, salt = auth.hash_password(payload.password)
-    db.create_user(username, password_hash, salt)
+    db.create_user(username, password_hash, salt, role)
     _set_session_cookie(response, username, request)
-    return {"username": username}
+    return {"username": username, "role": role, "role_label": ROLE_LABELS.get(role, role)}
 
 
 @app.post("/api/auth/login")
@@ -109,7 +139,8 @@ def api_login(payload: AuthPayload, request: Request, response: Response):
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
     _set_session_cookie(response, username, request)
-    return {"username": username}
+    role = user["role"]
+    return {"username": username, "role": role, "role_label": ROLE_LABELS.get(role, role)}
 
 
 @app.post("/api/auth/logout")
@@ -120,16 +151,73 @@ def api_logout(response: Response):
 
 @app.get("/api/auth/me")
 def api_me(username: str = Depends(require_auth)):
-    return {"username": username}
+    user = db.get_user(username)
+    role = user.get("role", "reponedor")
+    return {"username": username, "role": role, "role_label": ROLE_LABELS.get(role, role)}
+
+
+@app.get("/api/admin/users")
+def api_list_users(_actor: dict = Depends(require_role("admin"))):
+    return [
+        {**u, "role_label": ROLE_LABELS.get(u["role"], u["role"])}
+        for u in db.list_users()
+    ]
+
+
+@app.post("/api/admin/users")
+def api_create_user(payload: CreateUserPayload, _actor: dict = Depends(require_role("admin"))):
+    username = payload.username.strip().lower()
+    role = payload.role.strip().lower()
+    if len(username) < 3:
+        raise HTTPException(status_code=400, detail="El usuario debe tener al menos 3 caracteres")
+    if len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+    if role not in db.VALID_ROLES:
+        raise HTTPException(status_code=400, detail="Rol inválido")
+    if db.user_exists(username):
+        raise HTTPException(status_code=409, detail="Ese usuario ya existe")
+
+    password_hash, salt = auth.hash_password(payload.password)
+    db.create_user(username, password_hash, salt, role)
+    return {"username": username, "role": role, "role_label": ROLE_LABELS.get(role, role)}
+
+
+@app.put("/api/admin/users/{username}/role")
+def api_update_user_role(username: str, payload: UpdateRolePayload, _actor: dict = Depends(require_role("admin"))):
+    username = username.strip().lower()
+    role = payload.role.strip().lower()
+    if role not in db.VALID_ROLES:
+        raise HTTPException(status_code=400, detail="Rol inválido")
+    if not db.user_exists(username):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    user = db.get_user(username)
+    if user.get("role") == "admin" and role != "admin" and db.count_admins() <= 1:
+        raise HTTPException(status_code=400, detail="Debe quedar al menos un administrador")
+    db.update_user_role(username, role)
+    return {"username": username, "role": role, "role_label": ROLE_LABELS.get(role, role)}
+
+
+@app.delete("/api/admin/users/{username}")
+def api_delete_user(username: str, actor: dict = Depends(require_role("admin"))):
+    username = username.strip().lower()
+    if not db.user_exists(username):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    if username == actor["username"]:
+        raise HTTPException(status_code=400, detail="No puedes eliminar tu propia cuenta")
+    user = db.get_user(username)
+    if user.get("role") == "admin" and db.count_admins() <= 1:
+        raise HTTPException(status_code=400, detail="Debe quedar al menos un administrador")
+    db.delete_user(username)
+    return {"deleted": username}
 
 
 @app.get("/api/own-brands")
-def api_list_own_brands(_user: str = Depends(require_auth)):
+def api_list_own_brands(_actor: dict = Depends(require_role("admin", "analista"))):
     return db.list_own_brands()
 
 
 @app.post("/api/own-brands")
-def api_add_own_brand(name: str = Form(...), _user: str = Depends(require_auth)):
+def api_add_own_brand(name: str = Form(...), _actor: dict = Depends(require_role("admin", "analista"))):
     name = name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="El nombre de la marca es obligatorio")
@@ -138,7 +226,7 @@ def api_add_own_brand(name: str = Form(...), _user: str = Depends(require_auth))
 
 
 @app.delete("/api/own-brands/{name}")
-def api_delete_own_brand(name: str, _user: str = Depends(require_auth)):
+def api_delete_own_brand(name: str, _actor: dict = Depends(require_role("admin", "analista"))):
     db.delete_own_brand(name)
     return db.list_own_brands()
 
@@ -158,7 +246,7 @@ def _rows_to_csv(rows: list) -> str:
 
 
 @app.get("/api/export.csv")
-def api_export_all_csv(_user: str = Depends(require_auth)):
+def api_export_all_csv(_actor: dict = Depends(require_role("admin", "analista"))):
     csv_text = _rows_to_csv(db.export_rows())
     return Response(
         content=csv_text,
@@ -199,7 +287,7 @@ def api_get_point(point_id: str, _user: str = Depends(require_auth)):
 
 
 @app.get("/api/points/{point_id}/export.csv")
-def api_export_point_csv(point_id: str, _user: str = Depends(require_auth)):
+def api_export_point_csv(point_id: str, _actor: dict = Depends(require_role("admin", "analista"))):
     if not db.point_exists(point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     csv_text = _rows_to_csv(db.export_rows(point_id))
@@ -211,21 +299,21 @@ def api_export_point_csv(point_id: str, _user: str = Depends(require_auth)):
 
 
 @app.get("/api/points/{point_id}/daily-metrics")
-def api_daily_metrics(point_id: str, _user: str = Depends(require_auth)):
+def api_daily_metrics(point_id: str, _actor: dict = Depends(require_role("admin", "analista"))):
     if not db.point_exists(point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     return db.daily_metrics(point_id)
 
 
 @app.get("/api/points/{point_id}/replenishment")
-def api_replenishment(point_id: str, _user: str = Depends(require_auth)):
+def api_replenishment(point_id: str, _actor: dict = Depends(require_role("admin", "analista"))):
     if not db.point_exists(point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     return db.replenishment_signals(point_id)
 
 
 @app.delete("/api/points/{point_id}")
-def api_delete_point(point_id: str, _user: str = Depends(require_auth)):
+def api_delete_point(point_id: str, _actor: dict = Depends(require_role("admin"))):
     if not db.point_exists(point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
 

@@ -472,7 +472,7 @@
   .history-item .n { color: var(--ink-muted); font-variant-numeric: tabular-nums; font-size: 11px; }
 
   /* ---------- modal ---------- */
-  #modalBackdrop, #brandsModalBackdrop {
+  #modalBackdrop, #brandsModalBackdrop, #userModalBackdrop {
     display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.45);
     align-items: center; justify-content: center; z-index: 50; padding: 20px;
   }
@@ -506,6 +506,77 @@
   }
   .modal-actions .cancel { background: #fff; border: 1px solid var(--border-strong); color: var(--ink); }
   .modal-actions .confirm { background: var(--ink); border: none; color: #fff; }
+
+  /* ---------- roles / admin suite ---------- */
+  .role-pill {
+    display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 12px; border-radius: 100px;
+    background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.12);
+  }
+  .role-pill .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .admin-hero {
+    display: flex; align-items: center; gap: 20px; background: #0a0a0a; color: #fff;
+    border-radius: 18px; padding: 26px 30px; margin-bottom: 22px;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.35);
+  }
+  .admin-hero-icon {
+    width: 52px; height: 52px; border-radius: 14px; background: rgba(177,226,37,0.14);
+    border: 1px solid rgba(177,226,37,0.3); color: #B1E225; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .admin-hero-icon svg { width: 26px; height: 26px; }
+  .admin-hero h1 { margin: 0 0 4px; font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  .admin-hero p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.55); }
+  .admin-hero .primary {
+    margin-left: auto; flex-shrink: 0; background: #B1E225; color: #0a0a0a; border: none;
+    padding: 11px 18px; border-radius: 10px; font-weight: 800; font-size: 13.5px; cursor: pointer;
+    display: flex; align-items: center; gap: 7px; white-space: nowrap;
+  }
+  .admin-hero .primary svg { width: 16px; height: 16px; }
+
+  .role-legend { display: flex; flex-direction: column; gap: 9px; margin-bottom: 22px; }
+  .role-legend-item { font-size: 13px; color: var(--ink-secondary); display: flex; align-items: baseline; gap: 9px; }
+  .role-legend-item strong { color: var(--ink); }
+  .role-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; position: relative; top: 1px; }
+
+  .admin-table-head { margin-bottom: 14px; }
+  .admin-table-wrap { overflow-x: auto; }
+  table.admin-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.admin-table th {
+    text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ink-muted); font-weight: 700; padding: 9px 10px; border-bottom: 1px solid var(--border);
+  }
+  table.admin-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.admin-table tr:last-child td { border-bottom: none; }
+  .role-badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800;
+    padding: 5px 11px; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.02em;
+  }
+  .role-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .role-select {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 8px; border-radius: 7px;
+    border: 1px solid var(--border-strong); background: #fafafa; color: var(--ink); cursor: pointer;
+  }
+  .user-row-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+  .btn-icon-delete {
+    background: none; border: 1px solid var(--border-strong); color: #b3261e; border-radius: 7px;
+    padding: 6px 8px; cursor: pointer; display: flex; align-items: center;
+  }
+  .btn-icon-delete:hover { background: #fef2f2; border-color: #fca5a5; }
+  .btn-icon-delete svg { width: 14px; height: 14px; }
+
+  .role-picker { display: flex; gap: 8px; }
+  .role-card {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 14px 8px;
+    border-radius: 10px; border: 1.5px solid var(--border-strong); background: #fafafa; cursor: pointer;
+    font-family: inherit; transition: all 0.12s ease;
+  }
+  .role-card:hover { border-color: var(--ink-muted); }
+  .role-card.active { border-color: var(--ink); background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .role-card-dot { width: 14px; height: 14px; border-radius: 50%; }
+  .role-card-name { font-size: 12.5px; font-weight: 800; color: var(--ink); }
+  .role-card-desc { font-size: 10.5px; color: var(--ink-muted); text-align: center; line-height: 1.3; }
 
   /* ---------- auth ---------- */
   #authView {
@@ -647,6 +718,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
       <span class="btn-label">Marcas propias</span>
     </button>
+    <button class="btn-back" id="adminNavBtn" style="display:none;" title="Administración">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+      <span class="btn-label">Administración</span>
+    </button>
+    <div class="role-pill" id="rolePill" style="display:none;"></div>
     <button class="btn-back" id="logoutBtn" title="Cerrar sesión">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l-5-5 5-5M5 12h13"/></svg>
       <span class="btn-label" id="currentUsername">Salir</span>
@@ -686,7 +762,7 @@
         <h2>Puntos de venta</h2>
         <div style="display:flex; align-items:center; gap:12px;">
           <span class="hint" id="lastPoll">—</span>
-          <a class="btn-delete" href="/api/export.csv" download>
+          <a class="btn-delete role-analyst-only" href="/api/export.csv" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
             Descargar CSV
           </a>
@@ -702,11 +778,11 @@
           <div class="meta"><span id="detailCode">—</span> · <span id="detailStatus">—</span></div>
         </div>
         <div style="display:flex; gap:8px;">
-          <a class="btn-delete" id="exportPointBtn" href="#" download>
+          <a class="btn-delete role-analyst-only" id="exportPointBtn" href="#" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
             Exportar CSV
           </a>
-          <button class="btn-delete" id="deletePointBtn" title="Eliminar punto">
+          <button class="btn-delete role-admin-only" id="deletePointBtn" title="Eliminar punto">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a1.5 1.5 0 0 1-1.5 1.4H9.3a1.5 1.5 0 0 1-1.5-1.4L7 7"/></svg>
             Eliminar punto
           </button>
@@ -749,7 +825,7 @@
             <div class="history-list" id="historyList"></div>
           </div>
 
-          <div class="card">
+          <div class="card role-analyst-only">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M8 4v3M16 4v3"/></svg>
               Métricas por día
@@ -757,7 +833,7 @@
             <div id="dailyMetrics"></div>
           </div>
 
-          <div class="card">
+          <div class="card role-analyst-only">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
               Reabastecimiento (estimado desde fotos)
@@ -845,6 +921,45 @@
         </div>
       </div>
     </section>
+
+    <section id="adminView" style="display:none;">
+      <div class="admin-hero">
+        <div class="admin-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+        </div>
+        <div>
+          <h1>Administración de usuarios</h1>
+          <p>Roles y permisos segregados para operar la suite sin depender del equipo técnico.</p>
+        </div>
+        <button class="primary" id="newUserBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo usuario
+        </button>
+      </div>
+
+      <div class="role-legend">
+        <div class="role-legend-item"><span class="role-dot" style="background:#B1E225;"></span><strong>Administrador</strong> — control total: usuarios, roles, eliminar puntos, marcas propias.</div>
+        <div class="role-legend-item"><span class="role-dot" style="background:#3b82f6;"></span><strong>Analista</strong> — dashboards, métricas, reposición, exportar CSV, marcas propias.</div>
+        <div class="role-legend-item"><span class="role-dot" style="background:#9ca3af;"></span><strong>Reponedor</strong> — solo capturar y analizar fotos de góndola por punto.</div>
+      </div>
+
+      <div class="card">
+        <div class="admin-table-head">
+          <h3 class="card-title" style="margin:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Usuarios (<span id="userCount">0</span>)
+          </h3>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Usuario</th><th>Rol</th><th>Creado</th><th></th></tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
   </div>
 
@@ -883,6 +998,46 @@
       <div class="status" id="brandsStatus"></div>
       <div class="modal-actions">
         <button class="cancel" id="brandsCloseBtn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="userModalBackdrop">
+    <div class="modal" style="max-width:460px;">
+      <h2>Nuevo usuario</h2>
+      <p class="hint">Crea acceso para un colaborador y elige exactamente qué puede hacer dentro de la plataforma.</p>
+      <div class="field">
+        <label for="newUserName">Usuario</label>
+        <input type="text" id="newUserName" placeholder="ej: cristhian" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="newUserPassword">Contraseña</label>
+        <input type="password" id="newUserPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+      </div>
+      <div class="field">
+        <label>Rol</label>
+        <div class="role-picker" id="rolePicker">
+          <button type="button" class="role-card" data-role="admin">
+            <span class="role-card-dot" style="background:#B1E225;"></span>
+            <span class="role-card-name">Administrador</span>
+            <span class="role-card-desc">Control total</span>
+          </button>
+          <button type="button" class="role-card" data-role="analista">
+            <span class="role-card-dot" style="background:#3b82f6;"></span>
+            <span class="role-card-name">Analista</span>
+            <span class="role-card-desc">Dashboards y export</span>
+          </button>
+          <button type="button" class="role-card active" data-role="reponedor">
+            <span class="role-card-dot" style="background:#9ca3af;"></span>
+            <span class="role-card-name">Reponedor</span>
+            <span class="role-card-desc">Solo captura de fotos</span>
+          </button>
+        </div>
+      </div>
+      <div class="status" id="userModalStatus"></div>
+      <div class="modal-actions">
+        <button class="cancel" id="userModalCancel">Cancelar</button>
+        <button class="confirm" id="userModalConfirm">Crear usuario</button>
       </div>
     </div>
   </div>
@@ -964,6 +1119,28 @@
   let currentPoint = null;
   let currentReadingId = null;
   let pollTimer = null;
+  let currentUser = null;
+
+  const ROLE_META = {
+    admin: { label: "Administrador", color: "#B1E225", bg: "rgba(177,226,37,0.14)", fg: "#5f7a0a" },
+    analista: { label: "Analista", color: "#3b82f6", bg: "#eff6ff", fg: "#1d4ed8" },
+    reponedor: { label: "Reponedor", color: "#9ca3af", bg: "#f3f4f6", fg: "#4b5563" },
+  };
+
+  function applyRolePermissions() {
+    const role = currentUser ? currentUser.role : "reponedor";
+    const isAdmin = role === "admin";
+    const canAnalyze = role === "admin" || role === "analista";
+
+    document.getElementById("adminNavBtn").style.display = isAdmin ? "flex" : "none";
+    document.getElementById("brandsBtn").style.display = canAnalyze ? "flex" : "none";
+    document.querySelectorAll(".role-analyst-only").forEach((el) => {
+      el.style.display = canAnalyze ? "" : "none";
+    });
+    document.querySelectorAll(".role-admin-only").forEach((el) => {
+      el.style.display = isAdmin ? "" : "none";
+    });
+  }
 
   const dashboardView = document.getElementById("dashboardView");
   const detailView = document.getElementById("detailView");
@@ -1131,6 +1308,7 @@
   function closeDetail() {
     if (typeof closeCamera === "function") closeCamera();
     detailView.style.display = "none";
+    document.getElementById("adminView").style.display = "none";
     dashboardView.style.display = "block";
     dashboardView.classList.add("view-fade");
     backBtn.style.display = "none";
@@ -1159,8 +1337,10 @@
     } else {
       renderReading(null);
     }
-    loadDailyMetrics(pointId);
-    loadReplenishment(pointId);
+    if (currentUser && (currentUser.role === "admin" || currentUser.role === "analista")) {
+      loadDailyMetrics(pointId);
+      loadReplenishment(pointId);
+    }
   }
 
   function renderHistory() {
@@ -1761,6 +1941,143 @@
     if (e.key === "Enter") { e.preventDefault(); document.getElementById("addBrandBtn").click(); }
   });
 
+  // ---------- administración de usuarios ----------
+  const adminView = document.getElementById("adminView");
+  const userModalBackdrop = document.getElementById("userModalBackdrop");
+  const userModalStatus = document.getElementById("userModalStatus");
+  let selectedNewUserRole = "reponedor";
+
+  function showAdminView() {
+    dashboardView.style.display = "none";
+    detailView.style.display = "none";
+    adminView.style.display = "block";
+    adminView.classList.add("view-fade");
+    backBtn.style.display = "flex";
+    loadAdminUsers();
+  }
+
+  function roleBadgeHtml(role) {
+    const meta = ROLE_META[role] || ROLE_META.reponedor;
+    return `<span class="role-badge" style="background:${meta.bg}; color:${meta.fg};"><span class="dot" style="background:${meta.color};"></span>${meta.label}</span>`;
+  }
+
+  async function loadAdminUsers() {
+    const tbody = document.getElementById("usersTableBody");
+    tbody.innerHTML = `<tr><td colspan="4" class="point-empty">${ICON_SPINNER} Cargando…</td></tr>`;
+    try {
+      const res = await fetch("/api/admin/users");
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const users = await res.json();
+      document.getElementById("userCount").textContent = users.length;
+      if (!users.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="point-empty">Sin usuarios.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = users.map((u) => `
+        <tr data-username="${escapeHtml(u.username)}">
+          <td><strong>${escapeHtml(u.username)}</strong>${u.username === currentUser.username ? ' <span class="hint">(tú)</span>' : ""}</td>
+          <td>${roleBadgeHtml(u.role)}</td>
+          <td class="hint">${relativeTime(u.created_at)}</td>
+          <td>
+            <div class="user-row-actions">
+              <select class="role-select" data-action="change-role" data-username="${escapeHtml(u.username)}">
+                ${["admin", "analista", "reponedor"].map((r) => `<option value="${r}" ${r === u.role ? "selected" : ""}>${ROLE_META[r].label}</option>`).join("")}
+              </select>
+              <button class="btn-icon-delete" data-action="delete-user" data-username="${escapeHtml(u.username)}" title="Eliminar usuario" ${u.username === currentUser.username ? "disabled" : ""}>
+                ${ICON_REMOVE}
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="4" class="point-empty">${ICON_WARNING} No se pudo cargar la lista de usuarios.</td></tr>`;
+    }
+  }
+
+  document.getElementById("usersTableBody").addEventListener("change", async (e) => {
+    const sel = e.target.closest('select[data-action="change-role"]');
+    if (!sel) return;
+    const username = sel.dataset.username;
+    const role = sel.value;
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(username)}/role`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      loadAdminUsers();
+    } catch (e) {
+      alert(e.message || "No se pudo cambiar el rol");
+      loadAdminUsers();
+    }
+  });
+
+  document.getElementById("usersTableBody").addEventListener("click", async (e) => {
+    const btn = e.target.closest('button[data-action="delete-user"]');
+    if (!btn || btn.disabled) return;
+    const username = btn.dataset.username;
+    if (!confirm(`¿Eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      loadAdminUsers();
+    } catch (e) {
+      alert(e.message || "No se pudo eliminar el usuario");
+    }
+  });
+
+  document.getElementById("adminNavBtn").addEventListener("click", showAdminView);
+
+  document.getElementById("newUserBtn").addEventListener("click", () => {
+    document.getElementById("newUserName").value = "";
+    document.getElementById("newUserPassword").value = "";
+    userModalStatus.innerHTML = "";
+    userModalStatus.classList.remove("error");
+    selectedNewUserRole = "reponedor";
+    document.querySelectorAll("#rolePicker .role-card").forEach((c) => c.classList.toggle("active", c.dataset.role === "reponedor"));
+    userModalBackdrop.style.display = "flex";
+  });
+
+  document.getElementById("rolePicker").addEventListener("click", (e) => {
+    const card = e.target.closest(".role-card");
+    if (!card) return;
+    selectedNewUserRole = card.dataset.role;
+    document.querySelectorAll("#rolePicker .role-card").forEach((c) => c.classList.toggle("active", c === card));
+  });
+
+  document.getElementById("userModalCancel").addEventListener("click", () => { userModalBackdrop.style.display = "none"; });
+  userModalBackdrop.addEventListener("click", (e) => { if (e.target === userModalBackdrop) userModalBackdrop.style.display = "none"; });
+
+  document.getElementById("userModalConfirm").addEventListener("click", async () => {
+    const username = document.getElementById("newUserName").value.trim();
+    const password = document.getElementById("newUserPassword").value;
+    userModalStatus.classList.remove("error");
+    if (!username || !password) {
+      userModalStatus.classList.add("error");
+      userModalStatus.innerHTML = `${ICON_WARNING} Completa usuario y contraseña`;
+      return;
+    }
+    userModalStatus.innerHTML = `${ICON_SPINNER} Creando…`;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, role: selectedNewUserRole }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      userModalBackdrop.style.display = "none";
+      loadAdminUsers();
+    } catch (e) {
+      userModalStatus.classList.add("error");
+      userModalStatus.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+    }
+  });
+
   backBtn.addEventListener("click", closeDetail);
 
   document.getElementById("deletePointBtn").addEventListener("click", async () => {
@@ -1860,10 +2177,12 @@
     refreshQuickAccessBlock();
   }
 
-  function showAppRoot(username) {
+  function showAppRoot(user) {
+    currentUser = user;
     authView.style.display = "none";
     appRoot.style.display = "block";
-    document.getElementById("currentUsername").textContent = username;
+    document.getElementById("currentUsername").textContent = user.username;
+    applyRolePermissions();
     initApp();
   }
 
@@ -1886,7 +2205,7 @@
         clearRememberedCreds();
       }
       authStatus.innerHTML = "";
-      showAppRoot(data.username);
+      showAppRoot(data);
     } catch (e) {
       authStatus.classList.add("error");
       authStatus.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
@@ -1927,7 +2246,7 @@
       const res = await fetch("/api/auth/me");
       if (res.ok) {
         const data = await res.json();
-        showAppRoot(data.username);
+        showAppRoot(data);
         return;
       }
     } catch (e) {
