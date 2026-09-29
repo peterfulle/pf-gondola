@@ -82,12 +82,25 @@ def get_conn():
         conn.close()
 
 
+def _has_column(conn, table: str, column: str) -> bool:
+    return any(row[1] == column for row in conn.execute(f"PRAGMA table_info({table})").fetchall())
+
+
 def init_db():
     with get_conn() as conn:
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        # El esquema single-tenant anterior (users.username como PK, sin org_id)
+        # es incompatible con el modelo multi-tenant: no se puede migrar celda a
+        # celda porque faltan columnas estructurales (org_id, email como PK).
+        # No hay datos reales dependiendo de ese esquema, así que en vez de una
+        # migración parcial que rompería a mitad de camino, se reemplaza limpio.
+        if "users" in tables and not _has_column(conn, "users", "org_id"):
+            for legacy_table in ("readings", "points", "users", "own_brands"):
+                conn.execute(f"DROP TABLE IF EXISTS {legacy_table}")
+
         conn.executescript(SCHEMA)
-        # Si el archivo de datos ya existía con el esquema single-tenant anterior
-        # (sin org_id, sin puntajes), estas columnas faltarían y romperían los
-        # INSERT nuevos. ADD COLUMN es un no-op seguro cuando la columna ya existe.
+        # Columnas agregadas después del primer despliegue multi-tenant: ADD COLUMN
+        # es un no-op seguro cuando la columna ya existe.
         for statement in (
             "ALTER TABLE points ADD COLUMN region TEXT",
             "ALTER TABLE points ADD COLUMN comuna TEXT",
