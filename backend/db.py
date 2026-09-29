@@ -1,5 +1,8 @@
 import json
 import os
+import random
+import re
+import secrets
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -14,35 +17,58 @@ DB_PATH = DATA_DIR / "data.db"
 LEVEL_HEIGHT_M = 0.35
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS points (
+CREATE TABLE IF NOT EXISTS organizations (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  salt TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+CREATE TABLE IF NOT EXISTS points (
+  org_id TEXT NOT NULL,
+  id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  region TEXT,
+  comuna TEXT,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, id)
+);
 CREATE TABLE IF NOT EXISTS readings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
   point_id TEXT NOT NULL,
   created_at TEXT NOT NULL,
   total_facings INTEGER,
   shelf_levels_detected INTEGER,
   empty_space_pct REAL,
+  price_visibility_score REAL,
+  exhibition_score REAL,
+  organization_score REAL,
   products_json TEXT,
   categories_json TEXT,
   notes TEXT,
-  image_path TEXT,
-  FOREIGN KEY (point_id) REFERENCES points(id)
+  image_paths_json TEXT,
+  linear_meters REAL
 );
 CREATE TABLE IF NOT EXISTS own_brands (
-  name TEXT PRIMARY KEY,
-  created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS users (
-  username TEXT PRIMARY KEY,
-  password_hash TEXT NOT NULL,
-  salt TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  org_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, name)
 );
 """
+
+VALID_ROLES = ("superusuario", "admin", "analista", "reponedor")
+ADMIN_ROLES = ("superusuario", "admin")
+ANALYST_ROLES = ("superusuario", "admin", "analista")
 
 
 @contextmanager
@@ -56,107 +82,145 @@ def get_conn():
         conn.close()
 
 
-VALID_ROLES = ("admin", "analista", "reponedor")
-
-
 def init_db():
     with get_conn() as conn:
         conn.executescript(SCHEMA)
+        # Si el archivo de datos ya existía con el esquema single-tenant anterior
+        # (sin org_id, sin puntajes), estas columnas faltarían y romperían los
+        # INSERT nuevos. ADD COLUMN es un no-op seguro cuando la columna ya existe.
         for statement in (
-            "ALTER TABLE readings ADD COLUMN image_paths_json TEXT",
-            "ALTER TABLE readings ADD COLUMN linear_meters REAL",
-            "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'reponedor'",
+            "ALTER TABLE points ADD COLUMN region TEXT",
+            "ALTER TABLE points ADD COLUMN comuna TEXT",
+            "ALTER TABLE readings ADD COLUMN price_visibility_score REAL",
+            "ALTER TABLE readings ADD COLUMN exhibition_score REAL",
+            "ALTER TABLE readings ADD COLUMN organization_score REAL",
         ):
             try:
                 conn.execute(statement)
             except sqlite3.OperationalError:
                 pass
 
-        # Bootstrap: si ya hay usuarios pero ninguno es admin todavía (por ejemplo,
-        # justo después de agregar la columna role), promovemos al primero creado
-        # para que la suite de administración nunca quede sin un admin.
-        has_admin = conn.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1").fetchone()
-        if not has_admin:
-            first_user = conn.execute(
-                "SELECT username FROM users ORDER BY created_at LIMIT 1"
-            ).fetchone()
-            if first_user:
-                conn.execute(
-                    "UPDATE users SET role = 'admin' WHERE username = ?", (first_user["username"],)
-                )
-
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
-def list_own_brands() -> list:
-    with get_conn() as conn:
-        rows = conn.execute("SELECT name FROM own_brands ORDER BY name").fetchall()
-    return [r["name"] for r in rows]
+def slugify_org_name(name: str) -> str:
+    base = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-") or "empresa"
+    return base[:40]
 
 
-def add_own_brand(name: str) -> None:
+def _unique_org_id(conn, base_slug: str) -> str:
+    candidate = base_slug
+    while conn.execute("SELECT 1 FROM organizations WHERE id = ?", (candidate,)).fetchone():
+        candidate = f"{base_slug}-{secrets.token_hex(3)}"
+    return candidate
+
+
+def create_organization(name: str) -> dict:
     with get_conn() as conn:
+        org_id = _unique_org_id(conn, slugify_org_name(name))
+        created_at = now_iso()
         conn.execute(
-            "INSERT OR IGNORE INTO own_brands (name, created_at) VALUES (?, ?)",
-            (name, now_iso()),
+            "INSERT INTO organizations (id, name, created_at) VALUES (?, ?, ?)",
+            (org_id, name, created_at),
         )
+    return {"id": org_id, "name": name, "created_at": created_at}
 
 
-def delete_own_brand(name: str) -> None:
+def get_organization(org_id: str):
     with get_conn() as conn:
-        conn.execute("DELETE FROM own_brands WHERE name = ?", (name,))
-
-
-def user_exists(username: str) -> bool:
-    with get_conn() as conn:
-        row = conn.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone()
-    return row is not None
-
-
-def create_user(username: str, password_hash: str, salt: str, role: str = "reponedor") -> None:
-    with get_conn() as conn:
-        conn.execute(
-            "INSERT INTO users (username, password_hash, salt, created_at, role) VALUES (?, ?, ?, ?, ?)",
-            (username, password_hash, salt, now_iso(), role),
-        )
-
-
-def get_user(username: str):
-    with get_conn() as conn:
-        row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        row = conn.execute("SELECT * FROM organizations WHERE id = ?", (org_id,)).fetchone()
     return dict(row) if row else None
 
 
-def any_users_exist() -> bool:
+def rename_organization(org_id: str, name: str) -> None:
     with get_conn() as conn:
-        row = conn.execute("SELECT 1 FROM users LIMIT 1").fetchone()
+        conn.execute("UPDATE organizations SET name = ? WHERE id = ?", (name, org_id))
+
+
+# ---------- usuarios ----------
+
+def email_exists(email: str) -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone()
     return row is not None
 
 
-def list_users() -> list:
+def create_user(org_id: str, email: str, password_hash: str, salt: str, role: str) -> dict:
+    with get_conn() as conn:
+        created_at = now_iso()
+        cur = conn.execute(
+            "INSERT INTO users (org_id, email, password_hash, salt, role, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (org_id, email, password_hash, salt, role, created_at),
+        )
+    return {"id": cur.lastrowid, "org_id": org_id, "email": email, "role": role, "created_at": created_at}
+
+
+def get_user_by_email(email: str):
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    return dict(row) if row else None
+
+
+def list_users(org_id: str) -> list:
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT username, role, created_at FROM users ORDER BY created_at"
+            "SELECT email, role, created_at FROM users WHERE org_id = ? ORDER BY created_at", (org_id,)
         ).fetchall()
     return [dict(r) for r in rows]
 
 
-def count_admins() -> int:
+def count_role(org_id: str, roles: tuple) -> int:
+    placeholders = ",".join("?" for _ in roles)
     with get_conn() as conn:
-        row = conn.execute("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'").fetchone()
+        row = conn.execute(
+            f"SELECT COUNT(*) AS c FROM users WHERE org_id = ? AND role IN ({placeholders})",
+            (org_id, *roles),
+        ).fetchone()
     return row["c"]
 
 
-def update_user_role(username: str, role: str) -> None:
+def update_user_role(org_id: str, email: str, role: str) -> None:
     with get_conn() as conn:
-        conn.execute("UPDATE users SET role = ? WHERE username = ?", (role, username))
+        conn.execute("UPDATE users SET role = ? WHERE org_id = ? AND email = ?", (role, org_id, email))
 
 
-def delete_user(username: str) -> None:
+def delete_user(org_id: str, email: str) -> None:
     with get_conn() as conn:
-        conn.execute("DELETE FROM users WHERE username = ?", (username,))
+        conn.execute("DELETE FROM users WHERE org_id = ? AND email = ?", (org_id, email))
+
+
+def user_in_org(org_id: str, email: str):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM users WHERE org_id = ? AND email = ?", (org_id, email)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+# ---------- marcas propias ----------
+
+def list_own_brands(org_id: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT name FROM own_brands WHERE org_id = ? ORDER BY name", (org_id,)
+        ).fetchall()
+    return [r["name"] for r in rows]
+
+
+def add_own_brand(org_id: str, name: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO own_brands (org_id, name, created_at) VALUES (?, ?, ?)",
+            (org_id, name, now_iso()),
+        )
+
+
+def delete_own_brand(org_id: str, name: str) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM own_brands WHERE org_id = ? AND name = ?", (org_id, name))
 
 
 def _is_own_brand(product: dict, own_brands: list) -> bool:
@@ -168,6 +232,32 @@ def _tag_products(products: list, own_brands: list) -> list:
     if not own_brands:
         return [{**p, "is_own_brand": False} for p in products]
     return [{**p, "is_own_brand": _is_own_brand(p, own_brands)} for p in products]
+
+
+def performance_label(score) -> str:
+    if score is None:
+        return None
+    if score >= 85:
+        return "Excelente"
+    if score >= 65:
+        return "Bueno"
+    return "Necesita atención"
+
+
+def _score_summary(availability_score, price_visibility_score, exhibition_score, organization_score) -> dict:
+    parts = [
+        v for v in (availability_score, price_visibility_score, exhibition_score, organization_score)
+        if v is not None
+    ]
+    score_total = round(sum(parts) / len(parts), 1) if parts else None
+    return {
+        "availability_score": availability_score,
+        "price_visibility_score": price_visibility_score,
+        "exhibition_score": exhibition_score,
+        "organization_score": organization_score,
+        "score_total": score_total,
+        "performance_label": performance_label(score_total),
+    }
 
 
 def _benchmark_summary(products: list) -> dict:
@@ -183,15 +273,19 @@ def _benchmark_summary(products: list) -> dict:
     }
 
 
-def point_exists(point_id: str) -> bool:
+# ---------- puntos de venta ----------
+
+def point_exists(org_id: str, point_id: str) -> bool:
     with get_conn() as conn:
-        row = conn.execute("SELECT 1 FROM points WHERE id = ?", (point_id,)).fetchone()
+        row = conn.execute(
+            "SELECT 1 FROM points WHERE org_id = ? AND id = ?", (org_id, point_id)
+        ).fetchone()
     return row is not None
 
 
-def next_point_id() -> str:
+def next_point_id(org_id: str) -> str:
     with get_conn() as conn:
-        rows = conn.execute("SELECT id FROM points").fetchall()
+        rows = conn.execute("SELECT id FROM points WHERE org_id = ?", (org_id,)).fetchall()
     max_n = 0
     for row in rows:
         try:
@@ -202,15 +296,16 @@ def next_point_id() -> str:
     return f"PDV-{max_n + 1:03d}"
 
 
-def create_point(point_id: str, name: str) -> None:
+def create_point(org_id: str, point_id: str, name: str, region: str = None, comuna: str = None) -> None:
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO points (id, name, created_at) VALUES (?, ?, ?)",
-            (point_id, name, now_iso()),
+            "INSERT INTO points (org_id, id, name, region, comuna, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (org_id, point_id, name, region, comuna, now_iso()),
         )
 
 
 def add_reading(
+    org_id: str,
     point_id: str,
     analysis: dict,
     image_paths: list,
@@ -218,15 +313,20 @@ def add_reading(
 ) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO readings (point_id, created_at, total_facings, shelf_levels_detected, "
-            "empty_space_pct, products_json, categories_json, notes, image_paths_json, linear_meters) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO readings (org_id, point_id, created_at, total_facings, shelf_levels_detected, "
+            "empty_space_pct, price_visibility_score, exhibition_score, organization_score, "
+            "products_json, categories_json, notes, image_paths_json, linear_meters) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
+                org_id,
                 point_id,
                 now_iso(),
                 analysis.get("total_facings"),
                 analysis.get("shelf_levels_detected"),
                 analysis.get("empty_space_pct"),
+                analysis.get("price_visibility_score"),
+                analysis.get("exhibition_score"),
+                analysis.get("organization_score"),
                 json.dumps(analysis.get("products", [])),
                 json.dumps(analysis.get("categories", [])),
                 analysis.get("notes", ""),
@@ -236,21 +336,15 @@ def add_reading(
         )
         reading_id = cur.lastrowid
         row = conn.execute("SELECT * FROM readings WHERE id = ?", (reading_id,)).fetchone()
-    return _reading_dict(row, list_own_brands())
+    return _reading_dict(row, list_own_brands(org_id))
 
 
 def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
-    keys = row.keys()
-    paths_json = row["image_paths_json"] if "image_paths_json" in keys else None
-    if paths_json:
-        paths = json.loads(paths_json)
-    elif "image_path" in keys and row["image_path"]:
-        paths = [row["image_path"]]
-    else:
-        paths = []
+    paths_json = row["image_paths_json"]
+    paths = json.loads(paths_json) if paths_json else []
 
     products = _tag_products(json.loads(row["products_json"] or "[]"), own_brands or [])
-    linear_meters = row["linear_meters"] if "linear_meters" in keys else None
+    linear_meters = row["linear_meters"]
     total_facings = row["total_facings"] or 0
     levels = row["shelf_levels_detected"] or 0
 
@@ -259,6 +353,8 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
     total_units_estimate = sum(
         (p.get("facings") or 0) * (p.get("estimated_depth") or 1) for p in products
     ) if products else None
+    empty_space_pct = row["empty_space_pct"]
+    availability_score = round(100 - empty_space_pct, 1) if empty_space_pct is not None else None
 
     return {
         "id": row["id"],
@@ -266,7 +362,7 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
         "created_at": row["created_at"],
         "total_facings": row["total_facings"],
         "shelf_levels_detected": row["shelf_levels_detected"],
-        "empty_space_pct": row["empty_space_pct"],
+        "empty_space_pct": empty_space_pct,
         "products": products,
         "categories": json.loads(row["categories_json"] or "[]"),
         "notes": row["notes"],
@@ -277,25 +373,30 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
         "vertical_meters": vertical_meters,
         "display_area_m2": display_area_m2,
         "total_units_estimate": total_units_estimate,
+        **_score_summary(availability_score, row["price_visibility_score"], row["exhibition_score"], row["organization_score"]),
     }
 
 
-def list_points_with_latest() -> list:
-    own_brands = list_own_brands()
+def list_points_with_latest(org_id: str) -> list:
+    own_brands = list_own_brands(org_id)
     with get_conn() as conn:
-        points = conn.execute("SELECT * FROM points ORDER BY id").fetchall()
+        points = conn.execute(
+            "SELECT * FROM points WHERE org_id = ? ORDER BY id", (org_id,)
+        ).fetchall()
         result = []
         for p in points:
             latest_row = conn.execute(
-                "SELECT * FROM readings WHERE point_id = ? ORDER BY id DESC LIMIT 1",
-                (p["id"],),
+                "SELECT * FROM readings WHERE org_id = ? AND point_id = ? ORDER BY id DESC LIMIT 1",
+                (org_id, p["id"]),
             ).fetchone()
             count_row = conn.execute(
-                "SELECT COUNT(*) AS c FROM readings WHERE point_id = ?", (p["id"],)
+                "SELECT COUNT(*) AS c FROM readings WHERE org_id = ? AND point_id = ?",
+                (org_id, p["id"]),
             ).fetchone()
             recent_rows = conn.execute(
-                "SELECT total_facings, products_json FROM readings WHERE point_id = ? ORDER BY id DESC LIMIT 8",
-                (p["id"],),
+                "SELECT total_facings, products_json FROM readings WHERE org_id = ? AND point_id = ? "
+                "ORDER BY id DESC LIMIT 8",
+                (org_id, p["id"]),
             ).fetchall()
             recent_rows = list(reversed(recent_rows))
             recent_facings = [r["total_facings"] for r in recent_rows]
@@ -307,6 +408,8 @@ def list_points_with_latest() -> list:
                 {
                     "id": p["id"],
                     "name": p["name"],
+                    "region": p["region"],
+                    "comuna": p["comuna"],
                     "created_at": p["created_at"],
                     "readings_count": count_row["c"],
                     "latest": _reading_dict(latest_row, own_brands) if latest_row else None,
@@ -317,42 +420,51 @@ def list_points_with_latest() -> list:
     return result
 
 
-def get_point(point_id: str):
-    own_brands = list_own_brands()
+def get_point(org_id: str, point_id: str):
+    own_brands = list_own_brands(org_id)
     with get_conn() as conn:
-        p = conn.execute("SELECT * FROM points WHERE id = ?", (point_id,)).fetchone()
+        p = conn.execute(
+            "SELECT * FROM points WHERE org_id = ? AND id = ?", (org_id, point_id)
+        ).fetchone()
         if not p:
             return None
         readings = conn.execute(
-            "SELECT * FROM readings WHERE point_id = ? ORDER BY id DESC", (point_id,)
+            "SELECT * FROM readings WHERE org_id = ? AND point_id = ? ORDER BY id DESC",
+            (org_id, point_id),
         ).fetchall()
     return {
         "id": p["id"],
         "name": p["name"],
+        "region": p["region"],
+        "comuna": p["comuna"],
         "created_at": p["created_at"],
         "readings": [_reading_dict(r, own_brands) for r in readings],
     }
 
 
-def delete_point(point_id: str) -> None:
+def delete_point(org_id: str, point_id: str) -> None:
     with get_conn() as conn:
-        conn.execute("DELETE FROM readings WHERE point_id = ?", (point_id,))
-        conn.execute("DELETE FROM points WHERE id = ?", (point_id,))
+        conn.execute("DELETE FROM readings WHERE org_id = ? AND point_id = ?", (org_id, point_id))
+        conn.execute("DELETE FROM points WHERE org_id = ? AND id = ?", (org_id, point_id))
 
 
-def export_rows(point_id: str = None) -> list:
+def export_rows(org_id: str, point_id: str = None) -> list:
     """Una fila por producto por lectura, para exportar a Excel/Power BI/Looker."""
-    own_brands = list_own_brands()
+    own_brands = list_own_brands(org_id)
     with get_conn() as conn:
         if point_id:
             readings = conn.execute(
-                "SELECT r.*, p.name AS point_name FROM readings r JOIN points p ON p.id = r.point_id "
-                "WHERE r.point_id = ? ORDER BY r.id",
-                (point_id,),
+                "SELECT r.*, p.name AS point_name FROM readings r JOIN points p "
+                "ON p.org_id = r.org_id AND p.id = r.point_id "
+                "WHERE r.org_id = ? AND r.point_id = ? ORDER BY r.id",
+                (org_id, point_id),
             ).fetchall()
         else:
             readings = conn.execute(
-                "SELECT r.*, p.name AS point_name FROM readings r JOIN points p ON p.id = r.point_id ORDER BY r.id"
+                "SELECT r.*, p.name AS point_name FROM readings r JOIN points p "
+                "ON p.org_id = r.org_id AND p.id = r.point_id "
+                "WHERE r.org_id = ? ORDER BY r.id",
+                (org_id,),
             ).fetchall()
 
     rows = []
@@ -381,17 +493,17 @@ def export_rows(point_id: str = None) -> list:
                     "reading_total_facings": r["total_facings"],
                     "reading_empty_space_pct": r["empty_space_pct"],
                     "reading_shelf_levels": r["shelf_levels_detected"],
-                    "reading_linear_meters": r["linear_meters"] if "linear_meters" in r.keys() else None,
+                    "reading_linear_meters": r["linear_meters"],
                 }
             )
     return rows
 
 
-def daily_metrics(point_id: str) -> list:
-    own_brands = list_own_brands()
+def daily_metrics(org_id: str, point_id: str) -> list:
+    own_brands = list_own_brands(org_id)
     with get_conn() as conn:
         readings = conn.execute(
-            "SELECT * FROM readings WHERE point_id = ? ORDER BY id", (point_id,)
+            "SELECT * FROM readings WHERE org_id = ? AND point_id = ? ORDER BY id", (org_id, point_id)
         ).fetchall()
 
     by_day = {}
@@ -426,12 +538,12 @@ def daily_metrics(point_id: str) -> list:
     return result
 
 
-def replenishment_signals(point_id: str, lookback: int = 10) -> dict:
-    own_brands = list_own_brands()
+def replenishment_signals(org_id: str, point_id: str, lookback: int = 10) -> dict:
+    own_brands = list_own_brands(org_id)
     with get_conn() as conn:
         readings = conn.execute(
-            "SELECT * FROM readings WHERE point_id = ? ORDER BY id DESC LIMIT ?",
-            (point_id, lookback),
+            "SELECT * FROM readings WHERE org_id = ? AND point_id = ? ORDER BY id DESC LIMIT ?",
+            (org_id, point_id, lookback),
         ).fetchall()
     readings = list(reversed(readings))
 
@@ -480,3 +592,125 @@ def replenishment_signals(point_id: str, lookback: int = 10) -> dict:
         "empty_space_trend_delta": trend_delta,
         "recurring_stockouts": recurring,
     }
+
+
+def get_analytics(org_id: str) -> dict:
+    """Tabla de hechos (una fila por lectura) + resumen por punto, para el módulo de Reportería."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT r.id, r.point_id, p.name AS point_name, p.region AS region, p.comuna AS comuna, "
+            "r.created_at, r.empty_space_pct, r.price_visibility_score, r.exhibition_score, "
+            "r.organization_score FROM readings r JOIN points p "
+            "ON p.org_id = r.org_id AND p.id = r.point_id WHERE r.org_id = ? ORDER BY r.created_at",
+            (org_id,),
+        ).fetchall()
+
+    readings = []
+    by_point = {}
+    for r in rows:
+        availability_score = round(100 - r["empty_space_pct"], 1) if r["empty_space_pct"] is not None else None
+        scores = _score_summary(availability_score, r["price_visibility_score"], r["exhibition_score"], r["organization_score"])
+        entry = {
+            "reading_id": r["id"],
+            "point_id": r["point_id"],
+            "point_name": r["point_name"],
+            "region": r["region"],
+            "comuna": r["comuna"],
+            "created_at": r["created_at"],
+            **scores,
+        }
+        readings.append(entry)
+
+        bucket = by_point.setdefault(
+            r["point_id"],
+            {"id": r["point_id"], "name": r["point_name"], "region": r["region"], "comuna": r["comuna"],
+             "readings_count": 0, "score_sum": 0.0, "score_n": 0, "last_scan": None},
+        )
+        bucket["readings_count"] += 1
+        if scores["score_total"] is not None:
+            bucket["score_sum"] += scores["score_total"]
+            bucket["score_n"] += 1
+        if not bucket["last_scan"] or r["created_at"] > bucket["last_scan"]:
+            bucket["last_scan"] = r["created_at"]
+
+    points_summary = []
+    for bucket in by_point.values():
+        avg_score = round(bucket["score_sum"] / bucket["score_n"], 1) if bucket["score_n"] else None
+        points_summary.append(
+            {
+                "id": bucket["id"],
+                "name": bucket["name"],
+                "region": bucket["region"],
+                "comuna": bucket["comuna"],
+                "readings_count": bucket["readings_count"],
+                "last_scan": bucket["last_scan"],
+                "score_total": avg_score,
+                "performance_label": performance_label(avg_score),
+            }
+        )
+    points_summary.sort(key=lambda p: (p["score_total"] is None, -(p["score_total"] or 0)))
+
+    return {"readings": readings, "points": points_summary}
+
+
+_DEMO_POINTS = [
+    ("Sucursal Providencia", "Metropolitana", "Providencia"),
+    ("Sucursal Ñuñoa", "Metropolitana", "Ñuñoa"),
+    ("Sucursal Viña del Mar", "Valparaíso", "Viña del Mar"),
+    ("Sucursal Talca", "Maule", "Talca"),
+    ("Sucursal Concepción", "Biobío", "Concepción"),
+]
+
+
+def seed_demo_data(org_id: str) -> dict:
+    """Crea puntos y lecturas sintéticas (marcadas como demo en sus notas) para que
+    una organización pueda explorar Reportería antes de tener datos propios."""
+    with get_conn() as conn:
+        existing = [dict(p) for p in conn.execute(
+            "SELECT id, name, region, comuna FROM points WHERE org_id = ?", (org_id,)
+        ).fetchall()]
+
+    points = list(existing)
+    existing_names = {p["name"] for p in points}
+    for name, region, comuna in _DEMO_POINTS:
+        if name in existing_names:
+            continue
+        pid = next_point_id(org_id)
+        create_point(org_id, pid, name, region, comuna)
+        points.append({"id": pid, "name": name, "region": region, "comuna": comuna})
+
+    rng = random.Random(42)
+    today = datetime.now(timezone.utc)
+    months = []
+    for i in range(8, -1, -1):
+        m, y = today.month - i, today.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        months.append((y, m))
+
+    inserted = 0
+    with get_conn() as conn:
+        for p in points:
+            bias = rng.uniform(-8, 10)
+            for (y, m) in months:
+                for _ in range(rng.choice([1, 1, 2, 3])):
+                    day = rng.randint(1, 28)
+                    hour = rng.randint(8, 20)
+                    created_at = f"{y:04d}-{m:02d}-{day:02d}T{hour:02d}:00:00+00:00"
+                    empty_space_pct = round(max(0, min(100, rng.uniform(3, 22) - bias / 2)), 1)
+                    price_vis = round(max(0, min(100, rng.uniform(65, 98) + bias)))
+                    exhibition = round(max(0, min(100, rng.uniform(60, 97) + bias)))
+                    organization_score = round(max(0, min(100, rng.uniform(55, 96) + bias)))
+                    total_facings = rng.randint(25, 90)
+                    conn.execute(
+                        "INSERT INTO readings (org_id, point_id, created_at, total_facings, shelf_levels_detected, "
+                        "empty_space_pct, price_visibility_score, exhibition_score, organization_score, "
+                        "products_json, categories_json, notes, image_paths_json, linear_meters) "
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        (org_id, p["id"], created_at, total_facings, 4, empty_space_pct, price_vis, exhibition,
+                         organization_score, "[]", "[]", "Lectura de demostración", "[]", 2.5),
+                    )
+                    inserted += 1
+
+    return {"points_created": len(points) - len(existing), "readings_created": inserted}

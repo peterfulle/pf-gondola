@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: pf-gondola
+    name: neuravision
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt

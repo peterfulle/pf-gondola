@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<title>PF — Ejecución de Punto de Venta</title>
+<title>Neuravision — Visión artificial para ejecución de punto de venta</title>
 <style>
   :root {
     --ink:           #0a0a0a;
@@ -86,6 +86,47 @@
 
   .shell { max-width: 1080px; margin: 0 auto; padding: 22px 20px 56px; }
 
+  /* ---------- app layout / sidebar ---------- */
+  .app-layout { display: flex; min-height: 100vh; }
+  .main-col { flex: 1; min-width: 0; }
+  .sidebar {
+    width: 232px; flex-shrink: 0; position: sticky; top: 0; align-self: flex-start; height: 100vh;
+    overflow-y: auto; background: var(--header-bg); color: #fff;
+    display: flex; flex-direction: column; gap: 4px; padding: 20px 16px;
+  }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 4px; }
+  .sidebar-brand .mark { width: 26px; height: 26px; flex-shrink: 0; }
+  .sidebar-brand-name { font-weight: 800; font-size: 15.5px; letter-spacing: -0.01em; }
+  .sidebar-org {
+    font-size: 11px; color: #8d8e92; font-weight: 600; padding: 0 6px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
+  .sidebar-nav-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: transparent; border: none; color: #c7c7c4; border-radius: 8px;
+    padding: 9px 10px; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .sidebar-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .sidebar-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .sidebar-nav-item.active { background: #fff; color: #000; }
+  .sidebar-footer {
+    margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .sidebar-footer .role-pill { align-self: flex-start; }
+  .sidebar-user { font-size: 12px; color: #fff; font-weight: 600; word-break: break-all; padding: 0 2px; }
+  .sidebar-logout {
+    display: flex; align-items: center; gap: 6px; justify-content: center;
+    background: transparent; border: 1px solid #313131; color: #fff; border-radius: 7px;
+    padding: 8px 10px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    transition: border-color 0.12s ease;
+  }
+  .sidebar-logout:hover { border-color: #666; }
+  .sidebar-logout svg { width: 14px; height: 14px; }
+
   /* ---------- KPI row ---------- */
   .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
   .kpi-tile {
@@ -150,7 +191,7 @@
   .mini-bar-fill { height: 100%; border-radius: 3px; background: var(--ink); }
   .mini-bar-pct { flex: 0 0 34px; font-size: 10.5px; color: var(--ink-muted); text-align: right; font-variant-numeric: tabular-nums; }
 
-  /* ---------- benchmark PF vs competencia ---------- */
+  /* ---------- benchmark marca propia vs competencia ---------- */
   .benchmark-block { margin-bottom: 12px; }
   .benchmark-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
   .benchmark-head .label { font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 700; }
@@ -494,6 +535,8 @@
   .modal h2 { margin: 0 0 4px; font-size: 17px; font-weight: 800; }
   .modal p.hint { margin: 0 0 16px; font-size: 12.5px; color: var(--ink-muted); }
   .field { margin-bottom: 12px; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; min-width: 0; }
   .field label { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
   .field input {
     width: 100%; padding: 10px 11px; border-radius: 8px; border: 1px solid var(--border-strong);
@@ -619,12 +662,25 @@
   @media (max-width: 640px) {
     .shell { padding: 16px 14px 40px; }
 
+    .app-layout { flex-direction: column; }
+    .sidebar {
+      position: static; height: auto; width: 100%; flex-direction: row; flex-wrap: wrap;
+      align-items: center; gap: 8px; padding: 10px 14px;
+    }
+    .sidebar-brand { padding: 0; }
+    .sidebar-org { display: none; }
+    .sidebar-nav { flex-direction: row; flex: 1; gap: 4px; }
+    .sidebar-nav-item { padding: 7px 9px; font-size: 11.5px; gap: 5px; }
+    .sidebar-nav-item span { display: none; }
+    .sidebar-footer { flex-direction: row; margin-top: 0; border-top: none; padding-top: 0; gap: 6px; }
+    .sidebar-footer .role-pill, .sidebar-user { display: none !important; }
+    .sidebar-logout { padding: 7px 9px; }
+    .sidebar-logout span { display: none; }
+
     .topbar { flex-wrap: wrap; row-gap: 8px; padding: 11px 14px; gap: 8px; }
-    .topbar .subtitle { display: none; }
     .topbar .spacer { min-width: 6px; }
     .topbar .btn-back, .topbar .btn-new { padding: 7px 9px; font-size: 11.5px; gap: 5px; }
     .topbar .live-pill { padding: 4px 8px 4px 7px; font-size: 10.5px; }
-    #brandsBtn .btn-label, #logoutBtn .btn-label { display: none; }
 
     .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .kpi-tile { padding: 11px 12px; }
@@ -649,7 +705,87 @@
 
     .camera-modal { height: 96vh; border-radius: 12px; }
     .shelf3d-modal { height: 94vh; border-radius: 12px; }
+
+    .viz-hero-row { flex-direction: column; }
+    .viz-meter-grid { grid-template-columns: repeat(2, 1fr); }
   }
+
+  /* ---------- reportería / analytics module ---------- */
+  .viz-root {
+    --viz-series-1: #2a78d6;
+    --viz-series-2: #eb6834;
+    --viz-seq-100: #cde2fb;
+    --viz-seq-200: #9ec5f4;
+    --viz-seq-300: #6da7ec;
+    --viz-seq-450: #2a78d6;
+    --viz-seq-600: #184f95;
+    --viz-good: #0ca30c;
+    --viz-warning: #946200;
+    --viz-critical: #d03b3b;
+  }
+
+  .viz-filters { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 18px; }
+  .viz-filter-group { display: flex; flex-direction: column; gap: 7px; }
+  .viz-filter-label { font-size: 11px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .viz-chip-row { display: flex; flex-wrap: wrap; gap: 6px; max-width: 460px; }
+  .viz-chip {
+    padding: 6px 13px; border-radius: 100px; border: 1px solid var(--border-strong);
+    background: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-secondary);
+    cursor: pointer; transition: all 0.12s ease;
+  }
+  .viz-chip:hover { border-color: var(--ink); }
+  .viz-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .viz-hero-row { display: flex; gap: 16px; margin-bottom: 18px; align-items: stretch; }
+  .viz-hero-tile {
+    background: #0a0a0a; color: #fff; border-radius: 16px; padding: 22px 26px;
+    display: flex; flex-direction: column; justify-content: center; gap: 9px; min-width: 220px;
+  }
+  .viz-hero-label { font-size: 12px; font-weight: 600; color: #b8b8b5; }
+  .viz-hero-value { font-size: 48px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
+  .viz-status-badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+    padding: 5px 11px; border-radius: 100px; width: fit-content;
+  }
+  .viz-status-badge .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .viz-status-badge.good { background: rgba(12,163,12,0.14); color: var(--viz-good); }
+  .viz-status-badge.warning { background: rgba(250,178,25,0.18); color: var(--viz-warning); }
+  .viz-status-badge.critical { background: rgba(208,59,59,0.14); color: var(--viz-critical); }
+
+  .viz-meter-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .viz-meter { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; }
+  .viz-meter-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; color: var(--ink-secondary); font-weight: 600; margin-bottom: 8px; }
+  .viz-meter-head strong { font-size: 17px; color: var(--ink); font-weight: 800; }
+  .viz-meter-track { height: 8px; border-radius: 100px; background: var(--viz-seq-100); overflow: hidden; }
+  .viz-meter-fill { height: 100%; border-radius: 100px; background: var(--viz-seq-450); transition: width 0.3s ease; }
+
+  .viz-card { margin-bottom: 18px; }
+  .viz-chart-wrap { position: relative; }
+  .viz-legend { display: flex; gap: 18px; margin-bottom: 10px; font-size: 12px; color: var(--ink-secondary); font-weight: 600; }
+  .viz-legend-item { display: flex; align-items: center; gap: 6px; }
+  .viz-legend-key { width: 14px; height: 2px; border-radius: 2px; flex-shrink: 0; }
+
+  .viz-tooltip {
+    position: absolute; background: #0a0a0a; color: #fff; font-size: 12px; padding: 9px 11px;
+    border-radius: 9px; pointer-events: none; opacity: 0; transition: opacity 0.12s ease;
+    z-index: 6; box-shadow: 0 10px 26px -10px rgba(0,0,0,0.4); white-space: nowrap;
+  }
+  .viz-tooltip.visible { opacity: 1; }
+  .viz-tooltip .tt-title { color: #b8b8b5; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+  .viz-tooltip .tt-row { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+  .viz-tooltip .tt-key { width: 10px; height: 2px; border-radius: 2px; flex-shrink: 0; }
+  .viz-tooltip .tt-label { color: #d7d7d4; flex: 1; }
+  .viz-tooltip .tt-value { font-weight: 800; }
+
+  .viz-cal { display: inline-grid; gap: 2px; font-size: 10px; }
+  .viz-cal-cell { width: 15px; height: 15px; border-radius: 3px; background: #ececea; cursor: default; }
+  .viz-cal-cell.has-data { cursor: pointer; }
+  .viz-cal-month-label { font-size: 10.5px; color: var(--ink-secondary); font-weight: 700; text-transform: capitalize; display: flex; align-items: center; padding-right: 6px; }
+  .viz-cal-day-label { font-size: 9px; color: var(--ink-muted); text-align: center; display: flex; align-items: center; justify-content: center; }
+
+  .viz-row-meter { display: flex; align-items: center; gap: 8px; min-width: 130px; }
+  .viz-row-meter-track { flex: 1; height: 6px; border-radius: 100px; background: var(--viz-seq-100); }
+  .viz-row-meter-fill { height: 100%; border-radius: 100px; background: var(--viz-seq-450); }
 </style>
 <script type="importmap">
 {
@@ -665,8 +801,8 @@
     <div class="auth-shell">
       <div class="auth-card">
         <img class="auth-mark" src="/static/assets/neuramorphic-mark.svg" alt="" />
-        <h1>PF</h1>
-        <p class="auth-subtitle">Ejecución de Punto de Venta</p>
+        <h1>Neuravision</h1>
+        <p class="auth-subtitle">Visión artificial para ejecución de punto de venta</p>
 
         <div id="quickAccessBlock" style="display:none;">
           <button class="primary" id="quickAccessBtn" type="button"></button>
@@ -675,13 +811,17 @@
 
         <div class="auth-tabs">
           <button class="auth-tab active" data-mode="login" type="button">Iniciar sesión</button>
-          <button class="auth-tab" data-mode="register" type="button">Crear cuenta</button>
+          <button class="auth-tab" data-mode="register" type="button">Crear mi empresa</button>
         </div>
 
         <form id="authForm">
+          <div class="field" id="companyField" style="display:none;">
+            <label for="authCompany">Nombre de tu empresa</label>
+            <input type="text" id="authCompany" placeholder="ej: Farmacias Andes" autocomplete="organization" />
+          </div>
           <div class="field">
-            <label for="authUsername">Usuario</label>
-            <input type="text" id="authUsername" autocomplete="username" minlength="3" required />
+            <label for="authEmail">Correo electrónico</label>
+            <input type="email" id="authEmail" autocomplete="email" required />
           </div>
           <div class="field">
             <label for="authPassword">Contraseña</label>
@@ -702,38 +842,58 @@
   </section>
 
   <div id="appRoot" style="display:none;">
-  <nav class="topbar">
-    <img class="mark" src="/static/assets/neuramorphic-mark.svg" alt="Neuramorphic" />
-    <div>
-      <div class="title">PF</div>
-      <div class="subtitle">Ejecución de Punto de Venta</div>
-    </div>
-    <div class="spacer"></div>
-    <button class="btn-back" id="backBtn" style="display:none;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-      Dashboard
-    </button>
-    <div class="live-pill"><span class="dot"></span>En vivo</div>
-    <button class="btn-back" id="brandsBtn" style="display:flex;" title="Marcas propias">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
-      <span class="btn-label">Marcas propias</span>
-    </button>
-    <button class="btn-back" id="adminNavBtn" style="display:none;" title="Administración">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
-      <span class="btn-label">Administración</span>
-    </button>
-    <div class="role-pill" id="rolePill" style="display:none;"></div>
-    <button class="btn-back" id="logoutBtn" title="Cerrar sesión">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l-5-5 5-5M5 12h13"/></svg>
-      <span class="btn-label" id="currentUsername">Salir</span>
-    </button>
-    <button class="btn-new" id="newPointBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      Nuevo punto
-    </button>
-  </nav>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img class="mark" src="/static/assets/neuramorphic-mark.svg" alt="Neuravision" />
+        <div class="sidebar-brand-name">Neuravision</div>
+      </div>
+      <div class="sidebar-org" id="orgNameLabel">Ejecución de Punto de Venta</div>
 
-  <main class="shell">
+      <nav class="sidebar-nav">
+        <button class="sidebar-nav-item active" id="navDashboardBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg>
+          <span>Puntos de venta</span>
+        </button>
+        <button class="sidebar-nav-item" id="analyticsNavBtn" style="display:none;" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>
+          <span>Reportería</span>
+        </button>
+        <button class="sidebar-nav-item" id="brandsBtn" style="display:flex;" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
+          <span>Marcas propias</span>
+        </button>
+        <button class="sidebar-nav-item" id="adminNavBtn" style="display:none;" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+          <span>Administración</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="role-pill" id="rolePill" style="display:none;"></div>
+        <div class="sidebar-user" id="currentUsername">—</div>
+        <button class="sidebar-logout" id="logoutBtn" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l-5-5 5-5M5 12h13"/></svg>
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-col">
+      <nav class="topbar">
+        <button class="btn-back" id="backBtn" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Dashboard
+        </button>
+        <div class="spacer"></div>
+        <div class="live-pill"><span class="dot"></span>En vivo</div>
+        <button class="btn-new" id="newPointBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo punto
+        </button>
+      </nav>
+
+      <main class="shell">
     <section id="dashboardView">
       <div class="kpi-row">
         <div class="kpi-tile">
@@ -753,7 +913,7 @@
           <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M12 19V4M20 19v-7"/></svg></div>
         </div>
         <div class="kpi-tile">
-          <div><div class="kpi-value" id="kpiBenchmark">—</div><div class="kpi-label">Participación PF</div></div>
+          <div><div class="kpi-value" id="kpiBenchmark">—</div><div class="kpi-label">Participación propia</div></div>
           <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg></div>
         </div>
       </div>
@@ -872,7 +1032,7 @@
           <div class="card">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
-              PF vs. Competencia
+              Marca propia vs. competencia
             </h3>
             <div id="benchmarkBlock"></div>
           </div>
@@ -909,7 +1069,7 @@
             </h3>
             <p class="capture-hint" style="margin:0 0 10px;">Reconstrucción aproximada a partir de la foto — no son coordenadas exactas. Arrastra para rotar, scroll para acercar, clic en una caja para ver su detalle.</p>
             <div class="shelf3d-legend">
-              <span><span class="swatch own"></span>PF</span>
+              <span><span class="swatch own"></span>Propia</span>
               <span><span class="swatch competitor"></span>Competencia</span>
               <span><span class="swatch ghost"></span>Quiebre de stock</span>
             </div>
@@ -937,7 +1097,25 @@
         </button>
       </div>
 
+      <div class="card" style="margin-bottom:18px;">
+        <h3 class="card-title" style="margin:0 0 10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V8l6-4 6 4v13M10 21v-6h4v6"/></svg>
+          Mi organización
+        </h3>
+        <div class="field" style="max-width:420px;">
+          <label for="orgNameInput">Nombre de la empresa</label>
+          <input type="text" id="orgNameInput" />
+        </div>
+        <div class="status" id="orgStatus"></div>
+        <button class="confirm" id="orgSaveBtn" type="button" style="margin-top:4px;">Guardar cambios</button>
+        <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+          <p class="hint" style="margin:0 0 8px;">¿Quieres explorar Reportería antes de tener datos propios? Esto crea puntos y lecturas de ejemplo (marcadas como demo).</p>
+          <button class="cancel" id="seedDemoBtn" type="button">Cargar datos de ejemplo</button>
+        </div>
+      </div>
+
       <div class="role-legend">
+        <div class="role-legend-item"><span class="role-dot" style="background:#f97316;"></span><strong>Superusuario</strong> — dueño de la organización: todo lo de Administrador, además de otorgar/quitar superusuarios.</div>
         <div class="role-legend-item"><span class="role-dot" style="background:#B1E225;"></span><strong>Administrador</strong> — control total: usuarios, roles, eliminar puntos, marcas propias.</div>
         <div class="role-legend-item"><span class="role-dot" style="background:#3b82f6;"></span><strong>Analista</strong> — dashboards, métricas, reposición, exportar CSV, marcas propias.</div>
         <div class="role-legend-item"><span class="role-dot" style="background:#9ca3af;"></span><strong>Reponedor</strong> — solo capturar y analizar fotos de góndola por punto.</div>
@@ -953,14 +1131,98 @@
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
-              <tr><th>Usuario</th><th>Rol</th><th>Creado</th><th></th></tr>
+              <tr><th>Correo</th><th>Rol</th><th>Creado</th><th></th></tr>
             </thead>
             <tbody id="usersTableBody"></tbody>
           </table>
         </div>
       </div>
     </section>
-  </main>
+
+    <section id="analyticsView" class="viz-root" style="display:none;">
+      <div class="admin-hero">
+        <div class="admin-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>
+        </div>
+        <div>
+          <h1>Reportería</h1>
+          <p>Score de ejecución en góndola, tendencia y cobertura geográfica de tu red de puntos.</p>
+        </div>
+      </div>
+
+      <div class="viz-filters" id="vizFilterBar">
+        <div class="viz-filter-group">
+          <span class="viz-filter-label">Región</span>
+          <div class="viz-chip-row" id="regionChips"></div>
+        </div>
+        <div class="viz-filter-group">
+          <span class="viz-filter-label">Comuna</span>
+          <div class="viz-chip-row" id="comunaChips"></div>
+        </div>
+        <div class="viz-filter-group">
+          <span class="viz-filter-label">Año</span>
+          <div class="viz-chip-row" id="yearChips"></div>
+        </div>
+      </div>
+
+      <div id="analyticsEmpty" class="point-empty" style="display:none;">Todavía no hay lecturas para analizar. Registra un punto y sube fotos para ver Reportería.</div>
+
+      <div id="analyticsContent" style="display:none;">
+        <div class="viz-hero-row">
+          <div class="viz-hero-tile">
+            <div class="viz-hero-label">Score total promedio</div>
+            <div class="viz-hero-value" id="scoreHeroValue">—</div>
+            <div class="viz-status-badge" id="scoreHeroBadge"></div>
+          </div>
+          <div class="viz-meter-grid">
+            <div class="viz-meter">
+              <div class="viz-meter-head"><span>Disponibilidad</span><strong id="meterVal-availability_score">—</strong></div>
+              <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-availability_score"></div></div>
+            </div>
+            <div class="viz-meter">
+              <div class="viz-meter-head"><span>Exhibición</span><strong id="meterVal-exhibition_score">—</strong></div>
+              <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-exhibition_score"></div></div>
+            </div>
+            <div class="viz-meter">
+              <div class="viz-meter-head"><span>Organización</span><strong id="meterVal-organization_score">—</strong></div>
+              <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-organization_score"></div></div>
+            </div>
+            <div class="viz-meter">
+              <div class="viz-meter-head"><span>Precios visibles</span><strong id="meterVal-price_visibility_score">—</strong></div>
+              <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-price_visibility_score"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card viz-card">
+          <h3 class="card-title">Score total y disponibilidad — tendencia mensual</h3>
+          <div class="viz-legend" id="trendLegend"></div>
+          <div class="viz-chart-wrap" id="trendChartWrap"></div>
+        </div>
+
+        <div class="card viz-card">
+          <h3 class="card-title">Calendario de lecturas <span class="hint" id="calendarYearLabel"></span></h3>
+          <div class="viz-cal-scroll">
+            <div id="calendarHeatmapWrap"></div>
+          </div>
+        </div>
+
+        <div class="card viz-card">
+          <h3 class="card-title">Ranking de puntos de venta</h3>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>Punto de venta</th><th>Región</th><th>Comuna</th><th>Lecturas</th><th>Última lectura</th><th>Score</th><th>Desempeño</th></tr>
+              </thead>
+              <tbody id="rankingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+      </main>
+    </div>
+  </div>
   </div>
 
   <div id="modalBackdrop">
@@ -975,6 +1237,34 @@
         <label for="newPointCode">Número de punto / escáner (opcional)</label>
         <input type="text" id="newPointCode" placeholder="Se asigna automático si lo dejas vacío" />
       </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="newPointRegion">Región (opcional)</label>
+          <input type="text" id="newPointRegion" list="chileRegions" placeholder="Ej: Metropolitana" />
+          <datalist id="chileRegions">
+            <option value="Arica y Parinacota"></option>
+            <option value="Tarapacá"></option>
+            <option value="Antofagasta"></option>
+            <option value="Atacama"></option>
+            <option value="Coquimbo"></option>
+            <option value="Valparaíso"></option>
+            <option value="Metropolitana"></option>
+            <option value="O'Higgins"></option>
+            <option value="Maule"></option>
+            <option value="Ñuble"></option>
+            <option value="Biobío"></option>
+            <option value="La Araucanía"></option>
+            <option value="Los Ríos"></option>
+            <option value="Los Lagos"></option>
+            <option value="Aysén"></option>
+            <option value="Magallanes"></option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="newPointComuna">Comuna (opcional)</label>
+          <input type="text" id="newPointComuna" placeholder="Ej: Providencia" />
+        </div>
+      </div>
       <div class="status" id="modalStatus"></div>
       <div class="modal-actions">
         <button class="cancel" id="modalCancel">Cancelar</button>
@@ -985,7 +1275,7 @@
 
   <div id="brandsModalBackdrop">
     <div class="modal">
-      <h2>Marcas propias (PF)</h2>
+      <h2>Marcas propias</h2>
       <p class="hint">Los productos cuya marca coincida con esta lista se marcan como "propios" para calcular tu participación vs. la competencia en cada góndola.</p>
       <div class="brand-chips" id="brandChips"></div>
       <div class="field" style="margin-top:10px;">
@@ -1007,8 +1297,8 @@
       <h2>Nuevo usuario</h2>
       <p class="hint">Crea acceso para un colaborador y elige exactamente qué puede hacer dentro de la plataforma.</p>
       <div class="field">
-        <label for="newUserName">Usuario</label>
-        <input type="text" id="newUserName" placeholder="ej: cristhian" autocomplete="off" />
+        <label for="newUserName">Correo electrónico</label>
+        <input type="email" id="newUserName" placeholder="ej: cristhian@empresa.com" autocomplete="off" />
       </div>
       <div class="field">
         <label for="newUserPassword">Contraseña</label>
@@ -1017,6 +1307,11 @@
       <div class="field">
         <label>Rol</label>
         <div class="role-picker" id="rolePicker">
+          <button type="button" class="role-card role-superuser-only" data-role="superusuario" style="display:none;">
+            <span class="role-card-dot" style="background:#f97316;"></span>
+            <span class="role-card-name">Superusuario</span>
+            <span class="role-card-desc">Dueño de la organización</span>
+          </button>
           <button type="button" class="role-card" data-role="admin">
             <span class="role-card-dot" style="background:#B1E225;"></span>
             <span class="role-card-name">Administrador</span>
@@ -1122,23 +1417,30 @@
   let currentUser = null;
 
   const ROLE_META = {
+    superusuario: { label: "Superusuario", color: "#f97316", bg: "rgba(249,115,22,0.14)", fg: "#c2410c" },
     admin: { label: "Administrador", color: "#B1E225", bg: "rgba(177,226,37,0.14)", fg: "#5f7a0a" },
     analista: { label: "Analista", color: "#3b82f6", bg: "#eff6ff", fg: "#1d4ed8" },
     reponedor: { label: "Reponedor", color: "#9ca3af", bg: "#f3f4f6", fg: "#4b5563" },
   };
+  const ADMIN_ROLES = ["admin", "superusuario"];
+  const ANALYST_ROLES = ["admin", "analista", "superusuario"];
 
   function applyRolePermissions() {
     const role = currentUser ? currentUser.role : "reponedor";
-    const isAdmin = role === "admin";
-    const canAnalyze = role === "admin" || role === "analista";
+    const isAdmin = ADMIN_ROLES.includes(role);
+    const canAnalyze = ANALYST_ROLES.includes(role);
 
     document.getElementById("adminNavBtn").style.display = isAdmin ? "flex" : "none";
     document.getElementById("brandsBtn").style.display = canAnalyze ? "flex" : "none";
+    document.getElementById("analyticsNavBtn").style.display = canAnalyze ? "flex" : "none";
     document.querySelectorAll(".role-analyst-only").forEach((el) => {
       el.style.display = canAnalyze ? "" : "none";
     });
     document.querySelectorAll(".role-admin-only").forEach((el) => {
       el.style.display = isAdmin ? "" : "none";
+    });
+    document.querySelectorAll(".role-superuser-only").forEach((el) => {
+      el.style.display = role === "superusuario" ? "" : "none";
     });
   }
 
@@ -1269,7 +1571,7 @@
         const ownPct = p.latest.benchmark.own_share_pct;
         benchmarkHtml = `
           <div class="benchmark-block">
-            <div class="benchmark-head"><span class="label">PF vs. competencia</span><span>${ownPct.toFixed(0)}%</span></div>
+            <div class="benchmark-head"><span class="label">Marca propia vs. competencia</span><span>${ownPct.toFixed(0)}%</span></div>
             <div class="benchmark-bar"><div class="own" style="width:${ownPct}%;"></div><div class="competitor" style="width:${Math.max(0, 100 - ownPct)}%;"></div></div>
           </div>`;
       }
@@ -1295,11 +1597,18 @@
   }
 
   // ---------- detail ----------
+  function setActiveNav(id) {
+    document.querySelectorAll(".sidebar-nav-item").forEach((el) => el.classList.remove("active"));
+    const el = document.getElementById(id);
+    if (el) el.classList.add("active");
+  }
+
   async function openPoint(pointId) {
     dashboardView.style.display = "none";
     detailView.style.display = "block";
     detailView.classList.add("view-fade");
     backBtn.style.display = "flex";
+    setActiveNav("navDashboardBtn");
     location.hash = pointId;
     resetCapture();
     await loadPointDetail(pointId);
@@ -1309,9 +1618,11 @@
     if (typeof closeCamera === "function") closeCamera();
     detailView.style.display = "none";
     document.getElementById("adminView").style.display = "none";
+    document.getElementById("analyticsView").style.display = "none";
     dashboardView.style.display = "block";
     dashboardView.classList.add("view-fade");
     backBtn.style.display = "none";
+    setActiveNav("navDashboardBtn");
     currentPoint = null;
     currentReadingId = null;
     history.replaceState(null, "", location.pathname);
@@ -1337,7 +1648,7 @@
     } else {
       renderReading(null);
     }
-    if (currentUser && (currentUser.role === "admin" || currentUser.role === "analista")) {
+    if (currentUser && ANALYST_ROLES.includes(currentUser.role)) {
       loadDailyMetrics(pointId);
       loadReplenishment(pointId);
     }
@@ -1443,7 +1754,7 @@
     tbody.innerHTML = "";
     products.slice().sort((a, b) => (b.facings ?? 0) - (a.facings ?? 0)).forEach((p) => {
       const tr = document.createElement("tr");
-      const ownFlag = p.is_own_brand ? `<span class="own-flag" title="Marca propia (PF)">${ICON_DOT}</span>` : "";
+      const ownFlag = p.is_own_brand ? `<span class="own-flag" title="Marca propia">${ICON_DOT}</span>` : "";
       const oosFlag = p.out_of_stock ? ` <span class="oos-flag" title="Quiebre de stock detectado">${ICON_WARNING}</span>` : "";
       const depth = p.estimated_depth || 1;
       const unitsEst = (p.facings ?? 0) * depth;
@@ -1463,7 +1774,7 @@
   function renderBenchmarkBlock(reading) {
     const el = document.getElementById("benchmarkBlock");
     if (!ownBrands.length) {
-      el.innerHTML = `<div class="benchmark-empty">Todavía no defines qué marcas son "PF". <button id="benchmarkConfigBtn">Configurar marcas propias</button></div>`;
+      el.innerHTML = `<div class="benchmark-empty">Todavía no defines qué marcas son propias. <button id="benchmarkConfigBtn">Configurar marcas propias</button></div>`;
       el.querySelector("#benchmarkConfigBtn").addEventListener("click", () => document.getElementById("brandsBtn").click());
       return;
     }
@@ -1478,7 +1789,7 @@
       <div class="benchmark-tiles">
         <div class="benchmark-tile own">
           <div class="bt-value">${ownPct.toFixed(1)}%</div>
-          <div class="bt-label">Mi participación (PF)</div>
+          <div class="bt-label">Mi participación propia</div>
           <div class="bt-sub">${bench.own_facings} caras · ${bench.own_product_count} producto${bench.own_product_count === 1 ? "" : "s"}</div>
         </div>
         <div class="benchmark-tile competitor">
@@ -1492,7 +1803,7 @@
         <div class="competitor" style="width:${compPct}%;"></div>
       </div>
       <div class="benchmark-legend">
-        <span class="own-l"><span class="swatch"></span>PF</span>
+        <span class="own-l"><span class="swatch"></span>Propia</span>
         <span class="comp-l"><span class="swatch"></span>Competencia</span>
       </div>
     `;
@@ -1511,7 +1822,7 @@
       el.innerHTML = `
         <div class="daily-table-wrap">
           <table class="daily">
-            <thead><tr><th>Día</th><th>Lecturas</th><th>Caras prom.</th><th>Espacio vacío</th><th>Participación PF</th></tr></thead>
+            <thead><tr><th>Día</th><th>Lecturas</th><th>Caras prom.</th><th>Espacio vacío</th><th>Participación propia</th></tr></thead>
             <tbody>
               ${days.slice().reverse().map((d) => `
                 <tr>
@@ -1553,7 +1864,7 @@
         html += data.recurring_stockouts.map((r) => `
           <div class="replen-item">
             <div>
-              <div class="name">${r.is_own_brand ? `<span class="own-flag" title="Marca propia (PF)">${ICON_DOT}</span>` : ""}${escapeHtml(r.product)}</div>
+              <div class="name">${r.is_own_brand ? `<span class="own-flag" title="Marca propia">${ICON_DOT}</span>` : ""}${escapeHtml(r.product)}</div>
               <div class="meta">${escapeHtml(r.brand || "")} · ${escapeHtml(r.category || "")} · quiebre en ${r.times_out_of_stock}/${r.times_seen} lecturas</div>
             </div>
             <div class="replen-urgency">${r.urgency_pct.toFixed(0)}%</div>
@@ -1814,6 +2125,8 @@
   document.getElementById("newPointBtn").addEventListener("click", () => {
     document.getElementById("newPointName").value = "";
     document.getElementById("newPointCode").value = "";
+    document.getElementById("newPointRegion").value = "";
+    document.getElementById("newPointComuna").value = "";
     modalStatus.innerHTML = "";
     modalBackdrop.style.display = "flex";
   });
@@ -1828,9 +2141,13 @@
       modalStatus.classList.add("error");
       return;
     }
+    const region = document.getElementById("newPointRegion").value.trim();
+    const comuna = document.getElementById("newPointComuna").value.trim();
     const formData = new FormData();
     formData.append("name", name);
     if (code) formData.append("point_id", code);
+    if (region) formData.append("region", region);
+    if (comuna) formData.append("comuna", comuna);
 
     try {
       const res = await fetch("/api/points", { method: "POST", body: formData });
@@ -1848,7 +2165,7 @@
     }
   });
 
-  // ---------- own brands (PF vs. competencia) ----------
+  // ---------- own brands (marca propia vs. competencia) ----------
   let ownBrands = [];
   const brandsModalBackdrop = document.getElementById("brandsModalBackdrop");
   const brandsStatus = document.getElementById("brandsStatus");
@@ -1866,7 +2183,7 @@
 
   function renderBrandChips() {
     if (!ownBrands.length) {
-      brandChips.innerHTML = `<div class="brand-chips-empty">Todavía no defines qué marcas son "PF". Sin esto, el benchmark no puede distinguir tus productos de la competencia.</div>`;
+      brandChips.innerHTML = `<div class="brand-chips-empty">Todavía no defines qué marcas son propias. Sin esto, el benchmark no puede distinguir tus productos de la competencia.</div>`;
       return;
     }
     brandChips.innerHTML = "";
@@ -1950,11 +2267,61 @@
   function showAdminView() {
     dashboardView.style.display = "none";
     detailView.style.display = "none";
+    document.getElementById("analyticsView").style.display = "none";
     adminView.style.display = "block";
     adminView.classList.add("view-fade");
     backBtn.style.display = "flex";
+    setActiveNav("adminNavBtn");
+    document.getElementById("orgNameInput").value = currentUser.org_name || "";
     loadAdminUsers();
   }
+
+  document.getElementById("orgSaveBtn").addEventListener("click", async () => {
+    const name = document.getElementById("orgNameInput").value.trim();
+    const orgStatus = document.getElementById("orgStatus");
+    orgStatus.classList.remove("error");
+    if (!name) {
+      orgStatus.classList.add("error");
+      orgStatus.innerHTML = `${ICON_WARNING} El nombre no puede estar vacío`;
+      return;
+    }
+    orgStatus.innerHTML = `${ICON_SPINNER} Guardando…`;
+    try {
+      const res = await fetch("/api/org", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      currentUser.org_name = data.name;
+      document.getElementById("orgNameLabel").textContent = data.name;
+      orgStatus.innerHTML = `${ICON_CHECK} Guardado`;
+    } catch (e) {
+      orgStatus.classList.add("error");
+      orgStatus.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+    }
+  });
+
+  document.getElementById("seedDemoBtn").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const orgStatus = document.getElementById("orgStatus");
+    orgStatus.classList.remove("error");
+    btn.disabled = true;
+    orgStatus.innerHTML = `${ICON_SPINNER} Cargando datos de ejemplo…`;
+    try {
+      const res = await fetch("/api/admin/seed-demo-data", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      orgStatus.innerHTML = `${ICON_CHECK} Listo: ${data.points_created} puntos y ${data.readings_created} lecturas de ejemplo. Revisa Reportería.`;
+      fetchPoints();
+    } catch (e2) {
+      orgStatus.classList.add("error");
+      orgStatus.innerHTML = `${ICON_WARNING} ${escapeHtml(e2.message)}`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   function roleBadgeHtml(role) {
     const meta = ROLE_META[role] || ROLE_META.reponedor;
@@ -1973,17 +2340,20 @@
         tbody.innerHTML = `<tr><td colspan="4" class="point-empty">Sin usuarios.</td></tr>`;
         return;
       }
+      const assignableRoles = currentUser && currentUser.role === "superusuario"
+        ? ["superusuario", "admin", "analista", "reponedor"]
+        : ["admin", "analista", "reponedor"];
       tbody.innerHTML = users.map((u) => `
-        <tr data-username="${escapeHtml(u.username)}">
-          <td><strong>${escapeHtml(u.username)}</strong>${u.username === currentUser.username ? ' <span class="hint">(tú)</span>' : ""}</td>
+        <tr data-email="${escapeHtml(u.email)}">
+          <td><strong>${escapeHtml(u.email)}</strong>${u.email === currentUser.email ? ' <span class="hint">(tú)</span>' : ""}</td>
           <td>${roleBadgeHtml(u.role)}</td>
           <td class="hint">${relativeTime(u.created_at)}</td>
           <td>
             <div class="user-row-actions">
-              <select class="role-select" data-action="change-role" data-username="${escapeHtml(u.username)}">
-                ${["admin", "analista", "reponedor"].map((r) => `<option value="${r}" ${r === u.role ? "selected" : ""}>${ROLE_META[r].label}</option>`).join("")}
+              <select class="role-select" data-action="change-role" data-email="${escapeHtml(u.email)}">
+                ${assignableRoles.map((r) => `<option value="${r}" ${r === u.role ? "selected" : ""}>${ROLE_META[r].label}</option>`).join("")}
               </select>
-              <button class="btn-icon-delete" data-action="delete-user" data-username="${escapeHtml(u.username)}" title="Eliminar usuario" ${u.username === currentUser.username ? "disabled" : ""}>
+              <button class="btn-icon-delete" data-action="delete-user" data-email="${escapeHtml(u.email)}" title="Eliminar usuario" ${u.email === currentUser.email ? "disabled" : ""}>
                 ${ICON_REMOVE}
               </button>
             </div>
@@ -1998,10 +2368,10 @@
   document.getElementById("usersTableBody").addEventListener("change", async (e) => {
     const sel = e.target.closest('select[data-action="change-role"]');
     if (!sel) return;
-    const username = sel.dataset.username;
+    const email = sel.dataset.email;
     const role = sel.value;
     try {
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(username)}/role`, {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(email)}/role`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role }),
@@ -2018,10 +2388,10 @@
   document.getElementById("usersTableBody").addEventListener("click", async (e) => {
     const btn = e.target.closest('button[data-action="delete-user"]');
     if (!btn || btn.disabled) return;
-    const username = btn.dataset.username;
-    if (!confirm(`¿Eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) return;
+    const email = btn.dataset.email;
+    if (!confirm(`¿Eliminar al usuario "${email}"? Esta acción no se puede deshacer.`)) return;
     try {
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(email)}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
       loadAdminUsers();
@@ -2031,6 +2401,389 @@
   });
 
   document.getElementById("adminNavBtn").addEventListener("click", showAdminView);
+  document.getElementById("navDashboardBtn").addEventListener("click", closeDetail);
+
+  // ---------- reportería / analytics ----------
+  const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const VIZ_SERIES_1 = "#2a78d6";
+  const VIZ_SERIES_2 = "#eb6834";
+  let analyticsData = null;
+  const vizFilters = { regions: new Set(), comunas: new Set(), years: new Set() };
+
+  function toggleSetValue(set, v) {
+    if (set.has(v)) set.delete(v); else set.add(v);
+  }
+
+  function statusClassForLabel(label) {
+    if (label === "Excelente") return "good";
+    if (label === "Bueno") return "warning";
+    if (label === "Necesita atención") return "critical";
+    return "";
+  }
+
+  function labelForScore(score) {
+    if (score == null) return null;
+    if (score >= 85) return "Excelente";
+    if (score >= 65) return "Bueno";
+    return "Necesita atención";
+  }
+
+  function statusBadgeHtml(label) {
+    if (!label) return `<span class="hint">—</span>`;
+    return `<span class="viz-status-badge ${statusClassForLabel(label)}"><span class="dot"></span>${escapeHtml(label)}</span>`;
+  }
+
+  function avgOf(rows, key) {
+    const vals = rows.map((r) => r[key]).filter((v) => v != null);
+    if (!vals.length) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }
+
+  function renderChipRow(containerId, values, selectedSet, onToggle) {
+    const el = document.getElementById(containerId);
+    if (!values.length) {
+      el.innerHTML = `<span class="hint">Sin datos</span>`;
+      return;
+    }
+    el.innerHTML = values
+      .map((v) => `<button type="button" class="viz-chip ${selectedSet.has(v) ? "active" : ""}" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`)
+      .join("");
+    el.querySelectorAll(".viz-chip").forEach((btn) => {
+      btn.addEventListener("click", () => onToggle(btn.dataset.value));
+    });
+  }
+
+  function renderAnalyticsFilters() {
+    if (!analyticsData) return;
+    const regions = [...new Set(analyticsData.readings.filter((r) => r.region).map((r) => r.region))].sort();
+    renderChipRow("regionChips", regions, vizFilters.regions, (v) => {
+      toggleSetValue(vizFilters.regions, v);
+      vizFilters.comunas.clear();
+      refreshAnalytics();
+    });
+
+    const comunaSource = analyticsData.readings.filter(
+      (r) => r.comuna && (!vizFilters.regions.size || vizFilters.regions.has(r.region))
+    );
+    const comunas = [...new Set(comunaSource.map((r) => r.comuna))].sort();
+    renderChipRow("comunaChips", comunas, vizFilters.comunas, (v) => {
+      toggleSetValue(vizFilters.comunas, v);
+      refreshAnalytics();
+    });
+
+    const years = [...new Set(analyticsData.readings.map((r) => r.created_at.slice(0, 4)))].sort();
+    renderChipRow("yearChips", years, vizFilters.years, (v) => {
+      toggleSetValue(vizFilters.years, v);
+      refreshAnalytics();
+    });
+  }
+
+  function getFilteredReadings() {
+    if (!analyticsData) return [];
+    return analyticsData.readings.filter((r) => {
+      if (vizFilters.regions.size && !(r.region && vizFilters.regions.has(r.region))) return false;
+      if (vizFilters.comunas.size && !(r.comuna && vizFilters.comunas.has(r.comuna))) return false;
+      if (vizFilters.years.size && !vizFilters.years.has(r.created_at.slice(0, 4))) return false;
+      return true;
+    });
+  }
+
+  function renderScoreSummary(rows) {
+    const scoreTotal = avgOf(rows, "score_total");
+    document.getElementById("scoreHeroValue").textContent = scoreTotal != null ? Math.round(scoreTotal) : "—";
+    const label = labelForScore(scoreTotal);
+    const badge = document.getElementById("scoreHeroBadge");
+    badge.className = `viz-status-badge ${label ? statusClassForLabel(label) : ""}`;
+    badge.innerHTML = label ? `<span class="dot"></span>${escapeHtml(label)}` : "";
+
+    ["availability_score", "exhibition_score", "organization_score", "price_visibility_score"].forEach((key) => {
+      const v = avgOf(rows, key);
+      document.getElementById(`meterVal-${key}`).textContent = v != null ? Math.round(v) : "—";
+      document.getElementById(`meterFill-${key}`).style.width = v != null ? `${Math.max(0, Math.min(100, v))}%` : "0%";
+    });
+  }
+
+  function computeMonthlyTrend(rows) {
+    const byMonth = {};
+    rows.forEach((r) => {
+      const key = r.created_at.slice(0, 7);
+      const b = byMonth[key] || (byMonth[key] = { key, scoreSum: 0, scoreN: 0, availSum: 0, availN: 0 });
+      if (r.score_total != null) { b.scoreSum += r.score_total; b.scoreN++; }
+      if (r.availability_score != null) { b.availSum += r.availability_score; b.availN++; }
+    });
+    return Object.values(byMonth)
+      .sort((a, b) => a.key.localeCompare(b.key))
+      .map((b) => ({
+        key: b.key,
+        label: MESES[parseInt(b.key.slice(5, 7), 10) - 1].slice(0, 3),
+        score: b.scoreN ? b.scoreSum / b.scoreN : null,
+        avail: b.availN ? b.availSum / b.availN : null,
+      }));
+  }
+
+  function renderTrendChart(data) {
+    const wrap = document.getElementById("trendChartWrap");
+    document.getElementById("trendLegend").innerHTML = `
+      <span class="viz-legend-item"><span class="viz-legend-key" style="background:${VIZ_SERIES_1};"></span>Score total</span>
+      <span class="viz-legend-item"><span class="viz-legend-key" style="background:${VIZ_SERIES_2};"></span>Disponibilidad</span>
+    `;
+    if (!data.length) {
+      wrap.innerHTML = `<div class="point-empty">Sin datos suficientes para la tendencia.</div>`;
+      return;
+    }
+
+    const W = 760, H = 220, PAD_L = 30, PAD_R = 16, PAD_T = 14, PAD_B = 26;
+    const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+    const n = data.length;
+    const xAt = (i) => PAD_L + (n === 1 ? plotW / 2 : (plotW * i) / (n - 1));
+    const yAt = (v) => PAD_T + plotH - (Math.max(0, Math.min(100, v)) / 100) * plotH;
+
+    const gridLines = [0, 25, 50, 75, 100]
+      .map(
+        (v) => `
+      <line x1="${PAD_L}" x2="${W - PAD_R}" y1="${yAt(v)}" y2="${yAt(v)}" stroke="#e1e0d9" stroke-width="1"/>
+      <text x="${PAD_L - 8}" y="${yAt(v) + 3}" text-anchor="end" font-size="10" fill="#898781">${v}</text>`
+      )
+      .join("");
+
+    const xLabels = data
+      .map((d, i) => `<text x="${xAt(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#898781">${escapeHtml(d.label)}</text>`)
+      .join("");
+
+    function buildLine(key, color) {
+      const pts = data.map((d, i) => (d[key] != null ? [xAt(i), yAt(d[key])] : null));
+      let path = "", started = false;
+      pts.forEach((p) => {
+        if (!p) { started = false; return; }
+        path += `${started ? " L " : " M "}${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+        started = true;
+      });
+      const dots = pts
+        .map((p) => (p ? `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="${color}" stroke="#fcfcfb" stroke-width="2"/>` : ""))
+        .join("");
+      return { path, dots };
+    }
+
+    const scoreLine = buildLine("score", VIZ_SERIES_1);
+    const availLine = buildLine("avail", VIZ_SERIES_2);
+
+    let endLabels = "";
+    const lastScoreIdx = data.map((d, i) => (d.score != null ? i : -1)).filter((i) => i >= 0).pop();
+    const lastAvailIdx = data.map((d, i) => (d.avail != null ? i : -1)).filter((i) => i >= 0).pop();
+    if (lastScoreIdx != null) {
+      const y1 = yAt(data[lastScoreIdx].score);
+      const y2 = lastAvailIdx != null ? yAt(data[lastAvailIdx].avail) : null;
+      const collide = y2 != null && Math.abs(y1 - y2) < 14;
+      endLabels += `<text x="${xAt(lastScoreIdx) + 8}" y="${y1 + (collide ? -5 : 3)}" font-size="11" font-weight="700" fill="#0b0b0b">${Math.round(data[lastScoreIdx].score)}</text>`;
+      if (lastAvailIdx != null) {
+        endLabels += `<text x="${xAt(lastAvailIdx) + 8}" y="${y2 + (collide ? 9 : 3)}" font-size="11" font-weight="700" fill="#0b0b0b">${Math.round(data[lastAvailIdx].avail)}</text>`;
+      }
+    }
+
+    wrap.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block;">
+        ${gridLines}
+        <path d="${scoreLine.path}" fill="none" stroke="${VIZ_SERIES_1}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${availLine.path}" fill="none" stroke="${VIZ_SERIES_2}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        ${scoreLine.dots}
+        ${availLine.dots}
+        ${endLabels}
+        ${xLabels}
+        <line id="vizCrosshair" x1="0" x2="0" y1="${PAD_T}" y2="${H - PAD_B}" stroke="#c3c2b7" stroke-width="1" style="opacity:0;"/>
+      </svg>
+      <div class="viz-tooltip" id="vizTooltip"></div>
+    `;
+
+    const svg = wrap.querySelector("svg");
+    const tooltip = document.getElementById("vizTooltip");
+    const crosshair = document.getElementById("vizCrosshair");
+
+    svg.addEventListener("pointermove", (e) => {
+      const rect = svg.getBoundingClientRect();
+      const mx = ((e.clientX - rect.left) / rect.width) * W;
+      let idx = 0, best = Infinity;
+      data.forEach((d, i) => {
+        const dx = Math.abs(xAt(i) - mx);
+        if (dx < best) { best = dx; idx = i; }
+      });
+      const d = data[idx];
+      crosshair.setAttribute("x1", xAt(idx));
+      crosshair.setAttribute("x2", xAt(idx));
+      crosshair.style.opacity = "1";
+      tooltip.innerHTML = `
+        <div class="tt-title">${escapeHtml(d.label)}</div>
+        <div class="tt-row"><span class="tt-key" style="background:${VIZ_SERIES_1};"></span><span class="tt-label">Score total</span><span class="tt-value">${d.score != null ? Math.round(d.score) : "—"}</span></div>
+        <div class="tt-row"><span class="tt-key" style="background:${VIZ_SERIES_2};"></span><span class="tt-label">Disponibilidad</span><span class="tt-value">${d.avail != null ? Math.round(d.avail) : "—"}</span></div>
+      `;
+      const wrapRect = wrap.getBoundingClientRect();
+      const px = e.clientX - wrapRect.left;
+      const py = e.clientY - wrapRect.top;
+      tooltip.style.left = `${Math.min(Math.max(px + 12, 0), wrapRect.width - 160)}px`;
+      tooltip.style.top = `${Math.max(py - 60, 0)}px`;
+      tooltip.classList.add("visible");
+    });
+    svg.addEventListener("pointerleave", () => {
+      tooltip.classList.remove("visible");
+      crosshair.style.opacity = "0";
+    });
+  }
+
+  function renderCalendarHeatmap(rows) {
+    const label = document.getElementById("calendarYearLabel");
+    const wrap = document.getElementById("calendarHeatmapWrap");
+    const selectedYears = [...vizFilters.years];
+    const allYears = [...new Set(rows.map((r) => r.created_at.slice(0, 4)))].sort();
+    const year = selectedYears.length === 1 ? selectedYears[0] : allYears[allYears.length - 1];
+    if (!year) { wrap.innerHTML = ""; label.textContent = ""; return; }
+    label.textContent = `— ${year}`;
+
+    const counts = {};
+    rows.forEach((r) => {
+      if (r.created_at.slice(0, 4) !== year) return;
+      const day = r.created_at.slice(0, 10);
+      counts[day] = (counts[day] || 0) + 1;
+    });
+
+    function bucketColor(c) {
+      if (!c) return "#ececea";
+      if (c === 1) return "#cde2fb";
+      if (c <= 3) return "#9ec5f4";
+      if (c <= 6) return "#6da7ec";
+      return "#2a78d6";
+    }
+
+    const daysInMonth = (m) => new Date(parseInt(year, 10), m + 1, 0).getDate();
+
+    let headerCells = `<div class="viz-cal-month-label"></div>`;
+    for (let d = 1; d <= 31; d++) headerCells += `<div class="viz-cal-day-label">${d}</div>`;
+
+    let bodyCells = "";
+    MESES.forEach((mesName, mi) => {
+      bodyCells += `<div class="viz-cal-month-label">${mesName.slice(0, 3)}</div>`;
+      const dim = daysInMonth(mi);
+      for (let d = 1; d <= 31; d++) {
+        if (d > dim) { bodyCells += `<div class="viz-cal-cell" style="background:transparent;"></div>`; continue; }
+        const dateStr = `${year}-${String(mi + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const c = counts[dateStr] || 0;
+        bodyCells += `<div class="viz-cal-cell ${c ? "has-data" : ""}" style="background:${bucketColor(c)};" data-date="${dateStr}" data-count="${c}"></div>`;
+      }
+    });
+
+    wrap.innerHTML = `<div class="viz-cal" id="vizCalGrid" style="grid-template-columns:44px repeat(31,15px);">${headerCells}${bodyCells}</div><div class="viz-tooltip" id="vizCalTooltip"></div>`;
+
+    const grid = document.getElementById("vizCalGrid");
+    const calTooltip = document.getElementById("vizCalTooltip");
+    grid.addEventListener("pointermove", (e) => {
+      const cell = e.target.closest(".viz-cal-cell.has-data");
+      if (!cell) { calTooltip.classList.remove("visible"); return; }
+      const date = cell.dataset.date, count = cell.dataset.count;
+      calTooltip.innerHTML = `<div class="tt-row"><span class="tt-label">${escapeHtml(date)}</span><span class="tt-value">${count} lectura${count === "1" ? "" : "s"}</span></div>`;
+      const wrapRect = wrap.getBoundingClientRect();
+      calTooltip.style.left = `${e.clientX - wrapRect.left + 10}px`;
+      calTooltip.style.top = `${e.clientY - wrapRect.top - 34}px`;
+      calTooltip.classList.add("visible");
+    });
+    grid.addEventListener("pointerleave", () => calTooltip.classList.remove("visible"));
+  }
+
+  function computePointsSummary(rows) {
+    const byPoint = {};
+    rows.forEach((r) => {
+      const b = byPoint[r.point_id] || (byPoint[r.point_id] = {
+        id: r.point_id, name: r.point_name, region: r.region, comuna: r.comuna,
+        count: 0, scoreSum: 0, scoreN: 0, lastScan: null,
+      });
+      b.count++;
+      if (r.score_total != null) { b.scoreSum += r.score_total; b.scoreN++; }
+      if (!b.lastScan || r.created_at > b.lastScan) b.lastScan = r.created_at;
+    });
+    return Object.values(byPoint)
+      .map((b) => ({ ...b, score: b.scoreN ? b.scoreSum / b.scoreN : null }))
+      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  }
+
+  function renderRankingTable(rows) {
+    const tbody = document.getElementById("rankingTableBody");
+    const points = computePointsSummary(rows);
+    if (!points.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="point-empty">Sin datos.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = points
+      .map((p) => {
+        const label = labelForScore(p.score);
+        const pct = p.score != null ? Math.max(0, Math.min(100, p.score)) : 0;
+        return `
+        <tr>
+          <td><strong>${escapeHtml(p.name)}</strong></td>
+          <td class="hint">${escapeHtml(p.region || "—")}</td>
+          <td class="hint">${escapeHtml(p.comuna || "—")}</td>
+          <td class="num">${p.count}</td>
+          <td class="hint">${relativeTime(p.lastScan)}</td>
+          <td>
+            <div class="viz-row-meter">
+              <div class="viz-row-meter-track"><div class="viz-row-meter-fill" style="width:${pct}%;"></div></div>
+              <strong>${p.score != null ? Math.round(p.score) : "—"}</strong>
+            </div>
+          </td>
+          <td>${statusBadgeHtml(label)}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  function renderAnalyticsContent() {
+    const rows = getFilteredReadings();
+    const emptyEl = document.getElementById("analyticsEmpty");
+    const contentEl = document.getElementById("analyticsContent");
+    if (!rows.length) {
+      emptyEl.style.display = "block";
+      emptyEl.textContent = analyticsData && analyticsData.readings.length
+        ? "No hay lecturas para los filtros seleccionados."
+        : "Todavía no hay lecturas para analizar. Registra un punto y sube fotos para ver Reportería.";
+      contentEl.style.display = "none";
+      return;
+    }
+    emptyEl.style.display = "none";
+    contentEl.style.display = "block";
+    renderScoreSummary(rows);
+    renderTrendChart(computeMonthlyTrend(rows));
+    renderCalendarHeatmap(rows);
+    renderRankingTable(rows);
+  }
+
+  function refreshAnalytics() {
+    renderAnalyticsFilters();
+    renderAnalyticsContent();
+  }
+
+  async function loadAnalytics() {
+    try {
+      const res = await fetch("/api/analytics");
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      analyticsData = await res.json();
+    } catch (e) {
+      document.getElementById("analyticsEmpty").style.display = "block";
+      document.getElementById("analyticsEmpty").textContent = "No se pudo cargar Reportería.";
+      document.getElementById("analyticsContent").style.display = "none";
+      return;
+    }
+    refreshAnalytics();
+  }
+
+  function showAnalyticsView() {
+    dashboardView.style.display = "none";
+    detailView.style.display = "none";
+    document.getElementById("adminView").style.display = "none";
+    const view = document.getElementById("analyticsView");
+    view.style.display = "block";
+    view.classList.add("view-fade");
+    backBtn.style.display = "flex";
+    setActiveNav("analyticsNavBtn");
+    loadAnalytics();
+  }
+
+  document.getElementById("analyticsNavBtn").addEventListener("click", showAnalyticsView);
 
   document.getElementById("newUserBtn").addEventListener("click", () => {
     document.getElementById("newUserName").value = "";
@@ -2053,12 +2806,12 @@
   userModalBackdrop.addEventListener("click", (e) => { if (e.target === userModalBackdrop) userModalBackdrop.style.display = "none"; });
 
   document.getElementById("userModalConfirm").addEventListener("click", async () => {
-    const username = document.getElementById("newUserName").value.trim();
+    const email = document.getElementById("newUserName").value.trim();
     const password = document.getElementById("newUserPassword").value;
     userModalStatus.classList.remove("error");
-    if (!username || !password) {
+    if (!email || !password) {
       userModalStatus.classList.add("error");
-      userModalStatus.innerHTML = `${ICON_WARNING} Completa usuario y contraseña`;
+      userModalStatus.innerHTML = `${ICON_WARNING} Completa correo y contraseña`;
       return;
     }
     userModalStatus.innerHTML = `${ICON_SPINNER} Creando…`;
@@ -2066,7 +2819,7 @@
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role: selectedNewUserRole }),
+        body: JSON.stringify({ email, password, role: selectedNewUserRole }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
@@ -2117,11 +2870,13 @@
   }
 
   // ---------- autenticación ----------
-  const REMEMBER_KEY = "pf_remember_creds";
+  const REMEMBER_KEY = "neuravision_remember_creds";
   const authView = document.getElementById("authView");
   const appRoot = document.getElementById("appRoot");
   const authForm = document.getElementById("authForm");
-  const authUsername = document.getElementById("authUsername");
+  const companyField = document.getElementById("companyField");
+  const authCompany = document.getElementById("authCompany");
+  const authEmail = document.getElementById("authEmail");
   const authPassword = document.getElementById("authPassword");
   const authRemember = document.getElementById("authRemember");
   const authStatus = document.getElementById("authStatus");
@@ -2140,8 +2895,8 @@
     }
   }
 
-  function saveRememberedCreds(username, password) {
-    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username, password }));
+  function saveRememberedCreds(email, password) {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, password }));
   }
 
   function clearRememberedCreds() {
@@ -2150,9 +2905,9 @@
 
   function refreshQuickAccessBlock() {
     const creds = getRememberedCreds();
-    if (creds && creds.username) {
+    if (creds && creds.email) {
       quickAccessBlock.style.display = "block";
-      quickAccessBtn.innerHTML = `${ICON_CHECK} Acceso directo como ${escapeHtml(creds.username)}`;
+      quickAccessBtn.innerHTML = `${ICON_CHECK} Acceso directo como ${escapeHtml(creds.email)}`;
     } else {
       quickAccessBlock.style.display = "none";
     }
@@ -2161,8 +2916,14 @@
   function setAuthMode(mode) {
     authMode = mode;
     document.querySelectorAll(".auth-tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
-    authSubmitText.textContent = mode === "login" ? "Iniciar sesión" : "Crear cuenta";
+    authSubmitText.textContent = mode === "login" ? "Iniciar sesión" : "Crear mi empresa";
     authPassword.setAttribute("autocomplete", mode === "login" ? "current-password" : "new-password");
+    companyField.style.display = mode === "register" ? "block" : "none";
+    if (mode === "register") {
+      authCompany.setAttribute("required", "required");
+    } else {
+      authCompany.removeAttribute("required");
+    }
     authStatus.innerHTML = "";
     authStatus.classList.remove("error");
   }
@@ -2181,26 +2942,35 @@
     currentUser = user;
     authView.style.display = "none";
     appRoot.style.display = "block";
-    document.getElementById("currentUsername").textContent = user.username;
+    document.getElementById("currentUsername").textContent = user.email;
+    document.getElementById("orgNameLabel").textContent = user.org_name || "Ejecución de Punto de Venta";
+    const pill = document.getElementById("rolePill");
+    const meta = ROLE_META[user.role] || ROLE_META.reponedor;
+    pill.style.display = "flex";
+    pill.innerHTML = `<span class="dot" style="background:${meta.color};"></span>${meta.label}`;
     applyRolePermissions();
     initApp();
   }
 
-  async function submitAuth(username, password) {
+  async function submitAuth(email, password) {
     authSubmitBtn.disabled = true;
     authStatus.classList.remove("error");
     authStatus.innerHTML = `${ICON_SPINNER} Un momento…`;
     try {
-      const res = await fetch(`/api/auth/${authMode === "login" ? "login" : "register"}`, {
+      const endpoint = authMode === "login" ? "login" : "signup";
+      const body = authMode === "login"
+        ? { email, password }
+        : { email, password, company_name: authCompany.value.trim() };
+      const res = await fetch(`/api/auth/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
 
       if (authRemember.checked) {
-        saveRememberedCreds(username, password);
+        saveRememberedCreds(email, password);
       } else {
         clearRememberedCreds();
       }
@@ -2216,19 +2986,20 @@
 
   authForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const username = authUsername.value.trim();
+    const email = authEmail.value.trim();
     const password = authPassword.value;
-    if (!username || !password) return;
-    submitAuth(username, password);
+    if (!email || !password) return;
+    if (authMode === "register" && !authCompany.value.trim()) return;
+    submitAuth(email, password);
   });
 
   quickAccessBtn.addEventListener("click", () => {
     const creds = getRememberedCreds();
     if (!creds) return;
-    authUsername.value = creds.username;
+    authEmail.value = creds.email;
     authPassword.value = creds.password;
     setAuthMode("login");
-    submitAuth(creds.username, creds.password);
+    submitAuth(creds.email, creds.password);
   });
 
   document.getElementById("logoutBtn").addEventListener("click", async () => {
@@ -2422,7 +3193,7 @@
       return;
     }
     const ownTag = p.is_own_brand
-      ? `<span class="own-flag" title="Marca propia (PF)">${ICON_DOT_S3D}</span>PF`
+      ? `<span class="own-flag" title="Marca propia">${ICON_DOT_S3D}</span>Propia`
       : "Competencia";
     info.innerHTML = `
       <div class="shelf3d-detail-card">

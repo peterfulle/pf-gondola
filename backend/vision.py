@@ -29,6 +29,9 @@ debes rechazar el análisis devolviendo exactamente:
   "total_facings": 0,
   "shelf_levels_detected": 0,
   "empty_space_pct": 0,
+  "price_visibility_score": 0,
+  "exhibition_score": 0,
+  "organization_score": 0,
   "notes": ""
 }
 
@@ -61,6 +64,9 @@ Si SÍ es una góndola de supermercado válida, devuelve este esquema exacto:
   "total_facings": <entero, suma de todas las caras de todos los productos>,
   "shelf_levels_detected": <entero, cantidad de niveles/estantes visibles>,
   "empty_space_pct": <número 0-100, % estimado del frente de góndola que se ve vacío o sin producto>,
+  "price_visibility_score": <entero 0-100, qué tan visibles y legibles están los precios/etiquetas de precio de los productos; 100 = todos los precios claramente visibles, 0 = ningún precio visible o legible>,
+  "exhibition_score": <entero 0-100, calidad de exhibición: productos de frente, derechos, sin daños ni suciedad, bien enfrentados hacia el pasillo; 100 = exhibición impecable, 0 = productos caídos, dañados, sucios o mal orientados>,
+  "organization_score": <entero 0-100, orden y prolijidad del estante: productos agrupados correctamente por categoría/marca, sin mezclas ni desorden visible; 100 = perfectamente ordenado, 0 = completamente desordenado>,
   "notes": "observaciones breves sobre calidad de la foto, quiebres de stock u otras ambigüedades, si aplica"
 }
 
@@ -72,6 +78,7 @@ Reglas:
 - position_index ordena los productos dentro de un mismo shelf_level de izquierda a derecha tal como aparecen físicamente (1 = más a la izquierda). Es independiente entre niveles distintos.
 - estimated_depth es tu mejor estimación de cuántas unidades hay en fondo detrás de cada cara visible, específica para CADA producto (distintos productos en la misma foto pueden tener profundidades distintas). Ninguna foto frontal puede ver físicamente lo que hay detrás de la primera unidad, así que esto es una estimación basada en: el tamaño/tipo de envase visible (ej. una lata o botella individual suele ir en fondos de 2-4 unidades; una caja grande de cereal o un pack grande suele ir en fondos de 1-2 unidades), la profundidad típica de ese tipo de estante, y cualquier pista de profundidad visible en el ángulo de la foto. Nunca devuelvas 0 ni null; si no tienes ninguna base para estimar, usa 1.
 - No inventes productos que no estén en la imagen. No agregues texto fuera del JSON.
+- price_visibility_score, exhibition_score y organization_score son evaluaciones de la góndola completa (no por producto). Si la foto no permite evaluar alguno con certeza (mala resolución, ángulo, oclusión), usa tu mejor estimación con lo que sí es visible; nunca devuelvas null, siempre un entero 0-100.
 
 MÚLTIPLES FOTOS DE LA MISMA GÓNDOLA:
 Cuando recibes más de una foto, son segmentos contiguos de UNA MISMA góndola físicamente \

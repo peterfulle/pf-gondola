@@ -7,7 +7,7 @@ import time
 
 import db
 
-SESSION_COOKIE = "pf_session"
+SESSION_COOKIE = "neuravision_session"
 SESSION_TTL_SECONDS = 30 * 24 * 60 * 60  # 30 días
 PBKDF2_ITERATIONS = 200_000
 
@@ -43,9 +43,9 @@ def _sign(payload: str) -> str:
     return hmac.new(_SECRET, payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
-def create_session_token(username: str) -> str:
+def create_session_token(email: str) -> str:
     expires_at = int(time.time()) + SESSION_TTL_SECONDS
-    payload = f"{username}:{expires_at}"
+    payload = f"{email}:{expires_at}"
     signature = _sign(payload)
     raw = f"{payload}:{signature}"
     return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
@@ -54,13 +54,13 @@ def create_session_token(username: str) -> str:
 def verify_session_token(token: str):
     try:
         raw = base64.urlsafe_b64decode(token.encode("ascii")).decode("utf-8")
-        username, expires_at, signature = raw.rsplit(":", 2)
+        email, expires_at, signature = raw.rsplit(":", 2)
     except Exception:
         return None
 
-    payload = f"{username}:{expires_at}"
+    payload = f"{email}:{expires_at}"
     if not hmac.compare_digest(_sign(payload), signature):
         return None
     if int(expires_at) < int(time.time()):
         return None
-    return username
+    return email
