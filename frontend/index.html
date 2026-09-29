@@ -753,11 +753,17 @@
   .viz-status-badge.critical { background: rgba(208,59,59,0.14); color: var(--viz-critical); }
 
   .viz-meter-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
-  .viz-meter { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; }
-  .viz-meter-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; color: var(--ink-secondary); font-weight: 600; margin-bottom: 8px; }
-  .viz-meter-head strong { font-size: 17px; color: var(--ink); font-weight: 800; }
+  .viz-meter {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+    display: flex; flex-direction: column; justify-content: center;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.03), 0 10px 24px -16px rgba(10,10,10,0.10);
+  }
+  .viz-meter-head { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-secondary); font-weight: 600; margin-bottom: 10px; }
+  .viz-meter-head svg { width: 15px; height: 15px; color: var(--ink-muted); flex-shrink: 0; }
+  .viz-meter-head span { flex: 1; }
+  .viz-meter-head strong { font-size: 19px; color: var(--ink); font-weight: 800; }
   .viz-meter-track { height: 8px; border-radius: 100px; background: var(--viz-seq-100); overflow: hidden; }
-  .viz-meter-fill { height: 100%; border-radius: 100px; background: var(--viz-seq-450); transition: width 0.3s ease; }
+  .viz-meter-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--viz-seq-300), var(--viz-seq-450)); transition: width 0.4s ease; }
 
   .viz-card { margin-bottom: 18px; }
   .viz-chart-wrap { position: relative; }
@@ -777,11 +783,15 @@
   .viz-tooltip .tt-label { color: #d7d7d4; flex: 1; }
   .viz-tooltip .tt-value { font-weight: 800; }
 
-  .viz-cal { display: inline-grid; gap: 2px; font-size: 10px; }
-  .viz-cal-cell { width: 15px; height: 15px; border-radius: 3px; background: #ececea; cursor: default; }
+  .viz-cal { display: inline-grid; gap: 3px; font-size: 10px; }
+  .viz-cal-cell { width: 18px; height: 18px; border-radius: 4px; background: #e4e3df; cursor: default; transition: transform 0.1s ease; }
   .viz-cal-cell.has-data { cursor: pointer; }
+  .viz-cal-cell.has-data:hover { transform: scale(1.18); box-shadow: 0 2px 6px -1px rgba(10,10,10,0.25); }
   .viz-cal-month-label { font-size: 10.5px; color: var(--ink-secondary); font-weight: 700; text-transform: capitalize; display: flex; align-items: center; padding-right: 6px; }
   .viz-cal-day-label { font-size: 9px; color: var(--ink-muted); text-align: center; display: flex; align-items: center; justify-content: center; }
+  .viz-cal-legend { display: flex; align-items: center; gap: 6px; margin-top: 14px; font-size: 11px; color: var(--ink-muted); font-weight: 600; }
+  .viz-cal-legend .viz-cal-cell { width: 13px; height: 13px; cursor: default; }
+  .viz-cal-legend .viz-cal-cell:hover { transform: none; box-shadow: none; }
 
   .viz-row-meter { display: flex; align-items: center; gap: 8px; min-width: 130px; }
   .viz-row-meter-track { flex: 1; height: 6px; border-radius: 100px; background: var(--viz-seq-100); }
@@ -1176,19 +1186,31 @@
           </div>
           <div class="viz-meter-grid">
             <div class="viz-meter">
-              <div class="viz-meter-head"><span>Disponibilidad</span><strong id="meterVal-availability_score">—</strong></div>
+              <div class="viz-meter-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h13A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><path d="M4 10.5h16"/></svg>
+                <span>Disponibilidad</span><strong id="meterVal-availability_score">—</strong>
+              </div>
               <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-availability_score"></div></div>
             </div>
             <div class="viz-meter">
-              <div class="viz-meter-head"><span>Exhibición</span><strong id="meterVal-exhibition_score">—</strong></div>
+              <div class="viz-meter-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Exhibición</span><strong id="meterVal-exhibition_score">—</strong>
+              </div>
               <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-exhibition_score"></div></div>
             </div>
             <div class="viz-meter">
-              <div class="viz-meter-head"><span>Organización</span><strong id="meterVal-organization_score">—</strong></div>
+              <div class="viz-meter-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg>
+                <span>Organización</span><strong id="meterVal-organization_score">—</strong>
+              </div>
               <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-organization_score"></div></div>
             </div>
             <div class="viz-meter">
-              <div class="viz-meter-head"><span>Precios visibles</span><strong id="meterVal-price_visibility_score">—</strong></div>
+              <div class="viz-meter-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.5 12.9 20a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.5 3.5H18a2.5 2.5 0 0 1 2.5 2.5v6.5Z"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+                <span>Precios visibles</span><strong id="meterVal-price_visibility_score">—</strong>
+              </div>
               <div class="viz-meter-track"><div class="viz-meter-fill" id="meterFill-price_visibility_score"></div></div>
             </div>
           </div>
@@ -2521,6 +2543,34 @@
       }));
   }
 
+  function toSegments(points) {
+    const segments = [];
+    let current = [];
+    points.forEach((p) => {
+      if (p) current.push(p);
+      else { if (current.length) segments.push(current); current = []; }
+    });
+    if (current.length) segments.push(current);
+    return segments;
+  }
+
+  function smoothSegment(seg) {
+    if (seg.length < 2) return `M ${seg[0][0].toFixed(1)} ${seg[0][1].toFixed(1)}`;
+    let d = `M ${seg[0][0].toFixed(1)} ${seg[0][1].toFixed(1)} `;
+    for (let i = 0; i < seg.length - 1; i++) {
+      const p0 = seg[i - 1] || seg[i];
+      const p1 = seg[i];
+      const p2 = seg[i + 1];
+      const p3 = seg[i + 2] || p2;
+      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += `C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)} `;
+    }
+    return d;
+  }
+
   function renderTrendChart(data) {
     const wrap = document.getElementById("trendChartWrap");
     document.getElementById("trendLegend").innerHTML = `
@@ -2532,11 +2582,12 @@
       return;
     }
 
-    const W = 760, H = 220, PAD_L = 30, PAD_R = 16, PAD_T = 14, PAD_B = 26;
+    const W = 760, H = 240, PAD_L = 30, PAD_R = 46, PAD_T = 16, PAD_B = 26;
     const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
     const n = data.length;
     const xAt = (i) => PAD_L + (n === 1 ? plotW / 2 : (plotW * i) / (n - 1));
     const yAt = (v) => PAD_T + plotH - (Math.max(0, Math.min(100, v)) / 100) * plotH;
+    const baseline = yAt(0);
 
     const gridLines = [0, 25, 50, 75, 100]
       .map(
@@ -2552,16 +2603,19 @@
 
     function buildLine(key, color) {
       const pts = data.map((d, i) => (d[key] != null ? [xAt(i), yAt(d[key])] : null));
-      let path = "", started = false;
-      pts.forEach((p) => {
-        if (!p) { started = false; return; }
-        path += `${started ? " L " : " M "}${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
-        started = true;
-      });
+      const segments = toSegments(pts);
+      const linePath = segments.map(smoothSegment).join(" ");
+      const areaPath = segments
+        .map((seg) => {
+          if (seg.length < 2) return "";
+          const lastX = seg[seg.length - 1][0], firstX = seg[0][0];
+          return `${smoothSegment(seg)} L ${lastX.toFixed(1)} ${baseline.toFixed(1)} L ${firstX.toFixed(1)} ${baseline.toFixed(1)} Z`;
+        })
+        .join(" ");
       const dots = pts
         .map((p) => (p ? `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="${color}" stroke="#fcfcfb" stroke-width="2"/>` : ""))
         .join("");
-      return { path, dots };
+      return { linePath, areaPath, dots };
     }
 
     const scoreLine = buildLine("score", VIZ_SERIES_1);
@@ -2570,23 +2624,49 @@
     let endLabels = "";
     const lastScoreIdx = data.map((d, i) => (d.score != null ? i : -1)).filter((i) => i >= 0).pop();
     const lastAvailIdx = data.map((d, i) => (d.avail != null ? i : -1)).filter((i) => i >= 0).pop();
-    if (lastScoreIdx != null) {
-      const y1 = yAt(data[lastScoreIdx].score);
-      const y2 = lastAvailIdx != null ? yAt(data[lastAvailIdx].avail) : null;
-      const collide = y2 != null && Math.abs(y1 - y2) < 14;
-      endLabels += `<text x="${xAt(lastScoreIdx) + 8}" y="${y1 + (collide ? -5 : 3)}" font-size="11" font-weight="700" fill="#0b0b0b">${Math.round(data[lastScoreIdx].score)}</text>`;
-      if (lastAvailIdx != null) {
-        endLabels += `<text x="${xAt(lastAvailIdx) + 8}" y="${y2 + (collide ? 9 : 3)}" font-size="11" font-weight="700" fill="#0b0b0b">${Math.round(data[lastAvailIdx].avail)}</text>`;
+    if (lastScoreIdx != null || lastAvailIdx != null) {
+      const labelX = xAt(Math.max(lastScoreIdx ?? 0, lastAvailIdx ?? 0)) + 10;
+      const entries = [];
+      if (lastScoreIdx != null) entries.push({ y: yAt(data[lastScoreIdx].score), value: Math.round(data[lastScoreIdx].score) });
+      if (lastAvailIdx != null) entries.push({ y: yAt(data[lastAvailIdx].avail), value: Math.round(data[lastAvailIdx].avail) });
+      const MIN_GAP = 18;
+      if (entries.length === 2 && Math.abs(entries[0].y - entries[1].y) < MIN_GAP) {
+        const mid = (entries[0].y + entries[1].y) / 2;
+        const dir = entries[0].y <= entries[1].y ? -1 : 1;
+        entries[0].y = mid + dir * (MIN_GAP / 2);
+        entries[1].y = mid - dir * (MIN_GAP / 2);
       }
+      endLabels = entries
+        .map((e) => {
+          const text = String(e.value);
+          const boxW = 11 * text.length + 12;
+          return `
+            <rect x="${labelX.toFixed(1)}" y="${(e.y - 9).toFixed(1)}" width="${boxW}" height="16" rx="8" fill="#fcfcfb"/>
+            <text x="${(labelX + boxW / 2).toFixed(1)}" y="${(e.y + 3).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="#0b0b0b">${text}</text>
+          `;
+        })
+        .join("");
     }
 
     wrap.innerHTML = `
       <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block;">
+        <defs>
+          <linearGradient id="vizGradScore" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${VIZ_SERIES_1}" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="${VIZ_SERIES_1}" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="vizGradAvail" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${VIZ_SERIES_2}" stop-opacity="0.14"/>
+            <stop offset="100%" stop-color="${VIZ_SERIES_2}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
         ${gridLines}
-        <path d="${scoreLine.path}" fill="none" stroke="${VIZ_SERIES_1}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="${availLine.path}" fill="none" stroke="${VIZ_SERIES_2}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        ${scoreLine.dots}
+        <path d="${availLine.areaPath}" fill="url(#vizGradAvail)" stroke="none"/>
+        <path d="${scoreLine.areaPath}" fill="url(#vizGradScore)" stroke="none"/>
+        <path d="${availLine.linePath}" fill="none" stroke="${VIZ_SERIES_2}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${scoreLine.linePath}" fill="none" stroke="${VIZ_SERIES_1}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         ${availLine.dots}
+        ${scoreLine.dots}
         ${endLabels}
         ${xLabels}
         <line id="vizCrosshair" x1="0" x2="0" y1="${PAD_T}" y2="${H - PAD_B}" stroke="#c3c2b7" stroke-width="1" style="opacity:0;"/>
@@ -2669,7 +2749,18 @@
       }
     });
 
-    wrap.innerHTML = `<div class="viz-cal" id="vizCalGrid" style="grid-template-columns:44px repeat(31,15px);">${headerCells}${bodyCells}</div><div class="viz-tooltip" id="vizCalTooltip"></div>`;
+    const legend = `
+      <div class="viz-cal-legend">
+        <span>Menos</span>
+        <div class="viz-cal-cell" style="background:${bucketColor(0)};"></div>
+        <div class="viz-cal-cell" style="background:${bucketColor(1)};"></div>
+        <div class="viz-cal-cell" style="background:${bucketColor(2)};"></div>
+        <div class="viz-cal-cell" style="background:${bucketColor(5)};"></div>
+        <div class="viz-cal-cell" style="background:${bucketColor(8)};"></div>
+        <span>Más lecturas</span>
+      </div>
+    `;
+    wrap.innerHTML = `<div class="viz-cal" id="vizCalGrid" style="grid-template-columns:44px repeat(31,18px);">${headerCells}${bodyCells}</div>${legend}<div class="viz-tooltip" id="vizCalTooltip"></div>`;
 
     const grid = document.getElementById("vizCalGrid");
     const calTooltip = document.getElementById("vizCalTooltip");

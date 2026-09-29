@@ -674,6 +674,17 @@ _DEMO_POINTS = [
     ("Sucursal Concepción", "Biobío", "Concepción"),
 ]
 
+# (score al inicio del rango, score al final, volatilidad por lectura) — cada punto
+# demo sigue una historia distinta (mejora, decae, estable) en vez de ruido plano,
+# para que la tendencia y el ranking se vean como datos reales, no aleatorios.
+_DEMO_PERSONAS = [
+    (62, 92, 7),
+    (84, 90, 5),
+    (90, 66, 8),
+    (70, 81, 15),
+    (55, 68, 7),
+]
+
 
 def seed_demo_data(org_id: str) -> dict:
     """Crea puntos y lecturas sintéticas (marcadas como demo en sus notas) para que
@@ -701,20 +712,34 @@ def seed_demo_data(org_id: str) -> dict:
             m += 12
             y -= 1
         months.append((y, m))
+    n_months = len(months)
+
+    def around(center, spread):
+        return round(max(0, min(100, center + rng.uniform(-spread, spread))))
 
     inserted = 0
     with get_conn() as conn:
-        for p in points:
-            bias = rng.uniform(-8, 10)
-            for (y, m) in months:
+        # Re-generar es idempotente: se limpia el lote demo anterior antes de
+        # insertar el nuevo, para no mezclar dos historias sintéticas distintas.
+        conn.execute(
+            "DELETE FROM readings WHERE org_id = ? AND notes = ?",
+            (org_id, "Lectura de demostración"),
+        )
+        for idx, p in enumerate(points):
+            start, end, volatility = _DEMO_PERSONAS[idx % len(_DEMO_PERSONAS)]
+            for month_idx, (y, m) in enumerate(months):
+                progress = month_idx / max(1, n_months - 1)
+                base = start + (end - start) * progress
                 for _ in range(rng.choice([1, 1, 2, 3])):
                     day = rng.randint(1, 28)
                     hour = rng.randint(8, 20)
                     created_at = f"{y:04d}-{m:02d}-{day:02d}T{hour:02d}:00:00+00:00"
-                    empty_space_pct = round(max(0, min(100, rng.uniform(3, 22) - bias / 2)), 1)
-                    price_vis = round(max(0, min(100, rng.uniform(65, 98) + bias)))
-                    exhibition = round(max(0, min(100, rng.uniform(60, 97) + bias)))
-                    organization_score = round(max(0, min(100, rng.uniform(55, 96) + bias)))
+                    center = max(15, min(98, base + rng.uniform(-volatility, volatility)))
+                    availability_target = around(center, 10)
+                    empty_space_pct = round(max(0, min(100, 100 - availability_target)), 1)
+                    price_vis = around(center, 8)
+                    exhibition = around(center, 10)
+                    organization_score = around(center, 9)
                     total_facings = rng.randint(25, 90)
                     conn.execute(
                         "INSERT INTO readings (org_id, point_id, created_at, total_facings, shelf_levels_detected, "
