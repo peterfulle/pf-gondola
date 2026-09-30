@@ -102,6 +102,11 @@
     border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .sidebar-section-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.32); padding: 14px 10px 6px;
+  }
+  .sidebar-section-label:first-of-type { padding-top: 2px; }
   .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
   .sidebar-nav-item {
     display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
@@ -231,6 +236,44 @@
   }
   .empty-state svg { width: 32px; height: 32px; margin: 0 auto 10px; color: var(--ink-muted); }
   .empty-state p { margin: 0; font-size: 13.5px; }
+
+  /* ---------- home / resumen general ---------- */
+  .home-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .home-head h1 { margin: 0 0 3px; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+  .home-head p { margin: 0; font-size: 13px; color: var(--ink-muted); font-weight: 500; }
+  .home-head .period-pill {
+    display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: 100px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; color: var(--ink-secondary); white-space: nowrap;
+  }
+  .home-head .period-pill svg { width: 13px; height: 13px; color: var(--ink-muted); }
+
+  .home-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; margin-bottom: 22px; }
+
+  .card-head-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .card-link {
+    font-size: 12px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 4px;
+    text-decoration: none; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0;
+  }
+  .card-link svg { width: 12px; height: 12px; }
+
+  .last-scan-img-wrap { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: var(--track); margin-bottom: 10px; }
+  .last-scan-img-wrap img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+  .last-scan-meta { font-size: 12.5px; color: var(--ink); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .last-scan-meta .sub { color: var(--ink-muted); font-weight: 500; font-size: 12px; margin-top: 1px; }
+  .last-scan-empty { font-size: 12.5px; color: var(--ink-muted); padding: 10px 0 4px; }
+
+  .quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .quick-tile {
+    display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; cursor: pointer; text-align: left; font-family: inherit;
+    box-shadow: 0 1px 2px rgba(10,10,10,0.03); transition: border-color 0.15s ease, transform 0.15s ease;
+    text-decoration: none; color: inherit;
+  }
+  .quick-tile:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .quick-tile-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--page); color: var(--ink); }
+  .quick-tile-icon svg { width: 19px; height: 19px; }
+  .quick-tile-title { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+  .quick-tile-desc { font-size: 11.5px; color: var(--ink-muted); line-height: 1.4; }
 
   /* ---------- detail view ---------- */
   #detailView { display: none; }
@@ -686,6 +729,9 @@
     .kpi-tile { padding: 11px 12px; }
     .kpi-value { font-size: 21px; }
     .kpi-icon { width: 24px; height: 24px; }
+    .sidebar-section-label { display: none !important; }
+    .home-grid { grid-template-columns: 1fr; }
+    .home-head { flex-direction: column; align-items: stretch; }
 
     .section-head { flex-direction: column; align-items: flex-start; gap: 10px; }
     .section-head > div { width: 100%; justify-content: space-between; }
@@ -861,21 +907,32 @@
       <div class="sidebar-org" id="orgNameLabel">Ejecución de Punto de Venta</div>
 
       <nav class="sidebar-nav">
-        <button class="sidebar-nav-item active" id="navDashboardBtn" type="button">
+        <div class="sidebar-section-label">General</div>
+        <button class="sidebar-nav-item active" id="navHomeBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+          <span>Inicio</span>
+        </button>
+
+        <div class="sidebar-section-label">Operación</div>
+        <button class="sidebar-nav-item" id="navDashboardBtn" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg>
           <span>Puntos de venta</span>
-        </button>
-        <button class="sidebar-nav-item" id="analyticsNavBtn" style="display:none;" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>
-          <span>Reportería</span>
         </button>
         <button class="sidebar-nav-item" id="brandsBtn" style="display:flex;" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
           <span>Marcas propias</span>
         </button>
+
+        <div class="sidebar-section-label" id="analysisSectionLabel" style="display:none;">Análisis</div>
+        <button class="sidebar-nav-item" id="analyticsNavBtn" style="display:none;" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>
+          <span>Reportería</span>
+        </button>
+
+        <div class="sidebar-section-label" id="adminSectionLabel" style="display:none;">Administración</div>
         <button class="sidebar-nav-item" id="adminNavBtn" style="display:none;" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
-          <span>Administración</span>
+          <span>Personas y roles</span>
         </button>
       </nav>
 
@@ -893,7 +950,7 @@
       <nav class="topbar">
         <button class="btn-back" id="backBtn" style="display:none;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          Dashboard
+          Puntos de venta
         </button>
         <div class="spacer"></div>
         <div class="live-pill"><span class="dot"></span>En vivo</div>
@@ -904,7 +961,79 @@
       </nav>
 
       <main class="shell">
-    <section id="dashboardView">
+    <section id="homeView" class="view-fade">
+      <div class="home-head">
+        <div>
+          <h1>Resumen general</h1>
+          <p>Visibilidad de tus puntos de venta en un solo lugar</p>
+        </div>
+        <div class="period-pill" id="homePeriodPill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <span id="homePeriodLabel">—</span>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="homeKpiPoints">0</div><div class="kpi-label">PDV activos</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg></div>
+        </div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="homeKpiReadings">0</div><div class="kpi-label">Lecturas totales</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.2"/></svg></div>
+        </div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="homeKpiOos">0</div><div class="kpi-label">Quiebres detectados</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a1.8 1.8 0 0 0 1.55 2.7h15.3a1.8 1.8 0 0 0 1.55-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg></div>
+        </div>
+        <div class="kpi-tile">
+          <div><div class="kpi-value" id="homeKpiShare">—</div><div class="kpi-label">Participación propia</div></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg></div>
+        </div>
+      </div>
+
+      <div class="home-grid">
+        <div class="card">
+          <div class="card-head-row">
+            <h3 class="card-title" style="margin:0;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>
+              Actividad reciente
+            </h3>
+            <button class="card-link" id="homeSeeAllBtn" type="button">
+              Ver todas
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <div class="home-activity-table-wrap table-scroll">
+            <table>
+              <thead><tr><th>Punto de venta</th><th>Categoría principal</th><th>Fecha</th><th>Estado</th></tr></thead>
+              <tbody id="homeActivityBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head-row">
+            <h3 class="card-title" style="margin:0;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
+              Último escaneo
+            </h3>
+            <button class="card-link" id="homeLastScanLink" type="button" style="display:none;">
+              Ver análisis
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <div id="homeLastScanBody"><div class="last-scan-empty">Todavía no hay lecturas registradas.</div></div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <h2>Accesos rápidos</h2>
+      </div>
+      <div class="quick-grid" id="homeQuickGrid"></div>
+    </section>
+
+    <section id="dashboardView" style="display:none;">
       <div class="kpi-row">
         <div class="kpi-tile">
           <div><div class="kpi-value" id="kpiPoints">0</div><div class="kpi-label">Puntos totales</div></div>
@@ -1453,8 +1582,10 @@
     const canAnalyze = ANALYST_ROLES.includes(role);
 
     document.getElementById("adminNavBtn").style.display = isAdmin ? "flex" : "none";
+    document.getElementById("adminSectionLabel").style.display = isAdmin ? "block" : "none";
     document.getElementById("brandsBtn").style.display = canAnalyze ? "flex" : "none";
     document.getElementById("analyticsNavBtn").style.display = canAnalyze ? "flex" : "none";
+    document.getElementById("analysisSectionLabel").style.display = canAnalyze ? "block" : "none";
     document.querySelectorAll(".role-analyst-only").forEach((el) => {
       el.style.display = canAnalyze ? "" : "none";
     });
@@ -1466,6 +1597,7 @@
     });
   }
 
+  const homeView = document.getElementById("homeView");
   const dashboardView = document.getElementById("dashboardView");
   const detailView = document.getElementById("detailView");
   const backBtn = document.getElementById("backBtn");
@@ -1525,6 +1657,7 @@
       const res = await fetch("/api/points");
       points = await res.json();
       renderDashboard();
+      renderHome();
       document.getElementById("lastPoll").textContent = "Actualizado hace instantes";
     } catch (e) {
       document.getElementById("lastPoll").textContent = "Sin conexión con el servidor";
@@ -1618,6 +1751,156 @@
     });
   }
 
+  // ---------- home / resumen general ----------
+  function homeTopCategory(latest) {
+    if (!latest || !(latest.categories || []).length) return null;
+    return latest.categories.slice().sort((a, b) => (b.share_pct ?? 0) - (a.share_pct ?? 0))[0];
+  }
+
+  function renderHomeActivity() {
+    const body = document.getElementById("homeActivityBody");
+    const rows = points
+      .filter((p) => p.latest)
+      .slice()
+      .sort((a, b) => b.latest.created_at.localeCompare(a.latest.created_at))
+      .slice(0, 6);
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="4" class="hint">Aún no hay lecturas registradas.</td></tr>`;
+      return;
+    }
+    body.innerHTML = rows.map((p) => {
+      const top = homeTopCategory(p.latest);
+      return `
+        <tr>
+          <td>${escapeHtml(p.name)}</td>
+          <td>${top ? escapeHtml(top.category) : "—"}</td>
+          <td>${relativeTime(p.latest.created_at)}</td>
+          <td>${statusBadgeHtml(p.latest.performance_label)}</td>
+        </tr>`;
+    }).join("");
+  }
+
+  function renderHomeLastScan() {
+    const linkBtn = document.getElementById("homeLastScanLink");
+    const body = document.getElementById("homeLastScanBody");
+    const withPhoto = points
+      .filter((p) => p.latest && (p.latest.image_urls || []).length)
+      .slice()
+      .sort((a, b) => b.latest.created_at.localeCompare(a.latest.created_at));
+    if (!withPhoto.length) {
+      body.innerHTML = `<div class="last-scan-empty">Todavía no hay lecturas registradas.</div>`;
+      linkBtn.style.display = "none";
+      linkBtn.onclick = null;
+      return;
+    }
+    const p = withPhoto[0];
+    const top = homeTopCategory(p.latest);
+    body.innerHTML = `
+      <div class="last-scan-img-wrap"><img src="${p.latest.image_urls[0]}" alt="Última foto de ${escapeHtml(p.name)}" loading="lazy" /></div>
+      <div class="last-scan-meta">${escapeHtml(p.name)}</div>
+      <div class="last-scan-meta sub">${escapeHtml(p.id)}${top ? " · " + escapeHtml(top.category) : ""} · ${relativeTime(p.latest.created_at)}</div>
+    `;
+    linkBtn.style.display = "flex";
+    linkBtn.onclick = () => openPoint(p.id);
+  }
+
+  function renderHomeQuickAccess() {
+    const role = currentUser ? currentUser.role : "reponedor";
+    const isAdmin = ADMIN_ROLES.includes(role);
+    const canAnalyze = ANALYST_ROLES.includes(role);
+    const grid = document.getElementById("homeQuickGrid");
+    const tiles = [];
+    tiles.push({
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg>`,
+      title: "Puntos de venta",
+      desc: "Revisa tus góndolas y registra nuevas lecturas.",
+      onClick: () => document.getElementById("navDashboardBtn").click(),
+    });
+    if (canAnalyze) {
+      tiles.push({
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>`,
+        title: "Reportería",
+        desc: "Explora tendencias, ranking y quiebres por punto.",
+        onClick: () => document.getElementById("analyticsNavBtn").click(),
+      });
+    }
+    if (isAdmin) {
+      tiles.push({
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>`,
+        title: "Personas y roles",
+        desc: "Invita usuarios y administra sus roles de acceso.",
+        onClick: () => document.getElementById("adminNavBtn").click(),
+      });
+    }
+    if (canAnalyze) {
+      tiles.push({
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>`,
+        title: "Descargar datos",
+        desc: "Exporta lecturas y resultados de análisis a CSV.",
+        href: "/api/export.csv",
+      });
+    }
+    grid.innerHTML = tiles.map((t, i) => {
+      const tag = t.href ? "a" : "button";
+      const attrs = t.href ? `href="${t.href}" download` : `type="button"`;
+      return `<${tag} class="quick-tile" id="homeQuickTile${i}" ${attrs}>
+        <div class="quick-tile-icon">${t.icon}</div>
+        <div><div class="quick-tile-title">${escapeHtml(t.title)}</div><div class="quick-tile-desc">${escapeHtml(t.desc)}</div></div>
+      </${tag}>`;
+    }).join("");
+    tiles.forEach((t, i) => {
+      if (t.onClick) document.getElementById(`homeQuickTile${i}`).addEventListener("click", t.onClick);
+    });
+  }
+
+  function renderHome() {
+    const total = points.length;
+    const readingsTotal = points.reduce((s, p) => s + (p.readings_count || 0), 0);
+    let oosCount = 0;
+    points.forEach((p) => {
+      if (p.latest) oosCount += (p.latest.products || []).filter((x) => x.out_of_stock).length;
+    });
+    const shareVals = points
+      .map((p) => (p.latest && p.latest.benchmark ? p.latest.benchmark.own_share_pct : null))
+      .filter((v) => v != null);
+    const avgShare = shareVals.length ? (shareVals.reduce((a, b) => a + b, 0) / shareVals.length) : null;
+
+    document.getElementById("homeKpiPoints").textContent = total;
+    document.getElementById("homeKpiReadings").textContent = readingsTotal;
+    document.getElementById("homeKpiOos").textContent = oosCount;
+    document.getElementById("homeKpiShare").textContent = avgShare != null ? `${avgShare.toFixed(0)}%` : "—";
+
+    renderHomeActivity();
+    renderHomeLastScan();
+    renderHomeQuickAccess();
+  }
+
+  function showHomeView() {
+    if (typeof closeCamera === "function") closeCamera();
+    dashboardView.style.display = "none";
+    detailView.style.display = "none";
+    document.getElementById("adminView").style.display = "none";
+    document.getElementById("analyticsView").style.display = "none";
+    homeView.style.display = "block";
+    homeView.classList.add("view-fade");
+    backBtn.style.display = "none";
+    setActiveNav("navHomeBtn");
+    currentPoint = null;
+    currentReadingId = null;
+    history.replaceState(null, "", location.pathname);
+    renderHome();
+  }
+
+  document.getElementById("navHomeBtn").addEventListener("click", showHomeView);
+  document.getElementById("homeSeeAllBtn").addEventListener("click", () => document.getElementById("navDashboardBtn").click());
+
+  const HOME_MONTH_NAMES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  (function setHomePeriodLabel() {
+    const now = new Date();
+    const label = `${HOME_MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
+    document.getElementById("homePeriodLabel").textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  })();
+
   // ---------- detail ----------
   function setActiveNav(id) {
     document.querySelectorAll(".sidebar-nav-item").forEach((el) => el.classList.remove("active"));
@@ -1626,6 +1909,7 @@
   }
 
   async function openPoint(pointId) {
+    homeView.style.display = "none";
     dashboardView.style.display = "none";
     detailView.style.display = "block";
     detailView.classList.add("view-fade");
@@ -1638,6 +1922,7 @@
 
   function closeDetail() {
     if (typeof closeCamera === "function") closeCamera();
+    homeView.style.display = "none";
     detailView.style.display = "none";
     document.getElementById("adminView").style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
@@ -2287,6 +2572,7 @@
   let selectedNewUserRole = "reponedor";
 
   function showAdminView() {
+    homeView.style.display = "none";
     dashboardView.style.display = "none";
     detailView.style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
@@ -2863,6 +3149,7 @@
   }
 
   function showAnalyticsView() {
+    homeView.style.display = "none";
     dashboardView.style.display = "none";
     detailView.style.display = "none";
     document.getElementById("adminView").style.display = "none";
@@ -2956,6 +3243,7 @@
     fetchOwnBrands().then(() => fetchPoints()).then(() => {
       const deepLinkId = location.hash.replace("#", "").trim();
       if (deepLinkId) openPoint(deepLinkId);
+      else showHomeView();
     });
     startPolling();
   }
