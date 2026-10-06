@@ -136,6 +136,15 @@ def init_db():
             for legacy_table in ("readings", "points", "users", "own_brands"):
                 conn.execute(f"DROP TABLE IF EXISTS {legacy_table}")
 
+        # Mismo caso que arriba, pero para las tablas agregadas después: si el disco
+        # ya tenía una tabla con ese nombre de una aplicación distinta desplegada antes
+        # en el mismo servicio, "CREATE TABLE IF NOT EXISTS" la deja tal cual y las
+        # columnas no calzan (ej: planogram_items sin org_id). Si no tiene org_id, no es
+        # nuestra, así que se reemplaza igual que el caso de users.
+        for new_table in ("shelves", "planogram_items", "product_corrections", "point_assignments"):
+            if new_table in tables and not _has_column(conn, new_table, "org_id"):
+                conn.execute(f"DROP TABLE IF EXISTS {new_table}")
+
         conn.executescript(SCHEMA)
         # Columnas agregadas después del primer despliegue multi-tenant: ADD COLUMN
         # es un no-op seguro cuando la columna ya existe.
