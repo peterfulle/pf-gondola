@@ -58,6 +58,31 @@ class RenameOrgPayload(BaseModel):
     name: str
 
 
+class CreateShelfPayload(BaseModel):
+    name: str
+    shelf_type: Optional[str] = None
+    description: Optional[str] = None
+
+
+class PlanogramItemPayload(BaseModel):
+    product: str
+    brand: Optional[str] = None
+    category: Optional[str] = None
+    expected_facings: Optional[int] = None
+
+
+class ProductCorrectionPayload(BaseModel):
+    product: Optional[str] = None
+    brand: Optional[str] = None
+    category: Optional[str] = None
+    facings: Optional[int] = None
+    out_of_stock: Optional[bool] = None
+
+
+class AssignPointsPayload(BaseModel):
+    point_ids: List[str]
+
+
 ROLE_LABELS = {
     "superusuario": "Superusuario",
     "admin": "Administrador",
@@ -119,6 +144,12 @@ def save_upload(org_id: str, point_id: str, image_bytes: bytes, content_type: st
     filename = f"{uuid.uuid4().hex}.{ext}"
     (point_dir / filename).write_bytes(image_bytes)
     return f"{org_id}/{point_id}/{filename}"
+
+
+def _check_point_access(user: dict, point_id: str) -> None:
+    allowed = db.allowed_point_ids_for_user(user["org_id"], user)
+    if allowed is not None and point_id not in allowed:
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
 
 
 def _user_out(user: dict) -> dict:
@@ -244,6 +275,25 @@ def api_update_user_role(email: str, payload: UpdateRolePayload, actor: dict = D
     return {"email": email, "role": role, "role_label": ROLE_LABELS.get(role, role)}
 
 
+@app.get("/api/admin/users/{email}/points")
+def api_get_user_points(email: str, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
+    email = email.strip().lower()
+    if not db.user_in_org(actor["org_id"], email):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return db.list_assigned_point_ids(actor["org_id"], email)
+
+
+@app.put("/api/admin/users/{email}/points")
+def api_set_user_points(email: str, payload: AssignPointsPayload, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
+    email = email.strip().lower()
+    if not db.user_in_org(actor["org_id"], email):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    valid_ids = {p["id"] for p in db.list_points_with_latest(actor["org_id"])}
+    point_ids = [pid for pid in payload.point_ids if pid in valid_ids]
+    db.set_point_assignments(actor["org_id"], email, point_ids)
+    return {"email": email, "point_ids": point_ids}
+
+
 @app.delete("/api/admin/users/{email}")
 def api_delete_user(email: str, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
     email = email.strip().lower()
@@ -304,7 +354,8 @@ def api_export_all_csv(actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
 
 @app.get("/api/analytics")
 def api_analytics(actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
-    return db.get_analytics(actor["org_id"])
+    allowed = db.allowed_point_ids_for_user(actor["org_id"], actor)
+    return db.get_analytics(actor["org_id"], allowed)
 
 
 @app.post("/api/admin/seed-demo-data")
@@ -316,7 +367,40 @@ def api_seed_demo_data(actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
 
 @app.get("/api/points")
 def api_list_points(user: dict = Depends(require_auth)):
-    return db.list_points_with_latest(user["org_id"])
+    allowed = db.allowed_point_ids_for_user(user["org_id"], user)
+    return db.list_points_with_latest(user["org_id"], allowed)
+
+
+@app.post("/api/points/import")
+async def api_import_points(file: UploadFile = File(...), user: dict = Depends(require_auth)):
+    """Carga masiva de puntos de venta desde un CSV con columnas: name (obligatoria),
+    point_id, region, comuna (opcionales). Para Excel, exportar primero como CSV."""
+    raw = await file.read()
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("latin-1")
+
+    reader = csv.DictReader(io.StringIO(text))
+    if not reader.fieldnames or "name" not in [f.strip().lower() for f in reader.fieldnames]:
+        raise HTTPException(status_code=400, detail="El CSV debe tener una columna 'name' con el nombre del punto")
+
+    org_id = user["org_id"]
+    created, skipped = [], []
+    for i, raw_row in enumerate(reader, start=2):
+        row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw_row.items()}
+        name = row.get("name", "")
+        if not name:
+            skipped.append({"row": i, "reason": "falta el nombre"})
+            continue
+        pid = row.get("point_id") or db.next_point_id(org_id)
+        if db.point_exists(org_id, pid):
+            skipped.append({"row": i, "reason": f"el punto {pid} ya existe"})
+            continue
+        db.create_point(org_id, pid, name, row.get("region") or None, row.get("comuna") or None)
+        created.append({"id": pid, "name": name})
+
+    return {"created": created, "skipped": skipped, "created_count": len(created), "skipped_count": len(skipped)}
 
 
 @app.post("/api/points")
@@ -342,6 +426,7 @@ def api_create_point(
 
 @app.get("/api/points/{point_id}")
 def api_get_point(point_id: str, user: dict = Depends(require_auth)):
+    _check_point_access(user, point_id)
     point = db.get_point(user["org_id"], point_id)
     if not point:
         raise HTTPException(status_code=404, detail="Punto no encontrado")
@@ -350,6 +435,7 @@ def api_get_point(point_id: str, user: dict = Depends(require_auth)):
 
 @app.get("/api/points/{point_id}/export.csv")
 def api_export_point_csv(point_id: str, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    _check_point_access(actor, point_id)
     if not db.point_exists(actor["org_id"], point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     csv_text = _rows_to_csv(db.export_rows(actor["org_id"], point_id))
@@ -362,6 +448,7 @@ def api_export_point_csv(point_id: str, actor: dict = Depends(require_role(*db.A
 
 @app.get("/api/points/{point_id}/daily-metrics")
 def api_daily_metrics(point_id: str, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    _check_point_access(actor, point_id)
     if not db.point_exists(actor["org_id"], point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     return db.daily_metrics(actor["org_id"], point_id)
@@ -369,6 +456,7 @@ def api_daily_metrics(point_id: str, actor: dict = Depends(require_role(*db.ANAL
 
 @app.get("/api/points/{point_id}/replenishment")
 def api_replenishment(point_id: str, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    _check_point_access(actor, point_id)
     if not db.point_exists(actor["org_id"], point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
     return db.replenishment_signals(actor["org_id"], point_id)
@@ -384,16 +472,106 @@ def api_delete_point(point_id: str, actor: dict = Depends(require_role(*db.ADMIN
     return {"deleted": point_id}
 
 
+@app.get("/api/points/{point_id}/shelves")
+def api_list_shelves(point_id: str, user: dict = Depends(require_auth)):
+    _check_point_access(user, point_id)
+    if not db.point_exists(user["org_id"], point_id):
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
+    return db.list_shelves(user["org_id"], point_id)
+
+
+@app.post("/api/points/{point_id}/shelves")
+def api_create_shelf(point_id: str, payload: CreateShelfPayload, user: dict = Depends(require_auth)):
+    _check_point_access(user, point_id)
+    if not db.point_exists(user["org_id"], point_id):
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="El nombre de la góndola es obligatorio")
+    return db.create_shelf(user["org_id"], point_id, name, (payload.shelf_type or "").strip() or None,
+                            (payload.description or "").strip() or None)
+
+
+@app.delete("/api/points/{point_id}/shelves/{shelf_id}")
+def api_delete_shelf(point_id: str, shelf_id: str, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
+    if not db.shelf_exists(actor["org_id"], point_id, shelf_id):
+        raise HTTPException(status_code=404, detail="Góndola no encontrada")
+    db.delete_shelf(actor["org_id"], shelf_id)
+    return {"deleted": shelf_id}
+
+
+@app.get("/api/shelves/{shelf_id}/planogram")
+def api_get_planogram(shelf_id: str, user: dict = Depends(require_auth)):
+    shelf = db.get_shelf(user["org_id"], shelf_id)
+    if not shelf:
+        raise HTTPException(status_code=404, detail="Góndola no encontrada")
+    _check_point_access(user, shelf["point_id"])
+    return db.list_planogram_items(user["org_id"], shelf_id)
+
+
+@app.post("/api/shelves/{shelf_id}/planogram")
+def api_add_planogram_item(shelf_id: str, payload: PlanogramItemPayload, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    shelf = db.get_shelf(actor["org_id"], shelf_id)
+    if not shelf:
+        raise HTTPException(status_code=404, detail="Góndola no encontrada")
+    product = payload.product.strip()
+    if not product:
+        raise HTTPException(status_code=400, detail="El nombre del producto esperado es obligatorio")
+    return db.add_planogram_item(actor["org_id"], shelf_id, product, (payload.brand or "").strip() or None,
+                                  (payload.category or "").strip() or None, payload.expected_facings)
+
+
+@app.delete("/api/shelves/{shelf_id}/planogram/{item_id}")
+def api_delete_planogram_item(shelf_id: str, item_id: int, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    shelf = db.get_shelf(actor["org_id"], shelf_id)
+    if not shelf:
+        raise HTTPException(status_code=404, detail="Góndola no encontrada")
+    db.delete_planogram_item(actor["org_id"], item_id)
+    return {"deleted": item_id}
+
+
+@app.get("/api/points/{point_id}/readings/{reading_id}/corrections")
+def api_list_corrections(point_id: str, reading_id: int, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    _check_point_access(actor, point_id)
+    if not db.get_reading_for_point(actor["org_id"], point_id, reading_id):
+        raise HTTPException(status_code=404, detail="Lectura no encontrada")
+    return db.list_corrections(actor["org_id"], reading_id)
+
+
+@app.put("/api/points/{point_id}/readings/{reading_id}/products/{product_index}")
+def api_correct_product(
+    point_id: str,
+    reading_id: int,
+    product_index: int,
+    payload: ProductCorrectionPayload,
+    actor: dict = Depends(require_role(*db.ANALYST_ROLES)),
+):
+    _check_point_access(actor, point_id)
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No se recibió ningún campo para corregir")
+    result = db.correct_product(actor["org_id"], point_id, reading_id, product_index, updates, actor["email"])
+    if not result:
+        raise HTTPException(status_code=404, detail="Lectura o producto no encontrado")
+    return result
+
+
 @app.post("/api/points/{point_id}/analyze")
 async def api_analyze(
     point_id: str,
     images: List[UploadFile] = File(...),
     linear_meters: Optional[float] = Form(default=None),
+    shelf_id: Optional[str] = Form(default=None),
     user: dict = Depends(require_auth),
 ):
     org_id = user["org_id"]
+    _check_point_access(user, point_id)
     if not db.point_exists(org_id, point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
+
+    shelf_id = (shelf_id or "").strip() or None
+    if shelf_id and not db.shelf_exists(org_id, point_id, shelf_id):
+        raise HTTPException(status_code=404, detail="Góndola no encontrada")
 
     if not images:
         raise HTTPException(status_code=400, detail="Debes subir al menos una foto")
@@ -421,4 +599,4 @@ async def api_analyze(
     image_paths = [
         save_upload(org_id, point_id, image_bytes, content_type) for image_bytes, content_type in loaded
     ]
-    return db.add_reading(org_id, point_id, analysis, image_paths, linear_meters)
+    return db.add_reading(org_id, point_id, analysis, image_paths, linear_meters, shelf_id)

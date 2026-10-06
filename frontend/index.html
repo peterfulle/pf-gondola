@@ -20,7 +20,11 @@
     --border-strong: #cfcfcc;
     --track:         #ececea;
     --fill:          #0a0a0a;
-    --header-bg:     #000000;
+    --header-bg:     #0b2b30;
+    --accent:        #0f8577;
+    --chip-teal-bg:  #dcf3ee; --chip-teal-ink:  #0f8577;
+    --chip-blue-bg:  #e2ecfd; --chip-blue-ink:  #2563eb;
+    --chip-amber-bg: #fdf0d4; --chip-amber-ink: #b45309;
   }
 
   * { box-sizing: border-box; }
@@ -68,7 +72,7 @@
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
   .btn-new {
     display: flex; align-items: center; gap: 6px;
-    background: #fff; color: #000; border: none; border-radius: 7px;
+    background: var(--accent); color: #fff; border: none; border-radius: 7px;
     padding: 8px 13px; font-family: inherit; font-size: 13px; font-weight: 700;
     cursor: pointer; white-space: nowrap; transition: transform 0.12s ease, opacity 0.12s ease;
   }
@@ -97,6 +101,7 @@
   .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 4px; }
   .sidebar-brand .mark { width: 26px; height: 26px; flex-shrink: 0; }
   .sidebar-brand-name { font-weight: 800; font-size: 15.5px; letter-spacing: -0.01em; }
+  .sidebar-brand-name .accent { color: #5eead4; }
   .sidebar-org {
     font-size: 11px; color: #8d8e92; font-weight: 600; padding: 0 6px 16px;
     border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px;
@@ -116,13 +121,23 @@
   }
   .sidebar-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
   .sidebar-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
-  .sidebar-nav-item.active { background: #fff; color: #000; }
+  .sidebar-nav-item.active { background: var(--accent); color: #fff; }
   .sidebar-footer {
     margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);
     display: flex; flex-direction: column; gap: 8px;
   }
-  .sidebar-footer .role-pill { align-self: flex-start; }
-  .sidebar-user { font-size: 12px; color: #fff; font-weight: 600; word-break: break-all; padding: 0 2px; }
+  .sidebar-profile { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .sidebar-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800;
+    flex-shrink: 0; letter-spacing: 0;
+  }
+  .sidebar-profile-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .sidebar-footer .role-pill { align-self: flex-start; padding: 2px 9px; font-size: 9.5px; }
+  .sidebar-user {
+    font-size: 12px; color: #fff; font-weight: 600; word-break: break-all; padding: 0 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .sidebar-logout {
     display: flex; align-items: center; gap: 6px; justify-content: center;
     background: transparent; border: 1px solid #313131; color: #fff; border-radius: 7px;
@@ -238,16 +253,26 @@
   .empty-state p { margin: 0; font-size: 13.5px; }
 
   /* ---------- home / resumen general ---------- */
+  .home-breadcrumb { font-size: 12px; color: var(--ink-muted); font-weight: 600; margin-bottom: 10px; }
   .home-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
   .home-head h1 { margin: 0 0 3px; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
   .home-head p { margin: 0; font-size: 13px; color: var(--ink-muted); font-weight: 500; }
+  .home-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .home-head .period-pill {
     display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-strong);
     border-radius: 100px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; color: var(--ink-secondary); white-space: nowrap;
   }
   .home-head .period-pill svg { width: 13px; height: 13px; color: var(--ink-muted); }
+  .demo-pill {
+    display: flex; align-items: center; gap: 6px; background: var(--chip-teal-bg); color: var(--chip-teal-ink);
+    border-radius: 100px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  }
+  .demo-pill svg { width: 13px; height: 13px; }
 
   .home-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; margin-bottom: 22px; }
+  .home-grid > .card { min-width: 0; }
+  .viz-hero-row, .viz-meter-grid { min-width: 0; }
+  .viz-hero-row > * { min-width: 0; }
 
   .card-head-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
   .card-link {
@@ -271,6 +296,9 @@
   }
   .quick-tile:hover { border-color: var(--border-strong); transform: translateY(-1px); }
   .quick-tile-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--page); color: var(--ink); }
+  .quick-tile-icon.c-teal { background: var(--chip-teal-bg); color: var(--chip-teal-ink); }
+  .quick-tile-icon.c-blue { background: var(--chip-blue-bg); color: var(--chip-blue-ink); }
+  .quick-tile-icon.c-amber { background: var(--chip-amber-bg); color: var(--chip-amber-ink); }
   .quick-tile-icon svg { width: 19px; height: 19px; }
   .quick-tile-title { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
   .quick-tile-desc { font-size: 11.5px; color: var(--ink-muted); line-height: 1.4; }
@@ -332,7 +360,7 @@
 
   button.primary {
     width: 100%; margin-top: 12px; padding: 12px; border-radius: 8px; border: none;
-    background: var(--ink); color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 700;
+    background: var(--accent); color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 700;
     letter-spacing: -0.005em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: opacity 0.15s ease, transform 0.1s ease;
   }
@@ -556,7 +584,8 @@
   .history-item .n { color: var(--ink-muted); font-variant-numeric: tabular-nums; font-size: 11px; }
 
   /* ---------- modal ---------- */
-  #modalBackdrop, #brandsModalBackdrop, #userModalBackdrop {
+  #modalBackdrop, #brandsModalBackdrop, #userModalBackdrop, #importModalBackdrop,
+  #correctionModalBackdrop, #correctionsHistoryBackdrop, #assignModalBackdrop {
     display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.45);
     align-items: center; justify-content: center; z-index: 50; padding: 20px;
   }
@@ -564,6 +593,19 @@
     background: #fff; border-radius: 14px; padding: 22px; width: 100%; max-width: 380px;
     box-shadow: 0 24px 60px -20px rgba(0,0,0,0.4);
   }
+  .field select {
+    width: 100%; padding: 10px 11px; border-radius: 8px; border: 1px solid var(--border-strong);
+    font-family: inherit; font-size: 14px; color: var(--ink); background: #fafafa;
+  }
+  .field select:focus { outline: none; border-color: var(--ink); background: #fff; }
+  .assign-row { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  .assign-row:last-child { border-bottom: none; }
+  .planogram-gap-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 8px; background: #fff4f1; border: 1px solid #f3c7ba; margin-bottom: 7px; font-size: 13px; }
+  .planogram-gap-row .ptitle { font-weight: 700; color: var(--ink); }
+  .planogram-gap-row .pstatus { font-size: 11.5px; font-weight: 700; color: #b5431b; text-transform: uppercase; letter-spacing: 0.02em; }
+  .row-edit-btn { background: transparent; border: none; cursor: pointer; color: var(--ink-muted); padding: 2px; display: inline-flex; }
+  .row-edit-btn:hover { color: var(--ink); }
+  .shelf-badge { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--ink-secondary); background: var(--page); border: 1px solid var(--border-strong); border-radius: 100px; padding: 2px 8px; margin-top: 3px; }
   .brand-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
   .brand-chip {
     display: flex; align-items: center; gap: 6px; background: var(--page); border: 1px solid var(--border-strong);
@@ -716,7 +758,7 @@
     .sidebar-nav-item { padding: 7px 9px; font-size: 11.5px; gap: 5px; }
     .sidebar-nav-item span { display: none; }
     .sidebar-footer { flex-direction: row; margin-top: 0; border-top: none; padding-top: 0; gap: 6px; }
-    .sidebar-footer .role-pill, .sidebar-user { display: none !important; }
+    .sidebar-profile { display: none !important; }
     .sidebar-logout { padding: 7px 9px; }
     .sidebar-logout span { display: none; }
 
@@ -902,7 +944,7 @@
     <aside class="sidebar">
       <div class="sidebar-brand">
         <img class="mark" src="/static/assets/neuramorphic-mark.svg" alt="Neuravision" />
-        <div class="sidebar-brand-name">Neuravision</div>
+        <div class="sidebar-brand-name">Neura<span class="accent">vision</span></div>
       </div>
       <div class="sidebar-org" id="orgNameLabel">Ejecución de Punto de Venta</div>
 
@@ -937,8 +979,13 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="role-pill" id="rolePill" style="display:none;"></div>
-        <div class="sidebar-user" id="currentUsername">—</div>
+        <div class="sidebar-profile">
+          <div class="sidebar-avatar" id="sidebarAvatar">—</div>
+          <div class="sidebar-profile-text">
+            <div class="sidebar-user" id="currentUsername">—</div>
+            <div class="role-pill" id="rolePill" style="display:none;"></div>
+          </div>
+        </div>
         <button class="sidebar-logout" id="logoutBtn" title="Cerrar sesión">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l-5-5 5-5M5 12h13"/></svg>
           <span>Cerrar sesión</span>
@@ -954,6 +1001,10 @@
         </button>
         <div class="spacer"></div>
         <div class="live-pill"><span class="dot"></span>En vivo</div>
+        <button class="btn-delete" id="importPointsBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16.5v2A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+          Importar CSV
+        </button>
         <button class="btn-new" id="newPointBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Nuevo punto
@@ -961,34 +1012,57 @@
       </nav>
 
       <main class="shell">
-    <section id="homeView" class="view-fade">
+    <section id="homeView" class="view-fade viz-root">
+      <div class="home-breadcrumb" id="homeBreadcrumb">Portal de clientes / Inicio</div>
       <div class="home-head">
         <div>
           <h1>Resumen general</h1>
-          <p>Visibilidad de tus puntos de venta en un solo lugar</p>
+          <p>Así está la ejecución de tu red ahora mismo</p>
         </div>
-        <div class="period-pill" id="homePeriodPill">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-          <span id="homePeriodLabel">—</span>
+        <div class="home-head-actions">
+          <div class="demo-pill" id="homeDemoPill" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5.2L5.6 16a2 2 0 0 0 1.7 3h9.4a2 2 0 0 0 1.7-3L14 8.2V3"/></svg>
+            Datos de demostración
+          </div>
+          <div class="period-pill" id="homePeriodPill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span id="homePeriodLabel">—</span>
+          </div>
+          <button class="btn-new" id="homeNewScanBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Nuevo escaneo
+          </button>
         </div>
       </div>
 
-      <div class="kpi-row">
-        <div class="kpi-tile">
-          <div><div class="kpi-value" id="homeKpiPoints">0</div><div class="kpi-label">PDV activos</div></div>
-          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg></div>
+      <div class="viz-hero-row">
+        <div class="viz-hero-tile">
+          <div class="viz-hero-label">Score de ejecución de la red</div>
+          <div class="viz-hero-value" id="homeHeroValue">—</div>
+          <div class="viz-status-badge" id="homeHeroBadge"></div>
         </div>
-        <div class="kpi-tile">
-          <div><div class="kpi-value" id="homeKpiReadings">0</div><div class="kpi-label">Lecturas totales</div></div>
-          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.2"/></svg></div>
-        </div>
-        <div class="kpi-tile">
-          <div><div class="kpi-value" id="homeKpiOos">0</div><div class="kpi-label">Quiebres detectados</div></div>
-          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a1.8 1.8 0 0 0 1.55 2.7h15.3a1.8 1.8 0 0 0 1.55-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg></div>
-        </div>
-        <div class="kpi-tile">
-          <div><div class="kpi-value" id="homeKpiShare">—</div><div class="kpi-label">Participación propia</div></div>
-          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg></div>
+        <div class="viz-meter-grid">
+          <div class="viz-meter">
+            <div class="viz-meter-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg>
+              <span>PDV con lectura</span><strong id="homeMeterCoverage">—</strong>
+            </div>
+            <div class="viz-meter-track"><div class="viz-meter-fill" id="homeMeterCoverageFill"></div></div>
+          </div>
+          <div class="viz-meter">
+            <div class="viz-meter-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              <span>Datos frescos (7 d)</span><strong id="homeMeterFresh">—</strong>
+            </div>
+            <div class="viz-meter-track"><div class="viz-meter-fill" id="homeMeterFreshFill"></div></div>
+          </div>
+          <div class="viz-meter">
+            <div class="viz-meter-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a1.8 1.8 0 0 0 1.55 2.7h15.3a1.8 1.8 0 0 0 1.55-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg>
+              <span>Puntos críticos</span><strong id="homeMeterCritical">—</strong>
+            </div>
+            <div class="viz-meter-track"><div class="viz-meter-fill" id="homeMeterCriticalFill"></div></div>
+          </div>
         </div>
       </div>
 
@@ -996,8 +1070,8 @@
         <div class="card">
           <div class="card-head-row">
             <h3 class="card-title" style="margin:0;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>
-              Actividad reciente
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a1.8 1.8 0 0 0 1.55 2.7h15.3a1.8 1.8 0 0 0 1.55-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg>
+              Puntos que requieren atención
             </h3>
             <button class="card-link" id="homeSeeAllBtn" type="button">
               Ver todas
@@ -1006,7 +1080,7 @@
           </div>
           <div class="home-activity-table-wrap table-scroll">
             <table>
-              <thead><tr><th>Punto de venta</th><th>Categoría principal</th><th>Fecha</th><th>Estado</th></tr></thead>
+              <thead><tr><th>Punto de venta</th><th>Región</th><th class="num">Score</th><th>Estado</th><th class="num">Quiebres</th></tr></thead>
               <tbody id="homeActivityBody"></tbody>
             </table>
           </div>
@@ -1025,6 +1099,14 @@
           </div>
           <div id="homeLastScanBody"><div class="last-scan-empty">Todavía no hay lecturas registradas.</div></div>
         </div>
+      </div>
+
+      <div class="card" id="homeRegionalCard" style="display:none;">
+        <h3 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11.5a7 7 0 0 1 14 0C19 14.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.4"/></svg>
+          Score promedio por región
+        </h3>
+        <div id="homeRegionalBars"></div>
       </div>
 
       <div class="section-head">
@@ -1095,6 +1177,20 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
               Nueva lectura
             </h3>
+            <div class="field" style="margin-bottom:10px;">
+              <label for="shelfSelect">Góndola / estante</label>
+              <select id="shelfSelect"></select>
+            </div>
+            <div id="newShelfInline" style="display:none; margin-bottom:10px;">
+              <div class="field-row">
+                <div class="field"><label for="newShelfName">Nombre de la góndola</label><input type="text" id="newShelfName" placeholder="Ej: Dermocosmética" /></div>
+                <div class="field"><label for="newShelfType">Tipo (opcional)</label><input type="text" id="newShelfType" placeholder="góndola / bin / vitrina" /></div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="confirm" id="createShelfBtn" type="button" style="flex:1;">Crear góndola</button>
+                <button class="cancel" id="cancelNewShelfBtn" type="button" style="flex:0 0 auto;">Cancelar</button>
+              </div>
+            </div>
             <button class="primary" id="openCameraBtn" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/>
@@ -1184,14 +1280,51 @@
             <div id="categoryChart"></div>
           </div>
 
-          <div class="card">
+          <div class="card" id="planogramGapsCard" style="display:none;">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a1.8 1.8 0 0 0 1.55 2.7h15.3a1.8 1.8 0 0 0 1.55-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg>
+              Faltantes según planograma
+            </h3>
+            <p class="capture-hint" style="margin:0 0 10px;">Comparación entre lo que el planograma de esta góndola espera y lo que la IA detectó en la foto. Es un cruce por nombre de producto, no por SKU exacto.</p>
+            <div id="planogramGapsList"></div>
+          </div>
+
+          <div class="card role-analyst-only" id="planogramCard" style="display:none;">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M9 9.5V20"/></svg>
-              Caras por producto
+              Planograma de esta góndola
             </h3>
+            <p class="capture-hint" style="margin:0 0 10px;">Define qué productos deberían estar en esta góndola para que el sistema marque automáticamente lo que falta.</p>
             <div class="table-scroll">
               <table>
-                <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th><th class="num">Prof. est.</th><th class="num">Unidades est.</th></tr></thead>
+                <thead><tr><th>Producto esperado</th><th>Marca</th><th class="num">Caras esperadas</th><th></th></tr></thead>
+                <tbody id="planogramTable"></tbody>
+              </table>
+            </div>
+            <div class="field-row" style="margin-top:10px;">
+              <div class="field"><label for="planoProduct">Producto</label><input type="text" id="planoProduct" placeholder="Ej: Crema Nivea 200ml" /></div>
+              <div class="field"><label for="planoBrand">Marca</label><input type="text" id="planoBrand" placeholder="Ej: Nivea" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="planoFacings">Caras esperadas</label><input type="number" id="planoFacings" min="1" placeholder="Ej: 4" /></div>
+              <div class="field" style="display:flex; align-items:flex-end;"><button class="confirm" id="addPlanoItemBtn" type="button" style="width:100%;">Agregar al planograma</button></div>
+            </div>
+            <div class="status" id="planogramStatus"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head-row">
+              <h3 class="card-title" style="margin:0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M9 9.5V20"/></svg>
+                Caras por producto
+              </h3>
+              <button class="card-link role-analyst-only" id="viewCorrectionsBtn" type="button" style="display:none;">
+                Ver correcciones
+              </button>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th><th class="num">Prof. est.</th><th class="num">Unidades est.</th><th class="role-analyst-only"></th></tr></thead>
                 <tbody id="productsTable"></tbody>
               </table>
             </div>
@@ -1488,6 +1621,77 @@
     </div>
   </div>
 
+  <div id="importModalBackdrop">
+    <div class="modal">
+      <h2>Importar puntos de venta</h2>
+      <p class="hint">Sube un CSV con columnas <strong>name</strong> (obligatoria), <strong>point_id</strong>, <strong>region</strong> y <strong>comuna</strong> (opcionales). Si tienes el archivo en Excel, usa "Guardar como → CSV" antes de subirlo.</p>
+      <div class="field">
+        <label for="importCsvInput">Archivo CSV</label>
+        <input type="file" id="importCsvInput" accept=".csv,text/csv" />
+      </div>
+      <div class="status" id="importStatus"></div>
+      <div id="importResult"></div>
+      <div class="modal-actions">
+        <button class="cancel" id="importCancel">Cerrar</button>
+        <button class="confirm" id="importConfirm">Importar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="correctionModalBackdrop">
+    <div class="modal" style="max-width:460px;">
+      <h2>Corregir producto</h2>
+      <p class="hint">El cambio queda registrado con tu usuario y la fecha, y se puede consultar en "Ver correcciones".</p>
+      <div class="field">
+        <label for="corrProduct">Producto</label>
+        <input type="text" id="corrProduct" />
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="corrBrand">Marca</label><input type="text" id="corrBrand" /></div>
+        <div class="field"><label for="corrCategory">Categoría</label><input type="text" id="corrCategory" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="corrFacings">Caras</label><input type="number" id="corrFacings" min="0" /></div>
+        <div class="field">
+          <label for="corrOutOfStock">Quiebre de stock</label>
+          <select id="corrOutOfStock">
+            <option value="false">No</option>
+            <option value="true">Sí</option>
+          </select>
+        </div>
+      </div>
+      <div class="status" id="correctionStatus"></div>
+      <div class="modal-actions">
+        <button class="cancel" id="correctionCancel">Cancelar</button>
+        <button class="confirm" id="correctionConfirm">Guardar corrección</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="correctionsHistoryBackdrop">
+    <div class="modal" style="max-width:520px;">
+      <h2>Historial de correcciones</h2>
+      <p class="hint">Cambios manuales aplicados a los productos detectados en esta lectura.</p>
+      <div id="correctionsHistoryList" class="table-scroll" style="max-height:340px;"></div>
+      <div class="modal-actions">
+        <button class="cancel" id="correctionsHistoryClose">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="assignModalBackdrop">
+    <div class="modal" style="max-width:460px;">
+      <h2>Puntos asignados</h2>
+      <p class="hint" id="assignModalHint">Elige qué puntos de venta puede ver este usuario. Si no marcas ninguno, verá todos los puntos de la organización.</p>
+      <div id="assignPointsList" class="table-scroll" style="max-height:320px;"></div>
+      <div class="status" id="assignStatus"></div>
+      <div class="modal-actions">
+        <button class="cancel" id="assignCancel">Cancelar</button>
+        <button class="confirm" id="assignConfirm">Guardar asignación</button>
+      </div>
+    </div>
+  </div>
+
   <div id="shelf3dModalBackdrop">
     <div class="shelf3d-modal">
       <div class="shelf3d-modal-head">
@@ -1757,27 +1961,63 @@
     return latest.categories.slice().sort((a, b) => (b.share_pct ?? 0) - (a.share_pct ?? 0))[0];
   }
 
-  function renderHomeActivity() {
+  function homeSeverityRank(p) {
+    if (!p.latest) return -1;
+    return p.latest.score_total != null ? p.latest.score_total : 50;
+  }
+
+  function renderHomePriority() {
     const body = document.getElementById("homeActivityBody");
-    const rows = points
-      .filter((p) => p.latest)
-      .slice()
-      .sort((a, b) => b.latest.created_at.localeCompare(a.latest.created_at))
-      .slice(0, 6);
-    if (!rows.length) {
-      body.innerHTML = `<tr><td colspan="4" class="hint">Aún no hay lecturas registradas.</td></tr>`;
+    if (!points.length) {
+      body.innerHTML = `<tr><td colspan="5" class="hint">Todavía no hay puntos de venta configurados.</td></tr>`;
       return;
     }
+    const rows = points.slice().sort((a, b) => homeSeverityRank(a) - homeSeverityRank(b)).slice(0, 6);
     body.innerHTML = rows.map((p) => {
-      const top = homeTopCategory(p.latest);
+      if (!p.latest) {
+        return `
+          <tr>
+            <td>${escapeHtml(p.name)}</td>
+            <td>${escapeHtml(p.region || "—")}</td>
+            <td class="num">—</td>
+            <td><span class="viz-status-badge critical"><span class="dot"></span>Sin lecturas</span></td>
+            <td class="num">—</td>
+          </tr>`;
+      }
+      const oos = (p.latest.products || []).filter((x) => x.out_of_stock).length;
       return `
         <tr>
           <td>${escapeHtml(p.name)}</td>
-          <td>${top ? escapeHtml(top.category) : "—"}</td>
-          <td>${relativeTime(p.latest.created_at)}</td>
+          <td>${escapeHtml(p.region || "—")}</td>
+          <td class="num">${p.latest.score_total != null ? Math.round(p.latest.score_total) : "—"}</td>
           <td>${statusBadgeHtml(p.latest.performance_label)}</td>
+          <td class="num">${oos}</td>
         </tr>`;
     }).join("");
+  }
+
+  function renderHomeRegional() {
+    const card = document.getElementById("homeRegionalCard");
+    const byRegion = {};
+    points.forEach((p) => {
+      if (!p.region || !p.latest || p.latest.score_total == null) return;
+      const b = byRegion[p.region] || (byRegion[p.region] = { region: p.region, sum: 0, n: 0 });
+      b.sum += p.latest.score_total;
+      b.n += 1;
+    });
+    const regions = Object.values(byRegion).map((b) => ({ region: b.region, avg: b.sum / b.n }));
+    if (regions.length < 2) {
+      card.style.display = "none";
+      return;
+    }
+    regions.sort((a, b) => a.avg - b.avg);
+    card.style.display = "block";
+    document.getElementById("homeRegionalBars").innerHTML = regions.map((r) => `
+      <div class="bar-row">
+        <div class="bar-label" title="${escapeHtml(r.region)}">${escapeHtml(r.region)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, Math.min(100, r.avg))}%;"></div></div>
+        <div class="bar-value">${Math.round(r.avg)} / 100</div>
+      </div>`).join("");
   }
 
   function renderHomeLastScan() {
@@ -1814,6 +2054,7 @@
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg>`,
       title: "Puntos de venta",
       desc: "Revisa tus góndolas y registra nuevas lecturas.",
+      color: "c-teal",
       onClick: () => document.getElementById("navDashboardBtn").click(),
     });
     if (canAnalyze) {
@@ -1821,6 +2062,7 @@
         icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9m5 10V5m5 14v-7"/></svg>`,
         title: "Reportería",
         desc: "Explora tendencias, ranking y quiebres por punto.",
+        color: "c-blue",
         onClick: () => document.getElementById("analyticsNavBtn").click(),
       });
     }
@@ -1829,6 +2071,7 @@
         icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>`,
         title: "Personas y roles",
         desc: "Invita usuarios y administra sus roles de acceso.",
+        color: "c-teal",
         onClick: () => document.getElementById("adminNavBtn").click(),
       });
     }
@@ -1837,6 +2080,7 @@
         icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>`,
         title: "Descargar datos",
         desc: "Exporta lecturas y resultados de análisis a CSV.",
+        color: "c-amber",
         href: "/api/export.csv",
       });
     }
@@ -1844,7 +2088,7 @@
       const tag = t.href ? "a" : "button";
       const attrs = t.href ? `href="${t.href}" download` : `type="button"`;
       return `<${tag} class="quick-tile" id="homeQuickTile${i}" ${attrs}>
-        <div class="quick-tile-icon">${t.icon}</div>
+        <div class="quick-tile-icon ${t.color}">${t.icon}</div>
         <div><div class="quick-tile-title">${escapeHtml(t.title)}</div><div class="quick-tile-desc">${escapeHtml(t.desc)}</div></div>
       </${tag}>`;
     }).join("");
@@ -1855,22 +2099,42 @@
 
   function renderHome() {
     const total = points.length;
-    const readingsTotal = points.reduce((s, p) => s + (p.readings_count || 0), 0);
-    let oosCount = 0;
-    points.forEach((p) => {
-      if (p.latest) oosCount += (p.latest.products || []).filter((x) => x.out_of_stock).length;
+    const withReading = points.filter((p) => p.latest);
+    const now = Date.now();
+    const freshCount = withReading.filter((p) => (now - new Date(p.latest.created_at).getTime()) < 7 * 24 * 60 * 60 * 1000).length;
+    const criticalPoints = points.filter((p) => {
+      if (!p.latest) return true;
+      if (p.latest.performance_label === "Necesita atención") return true;
+      return (p.latest.products || []).some((x) => x.out_of_stock);
     });
-    const shareVals = points
-      .map((p) => (p.latest && p.latest.benchmark ? p.latest.benchmark.own_share_pct : null))
-      .filter((v) => v != null);
-    const avgShare = shareVals.length ? (shareVals.reduce((a, b) => a + b, 0) / shareVals.length) : null;
 
-    document.getElementById("homeKpiPoints").textContent = total;
-    document.getElementById("homeKpiReadings").textContent = readingsTotal;
-    document.getElementById("homeKpiOos").textContent = oosCount;
-    document.getElementById("homeKpiShare").textContent = avgShare != null ? `${avgShare.toFixed(0)}%` : "—";
+    const scoreVals = withReading.map((p) => p.latest.score_total).filter((v) => v != null);
+    const avgScore = scoreVals.length ? scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length : null;
+    const heroLabel = labelForScore(avgScore);
+    document.getElementById("homeHeroValue").textContent = avgScore != null ? Math.round(avgScore) : "—";
+    const heroBadge = document.getElementById("homeHeroBadge");
+    heroBadge.className = `viz-status-badge ${heroLabel ? statusClassForLabel(heroLabel) : ""}`;
+    heroBadge.innerHTML = heroLabel ? `<span class="dot"></span>${escapeHtml(heroLabel)}` : (total ? "Sin datos de score todavía" : "");
 
-    renderHomeActivity();
+    const coveragePct = total ? (withReading.length / total) * 100 : 0;
+    const freshPct = total ? (freshCount / total) * 100 : 0;
+    const criticalPct = total ? (criticalPoints.length / total) * 100 : 0;
+
+    document.getElementById("homeMeterCoverage").textContent = total ? `${withReading.length}/${total}` : "—";
+    document.getElementById("homeMeterCoverageFill").style.width = `${coveragePct}%`;
+    document.getElementById("homeMeterFresh").textContent = total ? `${Math.round(freshPct)}%` : "—";
+    document.getElementById("homeMeterFreshFill").style.width = `${freshPct}%`;
+    document.getElementById("homeMeterCritical").textContent = total ? String(criticalPoints.length) : "—";
+    document.getElementById("homeMeterCriticalFill").style.width = `${criticalPct}%`;
+
+    const isDemoData = points.some((p) => p.latest && p.latest.notes === "Lectura de demostración");
+    document.getElementById("homeDemoPill").style.display = isDemoData ? "flex" : "none";
+
+    const orgName = currentUser && currentUser.org_name ? currentUser.org_name : "Portal de clientes";
+    document.getElementById("homeBreadcrumb").textContent = `${orgName} / Inicio`;
+
+    renderHomePriority();
+    renderHomeRegional();
     renderHomeLastScan();
     renderHomeQuickAccess();
   }
@@ -1893,6 +2157,7 @@
 
   document.getElementById("navHomeBtn").addEventListener("click", showHomeView);
   document.getElementById("homeSeeAllBtn").addEventListener("click", () => document.getElementById("navDashboardBtn").click());
+  document.getElementById("homeNewScanBtn").addEventListener("click", () => document.getElementById("navDashboardBtn").click());
 
   const HOME_MONTH_NAMES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
   (function setHomePeriodLabel() {
@@ -1949,6 +2214,7 @@
       ? (isLive(latest.created_at) ? "En vivo" : "Última lectura " + relativeTime(latest.created_at))
       : "Sin lecturas";
 
+    await loadShelves(pointId);
     renderHistory();
     if (currentPoint.readings.length) {
       selectReading(currentReadingId && currentPoint.readings.some(r => r.id === currentReadingId) ? currentReadingId : currentPoint.readings[0].id);
@@ -1976,11 +2242,13 @@
       const thumb = urls.length
         ? `<div class="history-thumb-wrap"><img class="history-thumb" src="${urls[0]}" alt="Foto lectura ${r.id}" loading="lazy" />${badge}</div>`
         : `<div class="history-thumb placeholder">${ICON_EMPTY}</div>`;
+      const shelfBadge = r.shelf_name ? `<span class="shelf-badge">${escapeHtml(r.shelf_name)}</span>` : "";
       item.innerHTML = `
         ${thumb}
         <div class="history-info">
           <span class="t">${relativeTime(r.created_at)}</span>
           <span class="n">${r.total_facings ?? "–"} caras · ${(r.products || []).length} productos</span>
+          ${shelfBadge}
         </div>
       `;
       item.addEventListener("click", () => selectReading(r.id));
@@ -2057,17 +2325,34 @@
     });
     if (!categories.length) chart.innerHTML = `<div class="point-empty">Sube una foto para ver el desglose por categoría.</div>`;
 
+    renderPlanogramGaps(reading);
+
+    const canCorrect = currentUser && ANALYST_ROLES.includes(currentUser.role);
     const tbody = document.getElementById("productsTable");
     tbody.innerHTML = "";
-    products.slice().sort((a, b) => (b.facings ?? 0) - (a.facings ?? 0)).forEach((p) => {
+    const indexedProducts = products.map((p, i) => ({ p, i }));
+    indexedProducts.sort((a, b) => (b.p.facings ?? 0) - (a.p.facings ?? 0));
+    indexedProducts.forEach(({ p, i }) => {
       const tr = document.createElement("tr");
       const ownFlag = p.is_own_brand ? `<span class="own-flag" title="Marca propia">${ICON_DOT}</span>` : "";
       const oosFlag = p.out_of_stock ? ` <span class="oos-flag" title="Quiebre de stock detectado">${ICON_WARNING}</span>` : "";
       const depth = p.estimated_depth || 1;
       const unitsEst = (p.facings ?? 0) * depth;
-      tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td><td class="num">${depth}</td><td class="num">${unitsEst}</td>`;
+      const editCell = canCorrect
+        ? `<td><button class="row-edit-btn" data-edit-product="${i}" title="Corregir producto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></td>`
+        : "";
+      tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td><td class="num">${depth}</td><td class="num">${unitsEst}</td>${editCell}`;
       tbody.appendChild(tr);
     });
+    if (canCorrect && reading) {
+      tbody.querySelectorAll("[data-edit-product]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.dataset.editProduct);
+          openCorrectionModal(reading.id, idx, products[idx]);
+        });
+      });
+    }
+    document.getElementById("viewCorrectionsBtn").style.display = canCorrect && reading ? "" : "none";
 
     const shelf3dCard = document.getElementById("shelf3dCard");
     if (products.length) {
@@ -2273,6 +2558,7 @@
     selectedFiles.forEach((f) => formData.append("images", f));
     const totalMeters = selectedWidths.reduce((s, w) => s + (w || 0), 0);
     if (totalMeters > 0) formData.append("linear_meters", totalMeters.toFixed(2));
+    if (currentShelfId && currentShelfId !== "__new__") formData.append("shelf_id", currentShelfId);
 
     try {
       const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/analyze`, { method: "POST", body: formData });
@@ -2472,6 +2758,288 @@
     }
   });
 
+  // ---------- importar puntos de venta (CSV) ----------
+  const importModalBackdrop = document.getElementById("importModalBackdrop");
+  const importStatus = document.getElementById("importStatus");
+
+  document.getElementById("importPointsBtn").addEventListener("click", () => {
+    document.getElementById("importCsvInput").value = "";
+    document.getElementById("importResult").innerHTML = "";
+    importStatus.innerHTML = "";
+    importStatus.classList.remove("error");
+    importModalBackdrop.style.display = "flex";
+  });
+  document.getElementById("importCancel").addEventListener("click", () => { importModalBackdrop.style.display = "none"; fetchPoints(); });
+  importModalBackdrop.addEventListener("click", (e) => { if (e.target === importModalBackdrop) { importModalBackdrop.style.display = "none"; fetchPoints(); } });
+
+  document.getElementById("importConfirm").addEventListener("click", async () => {
+    const input = document.getElementById("importCsvInput");
+    const file = input.files && input.files[0];
+    if (!file) {
+      importStatus.classList.add("error");
+      importStatus.innerHTML = `${ICON_WARNING} Elige un archivo CSV primero`;
+      return;
+    }
+    importStatus.classList.remove("error");
+    importStatus.innerHTML = `${ICON_SPINNER} Importando…`;
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("/api/points/import", { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      importStatus.innerHTML = `${ICON_CHECK} ${data.created_count} punto${data.created_count === 1 ? "" : "s"} creado${data.created_count === 1 ? "" : "s"}, ${data.skipped_count} omitido${data.skipped_count === 1 ? "" : "s"}.`;
+      const resultEl = document.getElementById("importResult");
+      resultEl.innerHTML = data.skipped.length
+        ? `<div class="hint" style="margin-top:8px;">Omitidos: ${data.skipped.map((s) => `fila ${s.row} (${escapeHtml(s.reason)})`).join(", ")}</div>`
+        : "";
+      await fetchPoints();
+    } catch (e) {
+      importStatus.classList.add("error");
+      importStatus.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+    }
+  });
+
+  // ---------- góndolas (estantes nombrados dentro de un PDV) ----------
+  let shelves = [];
+  let currentShelfId = "";
+
+  async function loadShelves(pointId) {
+    try {
+      const res = await fetch(`/api/points/${encodeURIComponent(pointId)}/shelves`);
+      shelves = res.ok ? await res.json() : [];
+    } catch (e) {
+      shelves = [];
+    }
+    renderShelfSelect();
+  }
+
+  function renderShelfSelect() {
+    const sel = document.getElementById("shelfSelect");
+    const prev = currentShelfId;
+    sel.innerHTML = `<option value="">Sin góndola específica</option>` +
+      shelves.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}${s.shelf_type ? " · " + escapeHtml(s.shelf_type) : ""}</option>`).join("") +
+      `<option value="__new__">+ Nueva góndola…</option>`;
+    sel.value = shelves.some((s) => s.id === prev) ? prev : "";
+    currentShelfId = sel.value;
+    loadPlanogramManager(currentShelfId);
+  }
+
+  document.getElementById("shelfSelect").addEventListener("change", (e) => {
+    const inline = document.getElementById("newShelfInline");
+    if (e.target.value === "__new__") {
+      inline.style.display = "block";
+      document.getElementById("newShelfName").focus();
+      return;
+    }
+    inline.style.display = "none";
+    currentShelfId = e.target.value;
+    loadPlanogramManager(currentShelfId);
+  });
+
+  document.getElementById("cancelNewShelfBtn").addEventListener("click", () => {
+    document.getElementById("newShelfInline").style.display = "none";
+    document.getElementById("shelfSelect").value = currentShelfId || "";
+  });
+
+  document.getElementById("createShelfBtn").addEventListener("click", async () => {
+    const name = document.getElementById("newShelfName").value.trim();
+    const shelfType = document.getElementById("newShelfType").value.trim();
+    if (!name || !currentPoint) return;
+    try {
+      const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/shelves`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, shelf_type: shelfType || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+      const shelf = await res.json();
+      await loadShelves(currentPoint.id);
+      document.getElementById("shelfSelect").value = shelf.id;
+      currentShelfId = shelf.id;
+      document.getElementById("newShelfInline").style.display = "none";
+      document.getElementById("newShelfName").value = "";
+      document.getElementById("newShelfType").value = "";
+      loadPlanogramManager(currentShelfId);
+    } catch (e) {
+      alert(e.message || "No se pudo crear la góndola");
+    }
+  });
+
+  // ---------- planograma (productos esperados por góndola) ----------
+  async function loadPlanogramManager(shelfId) {
+    const card = document.getElementById("planogramCard");
+    const tbody = document.getElementById("planogramTable");
+    const canManage = currentUser && ANALYST_ROLES.includes(currentUser.role);
+    if (!shelfId || !canManage) {
+      card.style.display = "none";
+      tbody.innerHTML = "";
+      return;
+    }
+    card.style.display = "block";
+    tbody.innerHTML = `<tr><td colspan="4" class="point-empty">${ICON_SPINNER} Cargando…</td></tr>`;
+    try {
+      const res = await fetch(`/api/shelves/${encodeURIComponent(shelfId)}/planogram`);
+      const items = res.ok ? await res.json() : [];
+      renderPlanogramTable(items, shelfId);
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="4" class="point-empty">${ICON_WARNING} No se pudo cargar el planograma.</td></tr>`;
+    }
+  }
+
+  function renderPlanogramTable(items, shelfId) {
+    const tbody = document.getElementById("planogramTable");
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="point-empty">Todavía no defines qué productos deberían estar en esta góndola.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map((it) => `
+      <tr>
+        <td>${escapeHtml(it.product)}</td>
+        <td>${escapeHtml(it.brand || "—")}</td>
+        <td class="num">${it.expected_facings ?? "—"}</td>
+        <td><button class="row-edit-btn" data-remove-plano="${it.id}" title="Quitar">${ICON_REMOVE}</button></td>
+      </tr>
+    `).join("");
+    tbody.querySelectorAll("[data-remove-plano]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await fetch(`/api/shelves/${encodeURIComponent(shelfId)}/planogram/${btn.dataset.removePlano}`, { method: "DELETE" });
+        loadPlanogramManager(shelfId);
+      });
+    });
+  }
+
+  document.getElementById("addPlanoItemBtn").addEventListener("click", async () => {
+    const status = document.getElementById("planogramStatus");
+    const product = document.getElementById("planoProduct").value.trim();
+    const brand = document.getElementById("planoBrand").value.trim();
+    const facingsVal = document.getElementById("planoFacings").value;
+    if (!product || !currentShelfId) {
+      status.classList.add("error");
+      status.innerHTML = `${ICON_WARNING} Elige una góndola y escribe el producto`;
+      return;
+    }
+    try {
+      const res = await fetch(`/api/shelves/${encodeURIComponent(currentShelfId)}/planogram`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product, brand: brand || null, expected_facings: facingsVal ? Number(facingsVal) : null }),
+      });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      document.getElementById("planoProduct").value = "";
+      document.getElementById("planoBrand").value = "";
+      document.getElementById("planoFacings").value = "";
+      status.classList.remove("error");
+      status.innerHTML = "";
+      loadPlanogramManager(currentShelfId);
+    } catch (e) {
+      status.classList.add("error");
+      status.innerHTML = `${ICON_WARNING} No se pudo agregar el producto`;
+    }
+  });
+
+  function renderPlanogramGaps(reading) {
+    const card = document.getElementById("planogramGapsCard");
+    const list = document.getElementById("planogramGapsList");
+    if (!reading || !reading.has_planogram) {
+      card.style.display = "none";
+      return;
+    }
+    card.style.display = "block";
+    const gaps = reading.planogram_gaps || [];
+    if (!gaps.length) {
+      list.innerHTML = `<div class="point-empty">Todo lo esperado según el planograma se detectó en esta lectura.</div>`;
+      return;
+    }
+    const statusLabel = { no_detectado: "No detectado", quiebre_de_stock: "Quiebre de stock", bajo_lo_esperado: "Bajo lo esperado" };
+    list.innerHTML = gaps.map((g) => `
+      <div class="planogram-gap-row">
+        <div>
+          <div class="ptitle">${escapeHtml(g.product)}${g.brand ? " · " + escapeHtml(g.brand) : ""}</div>
+          <div class="hint">Esperado: ${g.expected_facings ?? "—"} caras · Detectado: ${g.detected_facings ?? 0}</div>
+        </div>
+        <span class="pstatus">${statusLabel[g.status] || g.status}</span>
+      </div>
+    `).join("");
+  }
+
+  // ---------- corrección manual de productos (con auditoría) ----------
+  let correctionContext = null;
+  const correctionModalBackdrop = document.getElementById("correctionModalBackdrop");
+
+  function openCorrectionModal(readingId, index, product) {
+    correctionContext = { readingId, index };
+    document.getElementById("corrProduct").value = product.product || "";
+    document.getElementById("corrBrand").value = product.brand || "";
+    document.getElementById("corrCategory").value = product.category || "";
+    document.getElementById("corrFacings").value = product.facings ?? 0;
+    document.getElementById("corrOutOfStock").value = product.out_of_stock ? "true" : "false";
+    const status = document.getElementById("correctionStatus");
+    status.innerHTML = "";
+    status.classList.remove("error");
+    correctionModalBackdrop.style.display = "flex";
+  }
+  document.getElementById("correctionCancel").addEventListener("click", () => { correctionModalBackdrop.style.display = "none"; });
+  correctionModalBackdrop.addEventListener("click", (e) => { if (e.target === correctionModalBackdrop) correctionModalBackdrop.style.display = "none"; });
+
+  document.getElementById("correctionConfirm").addEventListener("click", async () => {
+    if (!correctionContext || !currentPoint) return;
+    const status = document.getElementById("correctionStatus");
+    const payload = {
+      product: document.getElementById("corrProduct").value.trim(),
+      brand: document.getElementById("corrBrand").value.trim(),
+      category: document.getElementById("corrCategory").value.trim(),
+      facings: Number(document.getElementById("corrFacings").value) || 0,
+      out_of_stock: document.getElementById("corrOutOfStock").value === "true",
+    };
+    try {
+      const res = await fetch(
+        `/api/points/${encodeURIComponent(currentPoint.id)}/readings/${correctionContext.readingId}/products/${correctionContext.index}`,
+        { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
+      );
+      const updated = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(updated.detail || `Error ${res.status}`);
+      const idx = currentPoint.readings.findIndex((r) => r.id === updated.id);
+      if (idx >= 0) currentPoint.readings[idx] = updated;
+      correctionModalBackdrop.style.display = "none";
+      renderHistory();
+      renderReading(updated);
+    } catch (e) {
+      status.classList.add("error");
+      status.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+    }
+  });
+
+  const correctionsHistoryBackdrop = document.getElementById("correctionsHistoryBackdrop");
+  document.getElementById("viewCorrectionsBtn").addEventListener("click", async () => {
+    if (!currentPoint || !currentReadingId) return;
+    const list = document.getElementById("correctionsHistoryList");
+    list.innerHTML = `<div class="point-empty">${ICON_SPINNER} Cargando…</div>`;
+    correctionsHistoryBackdrop.style.display = "flex";
+    try {
+      const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/readings/${currentReadingId}/corrections`);
+      const items = await res.json();
+      if (!items.length) {
+        list.innerHTML = `<div class="point-empty">Esta lectura no tiene correcciones manuales todavía.</div>`;
+        return;
+      }
+      list.innerHTML = items.map((c) => `
+        <div style="padding:9px 2px; border-bottom:1px solid var(--border); font-size:12.5px;">
+          <div><strong>${escapeHtml(c.product_label || "")}</strong> — campo "${escapeHtml(c.field)}"</div>
+          <div class="hint">${escapeHtml(JSON.stringify(c.old_value))} → ${escapeHtml(JSON.stringify(c.new_value))}</div>
+          <div class="hint">${escapeHtml(c.corrected_by)} · ${relativeTime(c.corrected_at)}</div>
+        </div>
+      `).join("");
+    } catch (e) {
+      list.innerHTML = `<div class="point-empty">${ICON_WARNING} No se pudo cargar el historial.</div>`;
+    }
+  });
+  document.getElementById("correctionsHistoryClose").addEventListener("click", () => { correctionsHistoryBackdrop.style.display = "none"; });
+  correctionsHistoryBackdrop.addEventListener("click", (e) => { if (e.target === correctionsHistoryBackdrop) correctionsHistoryBackdrop.style.display = "none"; });
+
   // ---------- own brands (marca propia vs. competencia) ----------
   let ownBrands = [];
   const brandsModalBackdrop = document.getElementById("brandsModalBackdrop");
@@ -2661,6 +3229,9 @@
               <select class="role-select" data-action="change-role" data-email="${escapeHtml(u.email)}">
                 ${assignableRoles.map((r) => `<option value="${r}" ${r === u.role ? "selected" : ""}>${ROLE_META[r].label}</option>`).join("")}
               </select>
+              <button class="btn-icon-delete" data-action="assign-points" data-email="${escapeHtml(u.email)}" title="Elegir qué puntos de venta puede ver">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9.5L12 4l8 5.5V21M9 21v-6h6v6"/></svg>
+              </button>
               <button class="btn-icon-delete" data-action="delete-user" data-email="${escapeHtml(u.email)}" title="Eliminar usuario" ${u.email === currentUser.email ? "disabled" : ""}>
                 ${ICON_REMOVE}
               </button>
@@ -2694,17 +3265,75 @@
   });
 
   document.getElementById("usersTableBody").addEventListener("click", async (e) => {
-    const btn = e.target.closest('button[data-action="delete-user"]');
-    if (!btn || btn.disabled) return;
-    const email = btn.dataset.email;
-    if (!confirm(`¿Eliminar al usuario "${email}"? Esta acción no se puede deshacer.`)) return;
+    const deleteBtn = e.target.closest('button[data-action="delete-user"]');
+    if (deleteBtn && !deleteBtn.disabled) {
+      const email = deleteBtn.dataset.email;
+      if (!confirm(`¿Eliminar al usuario "${email}"? Esta acción no se puede deshacer.`)) return;
+      try {
+        const res = await fetch(`/api/admin/users/${encodeURIComponent(email)}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+        loadAdminUsers();
+      } catch (e) {
+        alert(e.message || "No se pudo eliminar el usuario");
+      }
+      return;
+    }
+    const assignBtn = e.target.closest('button[data-action="assign-points"]');
+    if (assignBtn) openAssignModal(assignBtn.dataset.email);
+  });
+
+  // ---------- asignación de puntos de venta por usuario ----------
+  const assignModalBackdrop = document.getElementById("assignModalBackdrop");
+  let assignEmail = null;
+
+  async function openAssignModal(email) {
+    assignEmail = email;
+    const list = document.getElementById("assignPointsList");
+    const status = document.getElementById("assignStatus");
+    status.innerHTML = "";
+    status.classList.remove("error");
+    list.innerHTML = `<div class="point-empty">${ICON_SPINNER} Cargando…</div>`;
+    assignModalBackdrop.style.display = "flex";
     try {
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(email)}`, { method: "DELETE" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
-      loadAdminUsers();
+      const [allPoints, assignedIds] = await Promise.all([
+        fetch("/api/points").then((r) => r.json()),
+        fetch(`/api/admin/users/${encodeURIComponent(email)}/points`).then((r) => r.json()),
+      ]);
+      if (!allPoints.length) {
+        list.innerHTML = `<div class="point-empty">Todavía no hay puntos de venta creados.</div>`;
+        return;
+      }
+      const assignedSet = new Set(assignedIds);
+      list.innerHTML = allPoints.map((p) => `
+        <label class="assign-row">
+          <input type="checkbox" value="${escapeHtml(p.id)}" ${assignedSet.has(p.id) ? "checked" : ""} />
+          <span><strong>${escapeHtml(p.name)}</strong> <span class="hint">${escapeHtml(p.id)}</span></span>
+        </label>
+      `).join("");
     } catch (e) {
-      alert(e.message || "No se pudo eliminar el usuario");
+      list.innerHTML = `<div class="point-empty">${ICON_WARNING} No se pudo cargar la lista de puntos.</div>`;
+    }
+  }
+
+  document.getElementById("assignCancel").addEventListener("click", () => { assignModalBackdrop.style.display = "none"; });
+  assignModalBackdrop.addEventListener("click", (e) => { if (e.target === assignModalBackdrop) assignModalBackdrop.style.display = "none"; });
+
+  document.getElementById("assignConfirm").addEventListener("click", async () => {
+    if (!assignEmail) return;
+    const status = document.getElementById("assignStatus");
+    const pointIds = Array.from(document.querySelectorAll("#assignPointsList input[type=checkbox]:checked")).map((c) => c.value);
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(assignEmail)}/points`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ point_ids: pointIds }),
+      });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      assignModalBackdrop.style.display = "none";
+    } catch (e) {
+      status.classList.add("error");
+      status.innerHTML = `${ICON_WARNING} No se pudo guardar la asignación`;
     }
   });
 
@@ -3327,6 +3956,14 @@
     const meta = ROLE_META[user.role] || ROLE_META.reponedor;
     pill.style.display = "flex";
     pill.innerHTML = `<span class="dot" style="background:${meta.color};"></span>${meta.label}`;
+    const avatar = document.getElementById("sidebarAvatar");
+    const initialsSource = (user.email || "?").split("@")[0].replace(/[^a-zA-Z0-9]/g, " ").trim();
+    const initialsParts = initialsSource.split(/\s+/).filter(Boolean);
+    const initials = initialsParts.length > 1
+      ? (initialsParts[0][0] + initialsParts[1][0])
+      : initialsSource.slice(0, 2);
+    avatar.textContent = initials.toUpperCase() || "?";
+    avatar.style.background = meta.color;
     applyRolePermissions();
     initApp();
   }

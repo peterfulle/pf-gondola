@@ -64,6 +64,44 @@ CREATE TABLE IF NOT EXISTS own_brands (
   created_at TEXT NOT NULL,
   PRIMARY KEY (org_id, name)
 );
+CREATE TABLE IF NOT EXISTS shelves (
+  org_id TEXT NOT NULL,
+  id TEXT NOT NULL,
+  point_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  shelf_type TEXT,
+  description TEXT,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, id)
+);
+CREATE TABLE IF NOT EXISTS planogram_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  shelf_id TEXT NOT NULL,
+  product TEXT NOT NULL,
+  brand TEXT,
+  category TEXT,
+  expected_facings INTEGER,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS product_corrections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  reading_id INTEGER NOT NULL,
+  product_label TEXT,
+  field TEXT NOT NULL,
+  old_value TEXT,
+  new_value TEXT,
+  corrected_by TEXT NOT NULL,
+  corrected_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS point_assignments (
+  org_id TEXT NOT NULL,
+  point_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (org_id, point_id, email)
+);
 """
 
 VALID_ROLES = ("superusuario", "admin", "analista", "reponedor")
@@ -107,6 +145,7 @@ def init_db():
             "ALTER TABLE readings ADD COLUMN price_visibility_score REAL",
             "ALTER TABLE readings ADD COLUMN exhibition_score REAL",
             "ALTER TABLE readings ADD COLUMN organization_score REAL",
+            "ALTER TABLE readings ADD COLUMN shelf_id TEXT",
         ):
             try:
                 conn.execute(statement)
@@ -286,6 +325,156 @@ def _benchmark_summary(products: list) -> dict:
     }
 
 
+# ---------- góndolas (estantes nombrados dentro de un PDV) ----------
+
+def next_shelf_id(org_id: str, point_id: str) -> str:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id FROM shelves WHERE org_id = ? AND point_id = ?", (org_id, point_id)
+        ).fetchall()
+    max_n = 0
+    for row in rows:
+        try:
+            n = int(row["id"].split("-G")[-1])
+        except ValueError:
+            continue
+        max_n = max(max_n, n)
+    return f"{point_id}-G{max_n + 1:02d}"
+
+
+def create_shelf(org_id: str, point_id: str, name: str, shelf_type: str = None, description: str = None) -> dict:
+    shelf_id = next_shelf_id(org_id, point_id)
+    created_at = now_iso()
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO shelves (org_id, id, point_id, name, shelf_type, description, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (org_id, shelf_id, point_id, name, shelf_type, description, created_at),
+        )
+    return {
+        "id": shelf_id, "point_id": point_id, "name": name,
+        "shelf_type": shelf_type, "description": description, "created_at": created_at,
+    }
+
+
+def list_shelves(org_id: str, point_id: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM shelves WHERE org_id = ? AND point_id = ? ORDER BY created_at", (org_id, point_id)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_shelf(org_id: str, shelf_id: str):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM shelves WHERE org_id = ? AND id = ?", (org_id, shelf_id)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def shelf_exists(org_id: str, point_id: str, shelf_id: str) -> bool:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM shelves WHERE org_id = ? AND point_id = ? AND id = ?", (org_id, point_id, shelf_id)
+        ).fetchone()
+    return row is not None
+
+
+def delete_shelf(org_id: str, shelf_id: str) -> None:
+    # Las lecturas históricas de esta góndola se conservan; solo pierden la etiqueta
+    # de góndola, para no destruir el historial de levantamientos ya hechos.
+    with get_conn() as conn:
+        conn.execute("UPDATE readings SET shelf_id = NULL WHERE org_id = ? AND shelf_id = ?", (org_id, shelf_id))
+        conn.execute("DELETE FROM planogram_items WHERE org_id = ? AND shelf_id = ?", (org_id, shelf_id))
+        conn.execute("DELETE FROM shelves WHERE org_id = ? AND id = ?", (org_id, shelf_id))
+
+
+def _shelf_names_by_id(org_id: str) -> dict:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT id, name, shelf_type FROM shelves WHERE org_id = ?", (org_id,)).fetchall()
+    return {r["id"]: {"name": r["name"], "shelf_type": r["shelf_type"]} for r in rows}
+
+
+# ---------- planograma (productos esperados por góndola) ----------
+
+def add_planogram_item(org_id: str, shelf_id: str, product: str, brand: str = None,
+                        category: str = None, expected_facings: int = None) -> dict:
+    created_at = now_iso()
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO planogram_items (org_id, shelf_id, product, brand, category, expected_facings, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (org_id, shelf_id, product, brand, category, expected_facings, created_at),
+        )
+    return {
+        "id": cur.lastrowid, "shelf_id": shelf_id, "product": product, "brand": brand,
+        "category": category, "expected_facings": expected_facings, "created_at": created_at,
+    }
+
+
+def list_planogram_items(org_id: str, shelf_id: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM planogram_items WHERE org_id = ? AND shelf_id = ? ORDER BY created_at",
+            (org_id, shelf_id),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def delete_planogram_item(org_id: str, item_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM planogram_items WHERE org_id = ? AND id = ?", (org_id, item_id))
+
+
+def _planogram_items_by_shelf(org_id: str) -> dict:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM planogram_items WHERE org_id = ?", (org_id,)).fetchall()
+    by_shelf = {}
+    for r in rows:
+        by_shelf.setdefault(r["shelf_id"], []).append(dict(r))
+    return by_shelf
+
+
+def _match_product(item: dict, products: list):
+    needle = (item.get("product") or "").strip().lower()
+    brand_needle = (item.get("brand") or "").strip().lower()
+    for p in products:
+        haystack = (p.get("product") or "").strip().lower()
+        brand_hay = (p.get("brand") or "").strip().lower()
+        name_match = needle and (needle in haystack or haystack in needle)
+        brand_match = (not brand_needle) or (brand_needle in brand_hay or brand_hay in brand_needle)
+        if name_match and brand_match:
+            return p
+    return None
+
+
+def _planogram_gaps(items: list, products: list) -> list:
+    """Compara el planograma (lo que debería estar) contra lo detectado en la foto.
+    No es un match exacto de SKU: es texto libre de producto/marca, así que puede haber
+    falsos positivos/negativos si la IA describe el producto distinto al planograma."""
+    gaps = []
+    for item in items:
+        match = _match_product(item, products)
+        expected = item.get("expected_facings")
+        if not match:
+            gaps.append({
+                "product": item.get("product"), "brand": item.get("brand"), "category": item.get("category"),
+                "expected_facings": expected, "detected_facings": 0, "status": "no_detectado",
+            })
+        elif match.get("out_of_stock"):
+            gaps.append({
+                "product": item.get("product"), "brand": item.get("brand"), "category": item.get("category"),
+                "expected_facings": expected, "detected_facings": 0, "status": "quiebre_de_stock",
+            })
+        elif expected and (match.get("facings") or 0) < expected:
+            gaps.append({
+                "product": item.get("product"), "brand": item.get("brand"), "category": item.get("category"),
+                "expected_facings": expected, "detected_facings": match.get("facings") or 0, "status": "bajo_lo_esperado",
+            })
+    return gaps
+
+
 # ---------- puntos de venta ----------
 
 def point_exists(org_id: str, point_id: str) -> bool:
@@ -323,13 +512,14 @@ def add_reading(
     analysis: dict,
     image_paths: list,
     linear_meters: float = None,
+    shelf_id: str = None,
 ) -> dict:
     with get_conn() as conn:
         cur = conn.execute(
             "INSERT INTO readings (org_id, point_id, created_at, total_facings, shelf_levels_detected, "
             "empty_space_pct, price_visibility_score, exhibition_score, organization_score, "
-            "products_json, categories_json, notes, image_paths_json, linear_meters) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "products_json, categories_json, notes, image_paths_json, linear_meters, shelf_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 org_id,
                 point_id,
@@ -345,14 +535,17 @@ def add_reading(
                 analysis.get("notes", ""),
                 json.dumps(image_paths or []),
                 linear_meters,
+                shelf_id,
             ),
         )
         reading_id = cur.lastrowid
         row = conn.execute("SELECT * FROM readings WHERE id = ?", (reading_id,)).fetchone()
-    return _reading_dict(row, list_own_brands(org_id))
+    shelves = _shelf_names_by_id(org_id)
+    planograms = _planogram_items_by_shelf(org_id)
+    return _reading_dict(row, list_own_brands(org_id), shelves, planograms)
 
 
-def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
+def _reading_dict(row: sqlite3.Row, own_brands: list = None, shelves: dict = None, planograms: dict = None) -> dict:
     paths_json = row["image_paths_json"]
     paths = json.loads(paths_json) if paths_json else []
 
@@ -369,10 +562,18 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
     empty_space_pct = row["empty_space_pct"]
     availability_score = round(100 - empty_space_pct, 1) if empty_space_pct is not None else None
 
+    shelf_id = row["shelf_id"] if "shelf_id" in row.keys() else None
+    shelf_meta = (shelves or {}).get(shelf_id) if shelf_id else None
+    planogram_items = (planograms or {}).get(shelf_id, []) if shelf_id else []
+    planogram_gaps = _planogram_gaps(planogram_items, products) if planogram_items else []
+
     return {
         "id": row["id"],
         "point_id": row["point_id"],
         "created_at": row["created_at"],
+        "shelf_id": shelf_id,
+        "shelf_name": shelf_meta["name"] if shelf_meta else None,
+        "shelf_type": shelf_meta["shelf_type"] if shelf_meta else None,
         "total_facings": row["total_facings"],
         "shelf_levels_detected": row["shelf_levels_detected"],
         "empty_space_pct": empty_space_pct,
@@ -386,16 +587,22 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None) -> dict:
         "vertical_meters": vertical_meters,
         "display_area_m2": display_area_m2,
         "total_units_estimate": total_units_estimate,
+        "has_planogram": bool(planogram_items),
+        "planogram_gaps": planogram_gaps,
         **_score_summary(availability_score, row["price_visibility_score"], row["exhibition_score"], row["organization_score"]),
     }
 
 
-def list_points_with_latest(org_id: str) -> list:
+def list_points_with_latest(org_id: str, allowed_point_ids: set = None) -> list:
     own_brands = list_own_brands(org_id)
+    shelves = _shelf_names_by_id(org_id)
+    planograms = _planogram_items_by_shelf(org_id)
     with get_conn() as conn:
         points = conn.execute(
             "SELECT * FROM points WHERE org_id = ? ORDER BY id", (org_id,)
         ).fetchall()
+        if allowed_point_ids is not None:
+            points = [p for p in points if p["id"] in allowed_point_ids]
         result = []
         for p in points:
             latest_row = conn.execute(
@@ -425,7 +632,7 @@ def list_points_with_latest(org_id: str) -> list:
                     "comuna": p["comuna"],
                     "created_at": p["created_at"],
                     "readings_count": count_row["c"],
-                    "latest": _reading_dict(latest_row, own_brands) if latest_row else None,
+                    "latest": _reading_dict(latest_row, own_brands, shelves, planograms) if latest_row else None,
                     "recent_facings": recent_facings,
                     "recent_own_share": recent_own_share,
                 }
@@ -435,6 +642,8 @@ def list_points_with_latest(org_id: str) -> list:
 
 def get_point(org_id: str, point_id: str):
     own_brands = list_own_brands(org_id)
+    shelves = _shelf_names_by_id(org_id)
+    planograms = _planogram_items_by_shelf(org_id)
     with get_conn() as conn:
         p = conn.execute(
             "SELECT * FROM points WHERE org_id = ? AND id = ?", (org_id, point_id)
@@ -451,7 +660,8 @@ def get_point(org_id: str, point_id: str):
         "region": p["region"],
         "comuna": p["comuna"],
         "created_at": p["created_at"],
-        "readings": [_reading_dict(r, own_brands) for r in readings],
+        "shelves": list_shelves(org_id, point_id),
+        "readings": [_reading_dict(r, own_brands, shelves, planograms) for r in readings],
     }
 
 
@@ -459,6 +669,116 @@ def delete_point(org_id: str, point_id: str) -> None:
     with get_conn() as conn:
         conn.execute("DELETE FROM readings WHERE org_id = ? AND point_id = ?", (org_id, point_id))
         conn.execute("DELETE FROM points WHERE org_id = ? AND id = ?", (org_id, point_id))
+        conn.execute("DELETE FROM shelves WHERE org_id = ? AND point_id = ?", (org_id, point_id))
+        conn.execute("DELETE FROM point_assignments WHERE org_id = ? AND point_id = ?", (org_id, point_id))
+
+
+# ---------- corrección manual de productos (con auditoría) ----------
+
+CORRECTABLE_FIELDS = ("product", "brand", "category", "facings", "out_of_stock")
+
+
+def get_reading_for_point(org_id: str, point_id: str, reading_id: int):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM readings WHERE org_id = ? AND point_id = ? AND id = ?",
+            (org_id, point_id, reading_id),
+        ).fetchone()
+    return row
+
+
+def correct_product(org_id: str, point_id: str, reading_id: int, product_index: int,
+                     updates: dict, corrected_by: str) -> dict:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM readings WHERE org_id = ? AND point_id = ? AND id = ?",
+            (org_id, point_id, reading_id),
+        ).fetchone()
+        if not row:
+            return None
+        products = json.loads(row["products_json"] or "[]")
+        if product_index < 0 or product_index >= len(products):
+            return None
+
+        product = products[product_index]
+        label = f"{product.get('brand', '')} {product.get('product', '')}".strip() or f"producto #{product_index}"
+        corrected_at = now_iso()
+        changed = False
+        for field in CORRECTABLE_FIELDS:
+            if field not in updates:
+                continue
+            old_value = product.get(field)
+            new_value = updates[field]
+            if old_value == new_value:
+                continue
+            changed = True
+            product[field] = new_value
+            conn.execute(
+                "INSERT INTO product_corrections (org_id, reading_id, product_label, field, old_value, "
+                "new_value, corrected_by, corrected_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (org_id, reading_id, label, field, json.dumps(old_value), json.dumps(new_value),
+                 corrected_by, corrected_at),
+            )
+
+        if changed:
+            products[product_index] = product
+            conn.execute(
+                "UPDATE readings SET products_json = ? WHERE org_id = ? AND id = ?",
+                (json.dumps(products), org_id, reading_id),
+            )
+            row = conn.execute("SELECT * FROM readings WHERE id = ?", (reading_id,)).fetchone()
+
+    shelves = _shelf_names_by_id(org_id)
+    planograms = _planogram_items_by_shelf(org_id)
+    return _reading_dict(row, list_own_brands(org_id), shelves, planograms)
+
+
+def list_corrections(org_id: str, reading_id: int) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM product_corrections WHERE org_id = ? AND reading_id = ? ORDER BY corrected_at DESC",
+            (org_id, reading_id),
+        ).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["old_value"] = json.loads(d["old_value"]) if d["old_value"] is not None else None
+        d["new_value"] = json.loads(d["new_value"]) if d["new_value"] is not None else None
+        out.append(d)
+    return out
+
+
+# ---------- asignación de puntos de venta a usuarios ----------
+
+def set_point_assignments(org_id: str, email: str, point_ids: list) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM point_assignments WHERE org_id = ? AND email = ?", (org_id, email))
+        created_at = now_iso()
+        for pid in point_ids:
+            conn.execute(
+                "INSERT OR IGNORE INTO point_assignments (org_id, point_id, email, created_at) VALUES (?, ?, ?, ?)",
+                (org_id, pid, email, created_at),
+            )
+
+
+def list_assigned_point_ids(org_id: str, email: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT point_id FROM point_assignments WHERE org_id = ? AND email = ?", (org_id, email)
+        ).fetchall()
+    return [r["point_id"] for r in rows]
+
+
+def allowed_point_ids_for_user(org_id: str, user: dict):
+    """None = sin restricción (ve todos los puntos). Un set = restringido a esos IDs.
+    Un reponedor/analista sin asignaciones todavía ve todo, para no romper cuentas
+    existentes que nunca configuraron asignaciones."""
+    if user["role"] in ADMIN_ROLES:
+        return None
+    assigned = list_assigned_point_ids(org_id, user["email"])
+    if not assigned:
+        return None
+    return set(assigned)
 
 
 def export_rows(org_id: str, point_id: str = None) -> list:
@@ -607,22 +927,26 @@ def replenishment_signals(org_id: str, point_id: str, lookback: int = 10) -> dic
     }
 
 
-def get_analytics(org_id: str) -> dict:
+def get_analytics(org_id: str, allowed_point_ids: set = None) -> dict:
     """Tabla de hechos (una fila por lectura) + resumen por punto, para el módulo de Reportería."""
+    shelves = _shelf_names_by_id(org_id)
     with get_conn() as conn:
         rows = conn.execute(
             "SELECT r.id, r.point_id, p.name AS point_name, p.region AS region, p.comuna AS comuna, "
             "r.created_at, r.empty_space_pct, r.price_visibility_score, r.exhibition_score, "
-            "r.organization_score FROM readings r JOIN points p "
+            "r.organization_score, r.shelf_id FROM readings r JOIN points p "
             "ON p.org_id = r.org_id AND p.id = r.point_id WHERE r.org_id = ? ORDER BY r.created_at",
             (org_id,),
         ).fetchall()
+    if allowed_point_ids is not None:
+        rows = [r for r in rows if r["point_id"] in allowed_point_ids]
 
     readings = []
     by_point = {}
     for r in rows:
         availability_score = round(100 - r["empty_space_pct"], 1) if r["empty_space_pct"] is not None else None
         scores = _score_summary(availability_score, r["price_visibility_score"], r["exhibition_score"], r["organization_score"])
+        shelf_meta = shelves.get(r["shelf_id"]) if r["shelf_id"] else None
         entry = {
             "reading_id": r["id"],
             "point_id": r["point_id"],
@@ -630,6 +954,8 @@ def get_analytics(org_id: str) -> dict:
             "region": r["region"],
             "comuna": r["comuna"],
             "created_at": r["created_at"],
+            "shelf_id": r["shelf_id"],
+            "shelf_name": shelf_meta["name"] if shelf_meta else None,
             **scores,
         }
         readings.append(entry)
