@@ -3028,7 +3028,7 @@
       }
       list.innerHTML = items.map((c) => `
         <div style="padding:9px 2px; border-bottom:1px solid var(--border); font-size:12.5px;">
-          <div><strong>${escapeHtml(c.product_label || "")}</strong> — campo "${escapeHtml(c.field)}"</div>
+          <div><strong>${escapeHtml(c.product_label || "")}</strong>, campo "${escapeHtml(c.field)}"</div>
           <div class="hint">${escapeHtml(JSON.stringify(c.old_value))} → ${escapeHtml(JSON.stringify(c.new_value))}</div>
           <div class="hint">${escapeHtml(c.corrected_by)} · ${relativeTime(c.corrected_at)}</div>
         </div>
