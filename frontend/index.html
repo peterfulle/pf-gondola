@@ -181,6 +181,8 @@
   .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
   .status-pill.live .dot { background: var(--ink); animation: pulse 1.6s ease-in-out infinite; }
   .status-pill.stale .dot { background: var(--border-strong); }
+  .status-pill.ok { color: #16a34a; }
+  .status-pill.warn { color: #d97706; }
   .point-name { font-size: 15.5px; font-weight: 700; margin: 6px 0 12px; letter-spacing: -0.005em; }
 
   .point-thumb-wrap { position: relative; margin-bottom: 12px; }
@@ -334,6 +336,12 @@
   }
   .capture label:hover { border-color: var(--ink); background: #fafafa; }
   .capture label svg { width: 15px; height: 15px; color: var(--ink-muted); }
+  .poc-field-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .poc-field-row:last-child { border-bottom: none; }
+  .poc-field-label { font-size: 11.5px; color: var(--ink-muted); font-weight: 600; }
+  .poc-field-value { font-size: 13px; font-weight: 600; text-align: right; }
+  .poc-field-value input { font: inherit; font-weight: 600; text-align: right; border: 1px solid var(--border-strong); border-radius: 6px; padding: 4px 7px; width: 200px; }
+  .poc-review-banner { display: flex; align-items: center; gap: 8px; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; border-radius: 8px; padding: 8px 10px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
   .capture-hint { font-size: 11.5px; color: var(--ink-muted); margin: 10px 0 0; line-height: 1.5; }
   input[type="file"] { display: none; }
 
@@ -971,6 +979,18 @@
           <span>Reportería</span>
         </button>
 
+        <div class="sidebar-section-label">Finanzas</div>
+        <button class="sidebar-nav-item" id="ocrVoucherNavBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 6v0M18 18v0"/></svg>
+          <span>Comprobantes de depósito</span>
+        </button>
+
+        <div class="sidebar-section-label">Clientes</div>
+        <button class="sidebar-nav-item" id="ocrClientFormNavBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+          <span>Alta de clientes</span>
+        </button>
+
         <div class="sidebar-section-label" id="adminSectionLabel" style="display:none;">Administración</div>
         <button class="sidebar-nav-item" id="adminNavBtn" style="display:none;" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5C4 16.5 7.5 20 12 21c4.5-1 8-4.5 8-9.5v-5L12 3Z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
@@ -1178,6 +1198,14 @@
               Nueva lectura
             </h3>
             <div class="field" style="margin-bottom:10px;">
+              <label for="readingTypeSelect">Tipo de lectura</label>
+              <select id="readingTypeSelect">
+                <option value="gondola">Góndola principal</option>
+                <option value="exhibicion_adicional">Exhibición adicional (cabecera / isla / mueble)</option>
+                <option value="vitrina_granel">Vitrina a granel — en evaluación</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:10px;" id="shelfSelectField">
               <label for="shelfSelect">Góndola / estante</label>
               <select id="shelfSelect"></select>
             </div>
@@ -1238,6 +1266,14 @@
         </div>
 
         <div>
+          <div class="card" id="displayResultCard" style="display:none;">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h13A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/></svg>
+              <span id="displayResultTitle">Resultado de la exhibición</span>
+            </h3>
+            <div id="displayResultContent"></div>
+          </div>
+
           <div class="card" id="photoCard" style="display:none;">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
@@ -1250,7 +1286,7 @@
             <div class="reading-photo-nav" id="readingPhotoNav"></div>
           </div>
 
-          <div class="card">
+          <div class="card" id="statsCard">
             <div class="stat-row">
               <div class="stat-tile"><div class="stat-value" id="statTotalFacings">–</div><div class="stat-label">Caras totales</div></div>
               <div class="stat-tile"><div class="stat-value" id="statProducts">–</div><div class="stat-label">Productos</div></div>
@@ -1264,7 +1300,7 @@
             <div class="notes" id="notesMsg"></div>
           </div>
 
-          <div class="card">
+          <div class="card" id="benchmarkCard">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></svg>
               Marca propia vs. competencia
@@ -1272,7 +1308,7 @@
             <div id="benchmarkBlock"></div>
           </div>
 
-          <div class="card">
+          <div class="card" id="categoryCard">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M12 19V4M20 19v-7"/></svg>
               % de participación en la góndola por categoría
@@ -1312,7 +1348,7 @@
             <div class="status" id="planogramStatus"></div>
           </div>
 
-          <div class="card">
+          <div class="card" id="productsCard">
             <div class="card-head-row">
               <h3 class="card-title" style="margin:0;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M9 9.5V20"/></svg>
@@ -1324,7 +1360,7 @@
             </div>
             <div class="table-scroll">
               <table>
-                <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th><th class="num">Prof. est.</th><th class="num">Unidades est.</th><th class="role-analyst-only"></th></tr></thead>
+                <thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th class="num">Nivel</th><th class="num">Caras</th><th class="num">Prof. est.</th><th class="num">Unidades est.</th><th class="num">Precio</th><th class="role-analyst-only"></th></tr></thead>
                 <tbody id="productsTable"></tbody>
               </table>
             </div>
@@ -1384,6 +1420,40 @@
           <p class="hint" style="margin:0 0 8px;">¿Quieres explorar Reportería antes de tener datos propios? Esto crea puntos y lecturas de ejemplo (marcadas como demo).</p>
           <button class="cancel" id="seedDemoBtn" type="button">Cargar datos de ejemplo</button>
         </div>
+      </div>
+
+      <div class="card role-analyst-only" style="margin-bottom:18px;">
+        <h3 class="card-title" style="margin:0 0 10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5 11.5 14 15 9.5M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6l7-3Z"/></svg>
+          Acuerdos comerciales (exhibiciones pagadas / comprometidas)
+        </h3>
+        <p class="capture-hint" style="margin:0 0 10px;">Registra lo que Comercial comprometió con cada punto (cabecera, isla, mueble de marca). Cuando se registre una lectura de "Exhibición adicional" en ese punto con la misma marca y tipo, el acuerdo queda marcado como verificado en terreno.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Punto</th><th>Tipo</th><th>Marca</th><th>Descripción</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="agreementsTableBody"></tbody>
+          </table>
+        </div>
+        <div class="field-row" style="margin-top:10px;">
+          <div class="field"><label for="agreementPoint">Punto</label><select id="agreementPoint"><option value="">Toda la organización</option></select></div>
+          <div class="field"><label for="agreementType">Tipo de exhibición</label>
+            <select id="agreementType">
+              <option value="cabecera">Cabecera</option>
+              <option value="isla">Isla</option>
+              <option value="exhibidor">Exhibidor</option>
+              <option value="mueble_de_marca">Mueble de marca</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label for="agreementBrand">Marca</label><input type="text" id="agreementBrand" placeholder="Ej: Fernandez" /></div>
+          <div class="field"><label for="agreementDescription">Descripción (opcional)</label><input type="text" id="agreementDescription" placeholder="Ej: cabecera comprometida octubre" /></div>
+        </div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="confirm" id="addAgreementBtn" type="button">Registrar acuerdo</button>
+        </div>
+        <div class="status" id="agreementStatus"></div>
       </div>
 
       <div class="role-legend">
@@ -1501,6 +1571,116 @@
               <tbody id="rankingTableBody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ocrVoucherView" style="display:none;">
+      <div class="admin-hero">
+        <div class="admin-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 6v0M18 18v0"/></svg>
+        </div>
+        <div>
+          <h1>Finanzas · Comprobantes de depósito</h1>
+          <p>Lee monto, fecha, folio y banco desde la foto del comprobante y deja todo trazado para la conciliación de Finanzas. Si un dato no es legible, lo marca para revisión manual — nunca lo inventa.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat-row" id="voucherStatsRow"></div>
+      </div>
+      <div class="detail-grid">
+        <div>
+          <div class="card capture">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg>
+              Nuevo comprobante
+            </h3>
+            <label for="voucherPhotoInput" id="voucherCaptureLabel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16.5v2A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+              Subir foto del voucher
+            </label>
+            <input type="file" id="voucherPhotoInput" accept="image/*" multiple />
+            <div class="photo-strip" id="voucherPhotoStrip" style="display:none;"></div>
+            <button class="primary" id="voucherProcessBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
+              <span>Procesar comprobante</span>
+            </button>
+            <div class="status" id="voucherStatus"></div>
+          </div>
+          <div class="card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+              Historial
+            </h3>
+            <div class="history-list" id="voucherHistoryList"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card" id="voucherPhotoCard" style="display:none;">
+            <h3 class="card-title">Foto del comprobante</h3>
+            <div class="reading-photo-main"><img id="voucherPhoto" class="reading-photo" alt="Foto del comprobante" /></div>
+          </div>
+          <div class="card" id="voucherResultCard" style="display:none;">
+            <h3 class="card-title">Datos reconocidos — revisa y corrige antes de transmitir</h3>
+            <div id="voucherNeedsReview"></div>
+            <div id="voucherFields"></div>
+          </div>
+          <div id="voucherEmpty" class="point-empty">Sube la foto de un comprobante para ver los datos reconocidos.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ocrClientFormView" style="display:none;">
+      <div class="admin-hero">
+        <div class="admin-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <h1>Clientes · Alta de clientes nuevos</h1>
+          <p>Extrae RUT, razón social, dirección y otros datos desde boleta, factura, declaración SII o patente municipal, para prellenar la ficha de alta. Si un dato no está claro, lo deja marcado para que el vendedor lo confirme — nunca lo inventa.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="stat-row" id="clientFormStatsRow"></div>
+      </div>
+      <div class="detail-grid">
+        <div>
+          <div class="card capture">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Nuevo documento
+            </h3>
+            <label for="clientFormPhotoInput" id="clientFormCaptureLabel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16.5v2A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+              Subir foto del documento
+            </label>
+            <input type="file" id="clientFormPhotoInput" accept="image/*" multiple />
+            <div class="photo-strip" id="clientFormPhotoStrip" style="display:none;"></div>
+            <button class="primary" id="clientFormProcessBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
+              <span>Procesar documento</span>
+            </button>
+            <div class="status" id="clientFormStatus"></div>
+          </div>
+          <div class="card">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+              Historial
+            </h3>
+            <div class="history-list" id="clientFormHistoryList"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card" id="clientFormPhotoCard" style="display:none;">
+            <h3 class="card-title">Foto del documento</h3>
+            <div class="reading-photo-main"><img id="clientFormPhoto" class="reading-photo" alt="Foto del documento" /></div>
+          </div>
+          <div class="card" id="clientFormResultCard" style="display:none;">
+            <h3 class="card-title">Ficha prellenada — revisa y corrige antes de transmitir</h3>
+            <div id="clientFormNeedsReview"></div>
+            <div id="clientFormFields"></div>
+          </div>
+          <div id="clientFormEmpty" class="point-empty">Sube la foto de un documento para ver la ficha prellenada.</div>
         </div>
       </div>
     </section>
@@ -2145,6 +2325,8 @@
     detailView.style.display = "none";
     document.getElementById("adminView").style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
+    document.getElementById("ocrVoucherView").style.display = "none";
+    document.getElementById("ocrClientFormView").style.display = "none";
     homeView.style.display = "block";
     homeView.classList.add("view-fade");
     backBtn.style.display = "none";
@@ -2176,6 +2358,8 @@
   async function openPoint(pointId) {
     homeView.style.display = "none";
     dashboardView.style.display = "none";
+    document.getElementById("ocrVoucherView").style.display = "none";
+    document.getElementById("ocrClientFormView").style.display = "none";
     detailView.style.display = "block";
     detailView.classList.add("view-fade");
     backBtn.style.display = "flex";
@@ -2191,6 +2375,8 @@
     detailView.style.display = "none";
     document.getElementById("adminView").style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
+    document.getElementById("ocrVoucherView").style.display = "none";
+    document.getElementById("ocrClientFormView").style.display = "none";
     dashboardView.style.display = "block";
     dashboardView.classList.add("view-fade");
     backBtn.style.display = "none";
@@ -2242,13 +2428,20 @@
       const thumb = urls.length
         ? `<div class="history-thumb-wrap"><img class="history-thumb" src="${urls[0]}" alt="Foto lectura ${r.id}" loading="lazy" />${badge}</div>`
         : `<div class="history-thumb placeholder">${ICON_EMPTY}</div>`;
+      const isGondola = !r.display_type || r.display_type === "gondola";
       const shelfBadge = r.shelf_name ? `<span class="shelf-badge">${escapeHtml(r.shelf_name)}</span>` : "";
+      const typeBadge = !isGondola ? `<span class="shelf-badge">${escapeHtml(r.display_type_label || r.display_type)}</span>` : "";
+      const summary = isGondola
+        ? `${r.total_facings ?? "–"} caras · ${(r.products || []).length} productos`
+        : r.display_type === "vitrina_granel"
+          ? `${(r.items || []).length} ítems detectados`
+          : `${r.total_facings ?? "–"} caras · ${(r.products || []).length} productos`;
       item.innerHTML = `
         ${thumb}
         <div class="history-info">
           <span class="t">${relativeTime(r.created_at)}</span>
-          <span class="n">${r.total_facings ?? "–"} caras · ${(r.products || []).length} productos</span>
-          ${shelfBadge}
+          <span class="n">${summary}</span>
+          ${shelfBadge}${typeBadge}
         </div>
       `;
       item.addEventListener("click", () => selectReading(r.id));
@@ -2263,41 +2456,24 @@
     renderReading(reading);
   }
 
+  const GONDOLA_ONLY_CARD_IDS = ["statsCard", "benchmarkCard", "categoryCard", "productsCard", "planogramGapsCard", "shelf3dCard"];
+
   function renderReading(reading) {
+    const isGondola = !reading || !reading.display_type || reading.display_type === "gondola";
+    document.getElementById("displayResultCard").style.display = isGondola ? "none" : "block";
+    GONDOLA_ONLY_CARD_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = isGondola ? "" : "none";
+    });
+    if (!isGondola) {
+      renderDisplayResult(reading);
+      renderReadingPhoto(reading);
+      return;
+    }
+
     const products = reading ? (reading.products || []) : [];
     const categories = reading ? (reading.categories || []) : [];
-    const urls = reading ? (reading.image_urls || []) : [];
-
-    const photoCard = document.getElementById("photoCard");
-    const readingPhoto = document.getElementById("readingPhoto");
-    const readingPhotoCount = document.getElementById("readingPhotoCount");
-    const readingPhotoNav = document.getElementById("readingPhotoNav");
-    if (urls.length) {
-      readingPhoto.src = urls[0];
-      photoCard.style.display = "block";
-      if (urls.length > 1) {
-        readingPhotoCount.style.display = "block";
-        readingPhotoCount.textContent = `1 / ${urls.length}`;
-        readingPhotoNav.innerHTML = "";
-        urls.forEach((u, i) => {
-          const thumb = document.createElement("img");
-          thumb.src = u;
-          thumb.className = i === 0 ? "active" : "";
-          thumb.addEventListener("click", () => {
-            readingPhoto.src = u;
-            readingPhotoCount.textContent = `${i + 1} / ${urls.length}`;
-            readingPhotoNav.querySelectorAll("img").forEach((el) => el.classList.remove("active"));
-            thumb.classList.add("active");
-          });
-          readingPhotoNav.appendChild(thumb);
-        });
-      } else {
-        readingPhotoCount.style.display = "none";
-        readingPhotoNav.innerHTML = "";
-      }
-    } else {
-      photoCard.style.display = "none";
-    }
+    renderReadingPhoto(reading);
 
     renderBenchmarkBlock(reading);
 
@@ -2338,10 +2514,13 @@
       const oosFlag = p.out_of_stock ? ` <span class="oos-flag" title="Quiebre de stock detectado">${ICON_WARNING}</span>` : "";
       const depth = p.estimated_depth || 1;
       const unitsEst = (p.facings ?? 0) * depth;
+      const priceCell = p.price_clp != null
+        ? `$${Number(p.price_clp).toLocaleString("es-CL")}${p.price_confidence === "baja" ? ` <span title="Confianza baja">${ICON_WARNING}</span>` : ""}`
+        : `<span class="hint">no visible</span>`;
       const editCell = canCorrect
         ? `<td><button class="row-edit-btn" data-edit-product="${i}" title="Corregir producto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></td>`
         : "";
-      tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td><td class="num">${depth}</td><td class="num">${unitsEst}</td>${editCell}`;
+      tr.innerHTML = `<td>${ownFlag}${escapeHtml(p.product)}${oosFlag}</td><td>${escapeHtml(p.brand || "—")}</td><td>${escapeHtml(p.category)}</td><td class="num">${p.shelf_level ?? "—"}</td><td class="num">${p.facings ?? 0}</td><td class="num">${depth}</td><td class="num">${unitsEst}</td><td class="num">${priceCell}</td>${editCell}`;
       tbody.appendChild(tr);
     });
     if (canCorrect && reading) {
@@ -2360,6 +2539,95 @@
       if (window.render3DShelf) window.render3DShelf(reading);
     } else {
       shelf3dCard.style.display = "none";
+    }
+  }
+
+  function renderReadingPhoto(reading) {
+    const urls = reading ? (reading.image_urls || []) : [];
+    const photoCard = document.getElementById("photoCard");
+    const readingPhoto = document.getElementById("readingPhoto");
+    const readingPhotoCount = document.getElementById("readingPhotoCount");
+    const readingPhotoNav = document.getElementById("readingPhotoNav");
+    if (urls.length) {
+      readingPhoto.src = urls[0];
+      photoCard.style.display = "block";
+      if (urls.length > 1) {
+        readingPhotoCount.style.display = "block";
+        readingPhotoCount.textContent = `1 / ${urls.length}`;
+        readingPhotoNav.innerHTML = "";
+        urls.forEach((u, i) => {
+          const thumb = document.createElement("img");
+          thumb.src = u;
+          thumb.className = i === 0 ? "active" : "";
+          thumb.addEventListener("click", () => {
+            readingPhoto.src = u;
+            readingPhotoCount.textContent = `${i + 1} / ${urls.length}`;
+            readingPhotoNav.querySelectorAll("img").forEach((el) => el.classList.remove("active"));
+            thumb.classList.add("active");
+          });
+          readingPhotoNav.appendChild(thumb);
+        });
+      } else {
+        readingPhotoCount.style.display = "none";
+        readingPhotoNav.innerHTML = "";
+      }
+    } else {
+      photoCard.style.display = "none";
+    }
+  }
+
+  function _priceLabel(item) {
+    if (item.price_clp == null) return `<span class="hint">precio no visible</span>`;
+    const lowFlag = item.price_confidence === "baja" ? ` <span title="Confianza baja">${ICON_WARNING}</span>` : "";
+    return `$${Number(item.price_clp).toLocaleString("es-CL")}${lowFlag}`;
+  }
+
+  function renderDisplayResult(reading) {
+    const titleEl = document.getElementById("displayResultTitle");
+    const el = document.getElementById("displayResultContent");
+    if (!reading) { el.innerHTML = ""; return; }
+
+    if (reading.display_type === "exhibicion_adicional") {
+      titleEl.textContent = `Exhibición adicional · ${escapeHtml((reading.detected_display_type || "").replace(/_/g, " "))}`;
+      const brands = (reading.brands_detected || []).map((b) => `<span class="shelf-badge">${escapeHtml(b)}</span>`).join(" ");
+      const rows = (reading.products || []).map((p) => `
+        <tr><td>${escapeHtml(p.product || "—")}</td><td>${escapeHtml(p.brand || "—")}</td><td class="num">${p.facings ?? 0}</td><td class="num">${_priceLabel(p)}</td></tr>
+      `).join("");
+      el.innerHTML = `
+        <div class="stat-row" style="margin-bottom:12px;">
+          <div class="stat-tile"><div class="stat-value">${escapeHtml((reading.detected_display_type || "—").replace(/_/g, " "))}</div><div class="stat-label">Tipo detectado</div></div>
+          <div class="stat-tile"><div class="stat-value">${reading.total_facings ?? "–"}</div><div class="stat-label">Caras totales</div></div>
+          <div class="stat-tile"><div class="stat-value">${reading.occupancy_pct != null ? reading.occupancy_pct + "%" : "–"}</div><div class="stat-label">Ocupación</div></div>
+          <div class="stat-tile"><div class="stat-value">${reading.exhibition_score != null ? reading.exhibition_score : "–"}</div><div class="stat-label">Calidad de montaje</div></div>
+        </div>
+        <p class="capture-hint" style="margin:0 0 10px;">Marcas detectadas: ${brands || "ninguna identificada"}</p>
+        <div class="table-scroll"><table><thead><tr><th>Producto</th><th>Marca</th><th class="num">Caras</th><th class="num">Precio</th></tr></thead><tbody>${rows || `<tr><td colspan="4">Sin productos detectados</td></tr>`}</tbody></table></div>
+        ${reading.notes ? `<div class="notes" style="margin-top:10px;">${escapeHtml(reading.notes)}</div>` : ""}
+      `;
+    } else if (reading.display_type === "vitrina_granel") {
+      titleEl.textContent = "Vitrina a granel — capacidad en evaluación";
+      const rows = (reading.items || []).map((it) => `
+        <tr>
+          <td>${escapeHtml(it.product_type || "—")}</td>
+          <td>${escapeHtml(it.brand || "—")}</td>
+          <td class="num">${it.shelf_space_pct != null ? it.shelf_space_pct + "%" : "–"}</td>
+          <td class="num">${it.presence ? "Sí" : "No"}</td>
+          <td class="num">${_priceLabel(it)}</td>
+          <td class="num">${escapeHtml(it.confidence || "—")}</td>
+        </tr>
+      `).join("");
+      el.innerHTML = `
+        <p class="capture-hint" style="margin:0 0 10px;">Capacidad experimental: factibilidad en evaluación con muestras reales, no es una precisión garantizada.</p>
+        <div class="stat-row" style="margin-bottom:12px;">
+          <div class="stat-tile"><div class="stat-value">${reading.occupancy_pct != null ? reading.occupancy_pct + "%" : "–"}</div><div class="stat-label">Ocupación de vitrina</div></div>
+          <div class="stat-tile"><div class="stat-value">${(reading.items || []).length}</div><div class="stat-label">Ítems detectados</div></div>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>Producto</th><th>Marca</th><th class="num">% espacio</th><th class="num">Presente</th><th class="num">Precio</th><th class="num">Confianza</th></tr></thead><tbody>${rows || `<tr><td colspan="6">Sin ítems detectados</td></tr>`}</tbody></table></div>
+        ${reading.notes ? `<div class="notes" style="margin-top:10px;">${escapeHtml(reading.notes)}</div>` : ""}
+      `;
+    } else {
+      titleEl.textContent = "Resultado";
+      el.innerHTML = "";
     }
   }
 
@@ -2478,6 +2746,21 @@
   let selectedFiles = [];
   let selectedWidths = []; // metros lineales por foto (null si viene de galería)
 
+  const READING_TYPE_LABELS = {
+    gondola: "góndola",
+    exhibicion_adicional: "exhibición",
+    vitrina_granel: "vitrina",
+  };
+  const readingTypeSelect = document.getElementById("readingTypeSelect");
+  const shelfSelectField = document.getElementById("shelfSelectField");
+  let currentReadingType = "gondola";
+
+  readingTypeSelect.addEventListener("change", () => {
+    currentReadingType = readingTypeSelect.value;
+    shelfSelectField.style.display = currentReadingType === "gondola" ? "" : "none";
+    renderPhotoStrip();
+  });
+
   function resetCapture() {
     selectedFiles = [];
     selectedWidths = [];
@@ -2493,7 +2776,7 @@
       photoStrip.style.display = "none";
       captureLabel.style.display = "flex";
       analyzeBtn.disabled = true;
-      analyzeBtnText.textContent = "Analizar góndola";
+      analyzeBtnText.textContent = `Analizar ${READING_TYPE_LABELS[currentReadingType]}`;
       return;
     }
     captureLabel.style.display = "none";
@@ -2530,7 +2813,7 @@
       photoStrip.appendChild(addTile);
     }
     analyzeBtn.disabled = false;
-    analyzeBtnText.textContent = `Analizar góndola (${selectedFiles.length} foto${selectedFiles.length === 1 ? "" : "s"})`;
+    analyzeBtnText.textContent = `Analizar ${READING_TYPE_LABELS[currentReadingType]} (${selectedFiles.length} foto${selectedFiles.length === 1 ? "" : "s"})`;
   }
 
   photoInput.addEventListener("change", () => {
@@ -2550,15 +2833,16 @@
     if (!selectedFiles.length || !currentPoint) return;
     analyzeBtn.disabled = true;
     statusMsg.classList.remove("error");
-    statusMsg.innerHTML = `${ICON_SPINNER} Analizando góndola…`;
+    statusMsg.innerHTML = `${ICON_SPINNER} Analizando ${READING_TYPE_LABELS[currentReadingType]}…`;
     analyzeBtn.querySelector("svg").outerHTML = ICON_SPINNER;
     analyzeBtnText.textContent = "Analizando…";
 
     const formData = new FormData();
     selectedFiles.forEach((f) => formData.append("images", f));
+    formData.append("reading_type", currentReadingType);
     const totalMeters = selectedWidths.reduce((s, w) => s + (w || 0), 0);
-    if (totalMeters > 0) formData.append("linear_meters", totalMeters.toFixed(2));
-    if (currentShelfId && currentShelfId !== "__new__") formData.append("shelf_id", currentShelfId);
+    if (totalMeters > 0 && currentReadingType === "gondola") formData.append("linear_meters", totalMeters.toFixed(2));
+    if (currentShelfId && currentShelfId !== "__new__" && currentReadingType === "gondola") formData.append("shelf_id", currentShelfId);
 
     try {
       const res = await fetch(`/api/points/${encodeURIComponent(currentPoint.id)}/analyze`, { method: "POST", body: formData });
@@ -2579,8 +2863,8 @@
       const svg = analyzeBtn.querySelector("svg");
       if (svg) svg.outerHTML = ICON_SCAN;
       analyzeBtnText.textContent = selectedFiles.length
-        ? `Analizar góndola (${selectedFiles.length} foto${selectedFiles.length === 1 ? "" : "s"})`
-        : "Analizar góndola";
+        ? `Analizar ${READING_TYPE_LABELS[currentReadingType]} (${selectedFiles.length} foto${selectedFiles.length === 1 ? "" : "s"})`
+        : `Analizar ${READING_TYPE_LABELS[currentReadingType]}`;
     }
   });
 
@@ -3144,12 +3428,15 @@
     dashboardView.style.display = "none";
     detailView.style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
+    document.getElementById("ocrVoucherView").style.display = "none";
+    document.getElementById("ocrClientFormView").style.display = "none";
     adminView.style.display = "block";
     adminView.classList.add("view-fade");
     backBtn.style.display = "flex";
     setActiveNav("adminNavBtn");
     document.getElementById("orgNameInput").value = currentUser.org_name || "";
     loadAdminUsers();
+    loadAgreements();
   }
 
   document.getElementById("orgSaveBtn").addEventListener("click", async () => {
@@ -3243,6 +3530,93 @@
       tbody.innerHTML = `<tr><td colspan="4" class="point-empty">${ICON_WARNING} No se pudo cargar la lista de usuarios.</td></tr>`;
     }
   }
+
+  // ---------- acuerdos comerciales (exhibiciones pagadas / comprometidas) ----------
+  const AGREEMENT_TYPE_LABELS = {
+    cabecera: "Cabecera", isla: "Isla", exhibidor: "Exhibidor",
+    mueble_de_marca: "Mueble de marca", otro: "Otro",
+  };
+
+  function populateAgreementPointSelect() {
+    const sel = document.getElementById("agreementPoint");
+    const prev = sel.value;
+    sel.innerHTML = `<option value="">Toda la organización</option>` +
+      (points || []).map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");
+    sel.value = prev;
+  }
+
+  async function loadAgreements() {
+    populateAgreementPointSelect();
+    const tbody = document.getElementById("agreementsTableBody");
+    tbody.innerHTML = `<tr><td colspan="6" class="point-empty">${ICON_SPINNER} Cargando…</td></tr>`;
+    try {
+      const res = await fetch("/api/commercial-agreements");
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const agreements = await res.json();
+      if (!agreements.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="point-empty">Sin acuerdos registrados.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = agreements.map((a) => `
+        <tr>
+          <td>${escapeHtml(a.point_name || "—")}</td>
+          <td>${AGREEMENT_TYPE_LABELS[a.display_type] || escapeHtml(a.display_type)}</td>
+          <td>${escapeHtml(a.brand)}</td>
+          <td class="hint">${escapeHtml(a.description || "—")}</td>
+          <td>${a.status === "verificado"
+              ? `<span class="status-pill ok">Verificado${a.last_verified_at ? " · " + relativeTime(a.last_verified_at) : ""}</span>`
+              : `<span class="status-pill warn">Sin verificar</span>`}</td>
+          <td><button class="btn-icon-delete" data-action="delete-agreement" data-id="${a.id}" title="Eliminar acuerdo">${ICON_REMOVE}</button></td>
+        </tr>
+      `).join("");
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" class="point-empty">${ICON_WARNING} No se pudo cargar los acuerdos.</td></tr>`;
+    }
+  }
+
+  document.getElementById("agreementsTableBody").addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-action="delete-agreement"]');
+    if (!btn) return;
+    if (!confirm("¿Eliminar este acuerdo comercial?")) return;
+    try {
+      await fetch(`/api/commercial-agreements/${btn.dataset.id}`, { method: "DELETE" });
+      loadAgreements();
+    } catch (e2) { /* noop */ }
+  });
+
+  document.getElementById("addAgreementBtn").addEventListener("click", async () => {
+    const status = document.getElementById("agreementStatus");
+    status.classList.remove("error");
+    const brand = document.getElementById("agreementBrand").value.trim();
+    if (!brand) {
+      status.classList.add("error");
+      status.innerHTML = `${ICON_WARNING} La marca es obligatoria`;
+      return;
+    }
+    const payload = {
+      point_id: document.getElementById("agreementPoint").value || null,
+      display_type: document.getElementById("agreementType").value,
+      brand,
+      description: document.getElementById("agreementDescription").value.trim() || null,
+    };
+    status.innerHTML = `${ICON_SPINNER} Guardando…`;
+    try {
+      const res = await fetch("/api/commercial-agreements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+      document.getElementById("agreementBrand").value = "";
+      document.getElementById("agreementDescription").value = "";
+      status.innerHTML = `${ICON_CHECK} Acuerdo registrado`;
+      loadAgreements();
+    } catch (e) {
+      status.classList.add("error");
+      status.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+    }
+  });
 
   document.getElementById("usersTableBody").addEventListener("change", async (e) => {
     const sel = e.target.closest('select[data-action="change-role"]');
@@ -3782,6 +4156,8 @@
     dashboardView.style.display = "none";
     detailView.style.display = "none";
     document.getElementById("adminView").style.display = "none";
+    document.getElementById("ocrVoucherView").style.display = "none";
+    document.getElementById("ocrClientFormView").style.display = "none";
     const view = document.getElementById("analyticsView");
     view.style.display = "block";
     view.classList.add("view-fade");
@@ -3791,6 +4167,270 @@
   }
 
   document.getElementById("analyticsNavBtn").addEventListener("click", showAnalyticsView);
+
+  // ---------- Finanzas (comprobantes de depósito) y Clientes (alta de clientes): lectura automática con historial ----------
+  function hideAllViewsExcept(viewId) {
+    if (typeof closeCamera === "function") closeCamera();
+    ["homeView", "dashboardView", "detailView", "adminView", "analyticsView", "ocrVoucherView", "ocrClientFormView"]
+      .forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = id === viewId ? "block" : "none"; });
+    backBtn.style.display = "flex";
+  }
+
+  function setupOcrPoc(cfg) {
+    const photoInput = document.getElementById(cfg.inputId);
+    const captureLabel = document.getElementById(cfg.captureLabelId);
+    const photoStrip = document.getElementById(cfg.stripId);
+    const processBtn = document.getElementById(cfg.btnId);
+    const processBtnText = processBtn.querySelector("span");
+    const statusEl = document.getElementById(cfg.statusId);
+    const photoCard = document.getElementById(cfg.photoCardId);
+    const photoImg = document.getElementById(cfg.photoImgId);
+    const resultCard = document.getElementById(cfg.resultCardId);
+    const reviewEl = document.getElementById(cfg.reviewId);
+    const fieldsEl = document.getElementById(cfg.fieldsId);
+    const emptyEl = document.getElementById(cfg.emptyId);
+    const historyListEl = document.getElementById(cfg.historyListId);
+    let files = [];
+    let history = [];
+    let selectedId = null;
+
+    function renderStrip() {
+      if (!files.length) {
+        photoStrip.style.display = "none";
+        captureLabel.style.display = "flex";
+        processBtn.disabled = true;
+        processBtnText.textContent = cfg.processLabel;
+        return;
+      }
+      captureLabel.style.display = "none";
+      photoStrip.style.display = "flex";
+      photoStrip.innerHTML = "";
+      files.forEach((file, i) => {
+        const item = document.createElement("div");
+        item.className = "photo-strip-item";
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        item.appendChild(img);
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "remove-btn";
+        removeBtn.innerHTML = ICON_REMOVE;
+        removeBtn.addEventListener("click", (e) => { e.stopPropagation(); files.splice(i, 1); renderStrip(); });
+        item.appendChild(removeBtn);
+        photoStrip.appendChild(item);
+      });
+      processBtn.disabled = false;
+      processBtnText.textContent = `${cfg.processLabel} (${files.length} foto${files.length === 1 ? "" : "s"})`;
+    }
+    renderStrip();
+
+    photoInput.addEventListener("change", () => {
+      files = files.concat(Array.from(photoInput.files || [])).slice(0, MAX_IMAGES);
+      photoInput.value = "";
+      statusEl.innerHTML = "";
+      statusEl.classList.remove("error");
+      renderStrip();
+    });
+
+    function renderFields(data) {
+      const conf = data.field_confidence || {};
+      fieldsEl.innerHTML = cfg.fields.map((f) => {
+        const raw = data[f.key];
+        const value = f.format ? f.format(raw) : raw;
+        const c = conf[f.key];
+        const lowConf = c === "baja" || c === "no_legible";
+        const badge = lowConf ? ` <span title="Confianza: ${c}">${ICON_WARNING}</span>` : "";
+        return `
+          <div class="poc-field-row">
+            <span class="poc-field-label">${escapeHtml(f.label)}</span>
+            <span class="poc-field-value"><input type="text" data-field="${f.key}" value="${escapeHtml(value ?? "")}" placeholder="no detectado" />${badge}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function showResult(data) {
+      selectedId = data.id;
+      renderHistoryList();
+      const urls = data.image_urls || [];
+      if (urls.length) {
+        photoImg.src = urls[0];
+        photoCard.style.display = "block";
+      } else {
+        photoCard.style.display = "none";
+      }
+      if (!data[cfg.validField]) {
+        resultCard.style.display = "none";
+        emptyEl.style.display = "block";
+        emptyEl.innerHTML = `${ICON_WARNING} ${escapeHtml(data.rejection_reason || cfg.rejectedMsg)}`;
+        return;
+      }
+      emptyEl.style.display = "none";
+      reviewEl.innerHTML = data.needs_review
+        ? `<div class="poc-review-banner">${ICON_WARNING} Hay campos con confianza baja o no legibles${data.ambiguous_party_note ? ": " + escapeHtml(data.ambiguous_party_note) : ""} — revísalos antes de confirmar.</div>`
+        : "";
+      renderFields(data);
+      resultCard.style.display = "block";
+    }
+
+    function renderHistoryList() {
+      if (!history.length) {
+        historyListEl.innerHTML = `<div class="point-empty">${cfg.emptyHistoryMsg}</div>`;
+        return;
+      }
+      historyListEl.innerHTML = "";
+      history.forEach((h) => {
+        const item = document.createElement("div");
+        item.className = "history-item" + (h.id === selectedId ? " active" : "");
+        const urls = h.image_urls || [];
+        const thumb = urls.length
+          ? `<div class="history-thumb-wrap"><img class="history-thumb" src="${urls[0]}" alt="" loading="lazy" /></div>`
+          : `<div class="history-thumb placeholder">${ICON_EMPTY}</div>`;
+        const badge = !h[cfg.validField]
+          ? `<span class="shelf-badge">rechazado</span>`
+          : (h.needs_review ? `<span class="shelf-badge">revisar</span>` : "");
+        item.innerHTML = `
+          ${thumb}
+          <div class="history-info">
+            <span class="t">${relativeTime(h.created_at)}</span>
+            <span class="n">${escapeHtml(cfg.summary(h))}</span>
+            ${badge}
+          </div>
+        `;
+        item.addEventListener("click", () => showResult(h));
+        historyListEl.appendChild(item);
+      });
+    }
+
+    function renderStats() {
+      const statsEl = document.getElementById(cfg.statsRowId);
+      if (!statsEl) return;
+      statsEl.innerHTML = cfg.computeStats(history).map((s) => `
+        <div class="stat-tile"><div class="stat-value">${escapeHtml(String(s.value))}</div><div class="stat-label">${escapeHtml(s.label)}</div></div>
+      `).join("");
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch(cfg.historyEndpoint);
+        history = res.ok ? await res.json() : [];
+      } catch (e) {
+        history = [];
+      }
+      renderHistoryList();
+      renderStats();
+    }
+
+    processBtn.addEventListener("click", async () => {
+      if (!files.length) return;
+      processBtn.disabled = true;
+      statusEl.classList.remove("error");
+      statusEl.innerHTML = `${ICON_SPINNER} Procesando…`;
+      const svg = processBtn.querySelector("svg");
+      if (svg) svg.outerHTML = ICON_SPINNER;
+      processBtnText.textContent = "Procesando…";
+      const formData = new FormData();
+      files.forEach((f) => formData.append("images", f));
+      try {
+        const res = await fetch(cfg.endpoint, { method: "POST", body: formData });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+        statusEl.innerHTML = data[cfg.validField]
+          ? `${ICON_CHECK} Listo. Revisa los datos antes de usarlos.`
+          : `${ICON_WARNING} ${escapeHtml(data.rejection_reason || cfg.rejectedMsg)}`;
+        files = [];
+        renderStrip();
+        await loadHistory();
+        showResult(data);
+      } catch (e) {
+        statusEl.classList.add("error");
+        statusEl.innerHTML = `${ICON_WARNING} ${escapeHtml(e.message)}`;
+      } finally {
+        const svg2 = processBtn.querySelector("svg");
+        if (svg2) svg2.outerHTML = ICON_SCAN;
+        processBtn.disabled = files.length === 0;
+        if (!files.length) processBtnText.textContent = cfg.processLabel;
+      }
+    });
+
+    return {
+      show() {
+        hideAllViewsExcept(cfg.viewId);
+        setActiveNav(cfg.navId);
+        loadHistory();
+      },
+    };
+  }
+
+  const voucherPoc = setupOcrPoc({
+    viewId: "ocrVoucherView", navId: "ocrVoucherNavBtn", endpoint: "/api/ocr/voucher", historyEndpoint: "/api/ocr/voucher/history",
+    validField: "is_valid_voucher", processLabel: "Procesar comprobante",
+    rejectedMsg: "No se pudo reconocer el comprobante.", emptyHistoryMsg: "Todavía no hay comprobantes procesados.",
+    inputId: "voucherPhotoInput", captureLabelId: "voucherCaptureLabel", stripId: "voucherPhotoStrip",
+    btnId: "voucherProcessBtn", statusId: "voucherStatus", photoCardId: "voucherPhotoCard", photoImgId: "voucherPhoto",
+    resultCardId: "voucherResultCard", reviewId: "voucherNeedsReview", fieldsId: "voucherFields",
+    emptyId: "voucherEmpty", historyListId: "voucherHistoryList", statsRowId: "voucherStatsRow",
+    summary: (h) => h.is_valid_voucher
+      ? `${h.monto_clp != null ? "$" + Number(h.monto_clp).toLocaleString("es-CL") : "monto no legible"} · ${h.banco_o_servicio || "banco no identificado"}`
+      : "No reconocido como comprobante",
+    computeStats: (history) => {
+      const valid = history.filter((h) => h.is_valid_voucher);
+      const total = valid.reduce((s, h) => s + (h.monto_clp || 0), 0);
+      const needsReview = valid.filter((h) => h.needs_review).length;
+      const banks = new Set(valid.map((h) => h.banco_o_servicio).filter(Boolean));
+      return [
+        { label: "Comprobantes procesados", value: history.length },
+        { label: "Monto total reconocido", value: "$" + total.toLocaleString("es-CL") },
+        { label: "Pendientes de revisión", value: needsReview },
+        { label: "Bancos / servicios distintos", value: banks.size },
+      ];
+    },
+    fields: [
+      { key: "banco_o_servicio", label: "Banco / servicio" },
+      { key: "monto_clp", label: "Monto", format: (v) => (v != null ? `$${Number(v).toLocaleString("es-CL")}` : v) },
+      { key: "fecha", label: "Fecha" },
+      { key: "hora", label: "Hora" },
+      { key: "folio_o_referencia", label: "Folio / referencia" },
+      { key: "cuenta_depositada", label: "Cuenta depositada" },
+      { key: "tipo_deposito", label: "Tipo de depósito" },
+    ],
+  });
+  document.getElementById("ocrVoucherNavBtn").addEventListener("click", voucherPoc.show);
+
+  const clientFormPoc = setupOcrPoc({
+    viewId: "ocrClientFormView", navId: "ocrClientFormNavBtn", endpoint: "/api/ocr/client-form", historyEndpoint: "/api/ocr/client-form/history",
+    validField: "is_valid_document", processLabel: "Procesar documento",
+    rejectedMsg: "No se pudo reconocer el documento.", emptyHistoryMsg: "Todavía no hay documentos procesados.",
+    inputId: "clientFormPhotoInput", captureLabelId: "clientFormCaptureLabel", stripId: "clientFormPhotoStrip",
+    btnId: "clientFormProcessBtn", statusId: "clientFormStatus", photoCardId: "clientFormPhotoCard", photoImgId: "clientFormPhoto",
+    resultCardId: "clientFormResultCard", reviewId: "clientFormNeedsReview", fieldsId: "clientFormFields",
+    emptyId: "clientFormEmpty", historyListId: "clientFormHistoryList", statsRowId: "clientFormStatsRow",
+    summary: (h) => h.is_valid_document
+      ? `${h.razon_social_o_nombre || "sin nombre"} · ${h.rut || "RUT no legible"}`
+      : "No reconocido como documento",
+    computeStats: (history) => {
+      const valid = history.filter((h) => h.is_valid_document);
+      const needsReview = valid.filter((h) => h.needs_review).length;
+      const types = new Set(valid.map((h) => h.document_type).filter(Boolean));
+      return [
+        { label: "Documentos procesados", value: history.length },
+        { label: "Fichas listas", value: valid.length - needsReview },
+        { label: "Pendientes de revisión", value: needsReview },
+        { label: "Tipos de documento distintos", value: types.size },
+      ];
+    },
+    fields: [
+      { key: "document_type", label: "Tipo de documento" },
+      { key: "rut", label: "RUT" },
+      { key: "razon_social_o_nombre", label: "Razón social / nombre" },
+      { key: "nombre_fantasia", label: "Nombre de fantasía" },
+      { key: "direccion", label: "Dirección" },
+      { key: "comuna", label: "Comuna" },
+      { key: "giro", label: "Giro" },
+      { key: "telefono", label: "Teléfono" },
+      { key: "correo", label: "Correo" },
+    ],
+  });
+  document.getElementById("ocrClientFormNavBtn").addEventListener("click", clientFormPoc.show);
 
   document.getElementById("newUserBtn").addEventListener("click", () => {
     document.getElementById("newUserName").value = "";

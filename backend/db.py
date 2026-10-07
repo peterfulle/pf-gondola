@@ -102,6 +102,26 @@ CREATE TABLE IF NOT EXISTS point_assignments (
   created_at TEXT NOT NULL,
   PRIMARY KEY (org_id, point_id, email)
 );
+CREATE TABLE IF NOT EXISTS commercial_agreements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  point_id TEXT,
+  display_type TEXT NOT NULL,
+  brand TEXT NOT NULL,
+  description TEXT,
+  committed_from TEXT,
+  committed_to TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS ocr_extractions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  created_by TEXT,
+  image_paths_json TEXT,
+  result_json TEXT
+);
 """
 
 VALID_ROLES = ("superusuario", "admin", "analista", "reponedor")
@@ -141,7 +161,8 @@ def init_db():
         # en el mismo servicio, "CREATE TABLE IF NOT EXISTS" la deja tal cual y las
         # columnas no calzan (ej: planogram_items sin org_id). Si no tiene org_id, no es
         # nuestra, así que se reemplaza igual que el caso de users.
-        for new_table in ("shelves", "planogram_items", "product_corrections", "point_assignments"):
+        for new_table in ("shelves", "planogram_items", "product_corrections", "point_assignments",
+                          "commercial_agreements", "ocr_extractions"):
             if new_table in tables and not _has_column(conn, new_table, "org_id"):
                 conn.execute(f"DROP TABLE IF EXISTS {new_table}")
 
@@ -155,6 +176,8 @@ def init_db():
             "ALTER TABLE readings ADD COLUMN exhibition_score REAL",
             "ALTER TABLE readings ADD COLUMN organization_score REAL",
             "ALTER TABLE readings ADD COLUMN shelf_id TEXT",
+            "ALTER TABLE readings ADD COLUMN display_type TEXT",
+            "ALTER TABLE readings ADD COLUMN display_payload_json TEXT",
         ):
             try:
                 conn.execute(statement)
@@ -522,29 +545,34 @@ def add_reading(
     image_paths: list,
     linear_meters: float = None,
     shelf_id: str = None,
+    display_type: str = "gondola",
 ) -> dict:
+    is_gondola = display_type == "gondola"
     with get_conn() as conn:
         cur = conn.execute(
             "INSERT INTO readings (org_id, point_id, created_at, total_facings, shelf_levels_detected, "
             "empty_space_pct, price_visibility_score, exhibition_score, organization_score, "
-            "products_json, categories_json, notes, image_paths_json, linear_meters, shelf_id) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "products_json, categories_json, notes, image_paths_json, linear_meters, shelf_id, "
+            "display_type, display_payload_json) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 org_id,
                 point_id,
                 now_iso(),
-                analysis.get("total_facings"),
-                analysis.get("shelf_levels_detected"),
-                analysis.get("empty_space_pct"),
-                analysis.get("price_visibility_score"),
-                analysis.get("exhibition_score"),
-                analysis.get("organization_score"),
-                json.dumps(analysis.get("products", [])),
-                json.dumps(analysis.get("categories", [])),
+                analysis.get("total_facings") if is_gondola else None,
+                analysis.get("shelf_levels_detected") if is_gondola else None,
+                analysis.get("empty_space_pct") if is_gondola else None,
+                analysis.get("price_visibility_score") if is_gondola else None,
+                analysis.get("exhibition_score") if is_gondola else None,
+                analysis.get("organization_score") if is_gondola else None,
+                json.dumps(analysis.get("products", [])) if is_gondola else "[]",
+                json.dumps(analysis.get("categories", [])) if is_gondola else "[]",
                 analysis.get("notes", ""),
                 json.dumps(image_paths or []),
                 linear_meters,
                 shelf_id,
+                display_type,
+                None if is_gondola else json.dumps(analysis),
             ),
         )
         reading_id = cur.lastrowid
@@ -554,7 +582,38 @@ def add_reading(
     return _reading_dict(row, list_own_brands(org_id), shelves, planograms)
 
 
+DISPLAY_TYPE_LABELS = {
+    "gondola": "Góndola principal",
+    "exhibicion_adicional": "Exhibición adicional",
+    "vitrina_granel": "Vitrina a granel",
+}
+
+
 def _reading_dict(row: sqlite3.Row, own_brands: list = None, shelves: dict = None, planograms: dict = None) -> dict:
+    display_type = row["display_type"] if "display_type" in row.keys() and row["display_type"] else "gondola"
+
+    if display_type != "gondola":
+        paths_json = row["image_paths_json"]
+        paths = json.loads(paths_json) if paths_json else []
+        payload_json = row["display_payload_json"] if "display_payload_json" in row.keys() else None
+        payload = json.loads(payload_json) if payload_json else {}
+        # El modelo de visión también devuelve un campo "display_type" propio (cabecera/isla/
+        # exhibidor/...), distinto del display_type de la lectura (exhibicion_adicional/
+        # vitrina_granel). Se renombra para que el spread de abajo no lo pise.
+        if "display_type" in payload:
+            payload["detected_display_type"] = payload.pop("display_type")
+        return {
+            "id": row["id"],
+            "point_id": row["point_id"],
+            "created_at": row["created_at"],
+            "shelf_id": row["shelf_id"] if "shelf_id" in row.keys() else None,
+            "display_type": display_type,
+            "display_type_label": DISPLAY_TYPE_LABELS.get(display_type, display_type),
+            "notes": row["notes"],
+            "image_urls": [f"/uploads/{p}" for p in paths],
+            **payload,
+        }
+
     paths_json = row["image_paths_json"]
     paths = json.loads(paths_json) if paths_json else []
 
@@ -580,6 +639,8 @@ def _reading_dict(row: sqlite3.Row, own_brands: list = None, shelves: dict = Non
         "id": row["id"],
         "point_id": row["point_id"],
         "created_at": row["created_at"],
+        "display_type": "gondola",
+        "display_type_label": DISPLAY_TYPE_LABELS["gondola"],
         "shelf_id": shelf_id,
         "shelf_name": shelf_meta["name"] if shelf_meta else None,
         "shelf_type": shelf_meta["shelf_type"] if shelf_meta else None,
@@ -790,6 +851,138 @@ def allowed_point_ids_for_user(org_id: str, user: dict):
     return set(assigned)
 
 
+# ---------- acuerdos comerciales (exhibiciones pagadas o comprometidas) ----------
+
+AGREEMENT_DISPLAY_TYPES = ("cabecera", "isla", "exhibidor", "mueble_de_marca", "otro")
+
+
+def create_commercial_agreement(org_id: str, point_id: str, display_type: str, brand: str,
+                                 description: str = None, committed_from: str = None,
+                                 committed_to: str = None) -> dict:
+    created_at = now_iso()
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO commercial_agreements (org_id, point_id, display_type, brand, description, "
+            "committed_from, committed_to, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (org_id, point_id, display_type, brand, description, committed_from, committed_to, created_at),
+        )
+    return {
+        "id": cur.lastrowid, "org_id": org_id, "point_id": point_id, "display_type": display_type,
+        "brand": brand, "description": description, "committed_from": committed_from,
+        "committed_to": committed_to, "created_at": created_at,
+    }
+
+
+def delete_commercial_agreement(org_id: str, agreement_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM commercial_agreements WHERE org_id = ? AND id = ?", (org_id, agreement_id))
+
+
+def _agreement_verification(conn, org_id: str, agreement: sqlite3.Row) -> dict:
+    """Busca la lectura de exhibición adicional más reciente en el punto (o en cualquier
+    punto si el acuerdo es a nivel de organización) cuyo tipo y marca coincidan con lo
+    comprometido. Es un cruce por texto libre (igual que el cruce de planograma), no un
+    match exacto de contrato, así que sirve como primera señal, no como prueba legal."""
+    query = (
+        "SELECT * FROM readings WHERE org_id = ? AND display_type = 'exhibicion_adicional' "
+        "AND point_id = ? ORDER BY id DESC"
+        if agreement["point_id"] else
+        "SELECT * FROM readings WHERE org_id = ? AND display_type = 'exhibicion_adicional' ORDER BY id DESC"
+    )
+    params = (org_id, agreement["point_id"]) if agreement["point_id"] else (org_id,)
+    rows = conn.execute(query, params).fetchall()
+
+    brand_needle = (agreement["brand"] or "").strip().lower()
+    for row in rows:
+        payload_json = row["display_payload_json"] if "display_payload_json" in row.keys() else None
+        payload = json.loads(payload_json) if payload_json else {}
+        if payload.get("display_type") != agreement["display_type"]:
+            continue
+        brands = [b.lower() for b in payload.get("brands_detected", [])]
+        if any(brand_needle in b or b in brand_needle for b in brands):
+            return {"status": "verificado", "last_verified_at": row["created_at"],
+                     "verified_point_id": row["point_id"], "verified_reading_id": row["id"]}
+    return {"status": "sin_verificar", "last_verified_at": None,
+            "verified_point_id": None, "verified_reading_id": None}
+
+
+def list_commercial_agreements(org_id: str, point_id: str = None) -> list:
+    with get_conn() as conn:
+        if point_id:
+            rows = conn.execute(
+                "SELECT * FROM commercial_agreements WHERE org_id = ? AND (point_id = ? OR point_id IS NULL) "
+                "ORDER BY created_at DESC",
+                (org_id, point_id),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM commercial_agreements WHERE org_id = ? ORDER BY created_at DESC", (org_id,)
+            ).fetchall()
+        points = {p["id"]: p["name"] for p in conn.execute(
+            "SELECT id, name FROM points WHERE org_id = ?", (org_id,)
+        ).fetchall()}
+        out = []
+        for r in rows:
+            d = dict(r)
+            d["point_name"] = points.get(r["point_id"]) if r["point_id"] else "Toda la organización"
+            d.update(_agreement_verification(conn, org_id, r))
+            out.append(d)
+    return out
+
+
+# ---------- PoC de extracción OCR (vouchers / ficha de cliente) ----------
+
+def add_ocr_extraction(org_id: str, kind: str, result: dict, image_paths: list, created_by: str) -> dict:
+    created_at = now_iso()
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO ocr_extractions (org_id, kind, created_at, created_by, image_paths_json, result_json) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (org_id, kind, created_at, created_by, json.dumps(image_paths or []), json.dumps(result)),
+        )
+    return {
+        "id": cur.lastrowid, "kind": kind, "created_at": created_at, "created_by": created_by,
+        "image_urls": [f"/uploads/{p}" for p in (image_paths or [])],
+        **result,
+    }
+
+
+def _ocr_extraction_dict(row: sqlite3.Row) -> dict:
+    paths = json.loads(row["image_paths_json"] or "[]")
+    result = json.loads(row["result_json"] or "{}")
+    return {
+        "id": row["id"], "kind": row["kind"], "created_at": row["created_at"], "created_by": row["created_by"],
+        "image_urls": [f"/uploads/{p}" for p in paths],
+        **result,
+    }
+
+
+def list_ocr_extractions(org_id: str, kind: str, limit: int = 50) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM ocr_extractions WHERE org_id = ? AND kind = ? ORDER BY id DESC LIMIT ?",
+            (org_id, kind, limit),
+        ).fetchall()
+    return [_ocr_extraction_dict(r) for r in rows]
+
+
+def get_ocr_extraction(org_id: str, kind: str, extraction_id: int):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM ocr_extractions WHERE org_id = ? AND kind = ? AND id = ?",
+            (org_id, kind, extraction_id),
+        ).fetchone()
+    return _ocr_extraction_dict(row) if row else None
+
+
+def delete_ocr_extraction(org_id: str, kind: str, extraction_id: int) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "DELETE FROM ocr_extractions WHERE org_id = ? AND kind = ? AND id = ?",
+            (org_id, kind, extraction_id),
+        )
+
+
 def export_rows(org_id: str, point_id: str = None) -> list:
     """Una fila por producto por lectura, para exportar a Excel/Power BI/Looker."""
     own_brands = list_own_brands(org_id)
@@ -832,6 +1025,8 @@ def export_rows(org_id: str, point_id: str = None) -> list:
                     "is_own_brand": p.get("is_own_brand"),
                     "estimated_depth": estimated_depth,
                     "units_estimate": (p.get("facings") or 0) * estimated_depth,
+                    "price_clp": p.get("price_clp"),
+                    "price_confidence": p.get("price_confidence"),
                     "reading_total_facings": r["total_facings"],
                     "reading_empty_space_pct": r["empty_space_pct"],
                     "reading_shelf_levels": r["shelf_levels_detected"],

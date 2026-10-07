@@ -16,7 +16,9 @@ from pydantic import BaseModel
 
 import auth
 import db
-from vision import MAX_IMAGES, analyze_shelf
+from ocr_client_form import extract_client_form
+from ocr_voucher import extract_voucher
+from vision import MAX_IMAGES, analyze_additional_display, analyze_bulk_display, analyze_shelf
 
 load_dotenv()
 db.init_db()
@@ -83,6 +85,15 @@ class AssignPointsPayload(BaseModel):
     point_ids: List[str]
 
 
+class CreateAgreementPayload(BaseModel):
+    point_id: Optional[str] = None
+    display_type: str
+    brand: str
+    description: Optional[str] = None
+    committed_from: Optional[str] = None
+    committed_to: Optional[str] = None
+
+
 ROLE_LABELS = {
     "superusuario": "Superusuario",
     "admin": "Administrador",
@@ -137,13 +148,21 @@ EXTENSION_BY_CONTENT_TYPE = {
 }
 
 
-def save_upload(org_id: str, point_id: str, image_bytes: bytes, content_type: str) -> str:
+def _write_upload(subpath_parts: list, image_bytes: bytes, content_type: str) -> str:
     ext = EXTENSION_BY_CONTENT_TYPE.get(content_type, "jpg")
-    point_dir = UPLOADS_DIR / org_id / point_id
-    point_dir.mkdir(parents=True, exist_ok=True)
+    target_dir = UPLOADS_DIR.joinpath(*subpath_parts)
+    target_dir.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid.uuid4().hex}.{ext}"
-    (point_dir / filename).write_bytes(image_bytes)
-    return f"{org_id}/{point_id}/{filename}"
+    (target_dir / filename).write_bytes(image_bytes)
+    return "/".join([*subpath_parts, filename])
+
+
+def save_upload(org_id: str, point_id: str, image_bytes: bytes, content_type: str) -> str:
+    return _write_upload([org_id, point_id], image_bytes, content_type)
+
+
+def save_ocr_upload(org_id: str, kind: str, image_bytes: bytes, content_type: str) -> str:
+    return _write_upload([org_id, "ocr", kind], image_bytes, content_type)
 
 
 def _check_point_access(user: dict, point_id: str) -> None:
@@ -333,6 +352,7 @@ def _rows_to_csv(rows: list) -> str:
         "point_id", "point_name", "reading_id", "created_at",
         "product", "brand", "category", "facings", "shelf_level", "position_index",
         "out_of_stock", "is_own_brand", "estimated_depth", "units_estimate",
+        "price_clp", "price_confidence",
         "reading_total_facings", "reading_empty_space_pct", "reading_shelf_levels", "reading_linear_meters",
     ]
     buf = io.StringIO()
@@ -556,12 +576,21 @@ def api_correct_product(
     return result
 
 
+READING_TYPES = ("gondola", "exhibicion_adicional", "vitrina_granel")
+_VALIDITY_FIELD_BY_TYPE = {
+    "gondola": ("is_supermarket_shelf", "La imagen no parece ser una góndola de supermercado."),
+    "exhibicion_adicional": ("is_valid_display", "La imagen no parece ser una exhibición adicional (cabecera, isla, exhibidor o mueble de marca)."),
+    "vitrina_granel": ("is_valid_bulk_display", "La imagen no parece ser una vitrina o exhibición a granel."),
+}
+
+
 @app.post("/api/points/{point_id}/analyze")
 async def api_analyze(
     point_id: str,
     images: List[UploadFile] = File(...),
     linear_meters: Optional[float] = Form(default=None),
     shelf_id: Optional[str] = Form(default=None),
+    reading_type: str = Form(default="gondola"),
     user: dict = Depends(require_auth),
 ):
     org_id = user["org_id"]
@@ -569,9 +598,15 @@ async def api_analyze(
     if not db.point_exists(org_id, point_id):
         raise HTTPException(status_code=404, detail="Punto no encontrado")
 
+    reading_type = (reading_type or "gondola").strip()
+    if reading_type not in READING_TYPES:
+        raise HTTPException(status_code=400, detail="Tipo de lectura inválido")
+
     shelf_id = (shelf_id or "").strip() or None
     if shelf_id and not db.shelf_exists(org_id, point_id, shelf_id):
         raise HTTPException(status_code=404, detail="Góndola no encontrada")
+    if shelf_id and reading_type != "gondola":
+        shelf_id = None  # el planograma solo aplica a la góndola principal
 
     if not images:
         raise HTTPException(status_code=400, detail="Debes subir al menos una foto")
@@ -587,16 +622,115 @@ async def api_analyze(
             raise HTTPException(status_code=400, detail="Una de las imágenes está vacía")
         loaded.append((image_bytes, image.content_type))
 
+    analyze_fn = {
+        "gondola": analyze_shelf,
+        "exhibicion_adicional": analyze_additional_display,
+        "vitrina_granel": analyze_bulk_display,
+    }[reading_type]
+
     try:
-        analysis = analyze_shelf(loaded)
+        analysis = analyze_fn(loaded)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Error al analizar la imagen: {exc}") from exc
 
-    if not analysis.get("is_supermarket_shelf", True):
-        reason = analysis.get("rejection_reason") or "La imagen no parece ser una góndola de supermercado."
+    validity_field, default_reason = _VALIDITY_FIELD_BY_TYPE[reading_type]
+    if not analysis.get(validity_field, True):
+        reason = analysis.get("rejection_reason") or default_reason
         raise HTTPException(status_code=422, detail=reason)
 
     image_paths = [
         save_upload(org_id, point_id, image_bytes, content_type) for image_bytes, content_type in loaded
     ]
-    return db.add_reading(org_id, point_id, analysis, image_paths, linear_meters, shelf_id)
+    return db.add_reading(org_id, point_id, analysis, image_paths, linear_meters, shelf_id, reading_type)
+
+
+@app.get("/api/commercial-agreements")
+def api_list_agreements(point_id: Optional[str] = None, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    return db.list_commercial_agreements(actor["org_id"], point_id)
+
+
+@app.post("/api/commercial-agreements")
+def api_create_agreement(payload: CreateAgreementPayload, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    brand = payload.brand.strip()
+    if not brand:
+        raise HTTPException(status_code=400, detail="La marca es obligatoria")
+    if payload.display_type not in db.AGREEMENT_DISPLAY_TYPES:
+        raise HTTPException(status_code=400, detail="Tipo de exhibición inválido")
+    point_id = (payload.point_id or "").strip() or None
+    if point_id and not db.point_exists(actor["org_id"], point_id):
+        raise HTTPException(status_code=404, detail="Punto no encontrado")
+    return db.create_commercial_agreement(
+        actor["org_id"], point_id, payload.display_type, brand,
+        (payload.description or "").strip() or None,
+        (payload.committed_from or "").strip() or None,
+        (payload.committed_to or "").strip() or None,
+    )
+
+
+@app.delete("/api/commercial-agreements/{agreement_id}")
+def api_delete_agreement(agreement_id: int, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    db.delete_commercial_agreement(actor["org_id"], agreement_id)
+    return {"deleted": agreement_id}
+
+
+# ---------- PoC: extracción OCR (persiste resultados por organización para mantener un historial) ----------
+
+OCR_KINDS = {"voucher": "voucher", "client-form": "client_form"}
+OCR_EXTRACT_FN = {"voucher": extract_voucher, "client-form": extract_client_form}
+OCR_VALID_FIELD = {"voucher": "is_valid_voucher", "client-form": "is_valid_document"}
+OCR_ERROR_LABEL = {"voucher": "el comprobante", "client-form": "el documento"}
+
+
+async def _load_ocr_images(images: List[UploadFile]) -> list:
+    if not images:
+        raise HTTPException(status_code=400, detail="Debes subir al menos una foto")
+    if len(images) > MAX_IMAGES:
+        raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGES} fotos")
+    loaded = []
+    for image in images:
+        if not image.content_type or not image.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Todos los archivos deben ser imágenes")
+        image_bytes = await image.read()
+        if not image_bytes:
+            raise HTTPException(status_code=400, detail="Una de las imágenes está vacía")
+        loaded.append((image_bytes, image.content_type))
+    return loaded
+
+
+async def _api_ocr_process(url_kind: str, images: List[UploadFile], user: dict) -> dict:
+    kind = OCR_KINDS[url_kind]
+    loaded = await _load_ocr_images(images)
+    try:
+        result = OCR_EXTRACT_FN[url_kind](loaded)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Error al leer {OCR_ERROR_LABEL[url_kind]}: {exc}") from exc
+
+    image_paths = [
+        save_ocr_upload(user["org_id"], kind, image_bytes, content_type) for image_bytes, content_type in loaded
+    ]
+    return db.add_ocr_extraction(user["org_id"], kind, result, image_paths, user["email"])
+
+
+@app.post("/api/ocr/voucher")
+async def api_ocr_voucher(images: List[UploadFile] = File(...), user: dict = Depends(require_auth)):
+    return await _api_ocr_process("voucher", images, user)
+
+
+@app.post("/api/ocr/client-form")
+async def api_ocr_client_form(images: List[UploadFile] = File(...), user: dict = Depends(require_auth)):
+    return await _api_ocr_process("client-form", images, user)
+
+
+@app.get("/api/ocr/{url_kind}/history")
+def api_ocr_history(url_kind: str, user: dict = Depends(require_auth)):
+    if url_kind not in OCR_KINDS:
+        raise HTTPException(status_code=404, detail="Tipo de extracción inválido")
+    return db.list_ocr_extractions(user["org_id"], OCR_KINDS[url_kind])
+
+
+@app.delete("/api/ocr/{url_kind}/{extraction_id}")
+def api_ocr_delete(url_kind: str, extraction_id: int, actor: dict = Depends(require_role(*db.ANALYST_ROLES))):
+    if url_kind not in OCR_KINDS:
+        raise HTTPException(status_code=404, detail="Tipo de extracción inválido")
+    db.delete_ocr_extraction(actor["org_id"], OCR_KINDS[url_kind], extraction_id)
+    return {"deleted": extraction_id}
