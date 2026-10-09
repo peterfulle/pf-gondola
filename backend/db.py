@@ -122,6 +122,33 @@ CREATE TABLE IF NOT EXISTS ocr_extractions (
   image_paths_json TEXT,
   result_json TEXT
 );
+CREATE TABLE IF NOT EXISTS clients (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  created_by TEXT,
+  source_ocr_extraction_id INTEGER,
+  rut TEXT,
+  razon_social_o_nombre TEXT NOT NULL,
+  nombre_fantasia TEXT,
+  direccion TEXT,
+  comuna TEXT,
+  giro TEXT,
+  telefono TEXT,
+  correo TEXT,
+  canal TEXT,
+  tipo_negocio TEXT,
+  condicion_pago TEXT,
+  plazo_pago TEXT,
+  monto_tope TEXT,
+  dias_atencion TEXT,
+  direccion_entrega TEXT,
+  contacto_nombre TEXT,
+  contacto_telefono TEXT,
+  contacto_correo TEXT,
+  folio_credito TEXT,
+  notes TEXT
+);
 """
 
 VALID_ROLES = ("superusuario", "admin", "analista", "reponedor")
@@ -162,7 +189,7 @@ def init_db():
         # columnas no calzan (ej: planogram_items sin org_id). Si no tiene org_id, no es
         # nuestra, así que se reemplaza igual que el caso de users.
         for new_table in ("shelves", "planogram_items", "product_corrections", "point_assignments",
-                          "commercial_agreements", "ocr_extractions"):
+                          "commercial_agreements", "ocr_extractions", "clients"):
             if new_table in tables and not _has_column(conn, new_table, "org_id"):
                 conn.execute(f"DROP TABLE IF EXISTS {new_table}")
 
@@ -1037,6 +1064,45 @@ def list_finance_vouchers(org_id: str, date_from: str = None, date_to: str = Non
     if reconciled is not None:
         vouchers = [v for v in vouchers if bool(v.get("reconciled")) == reconciled]
     return vouchers[:limit]
+
+
+# ---------- clientes (alta vía wizard de OCR) ----------
+
+CLIENT_FIELDS = (
+    "rut", "razon_social_o_nombre", "nombre_fantasia", "direccion", "comuna", "giro",
+    "telefono", "correo", "canal", "tipo_negocio", "condicion_pago", "plazo_pago",
+    "monto_tope", "dias_atencion", "direccion_entrega", "contacto_nombre",
+    "contacto_telefono", "contacto_correo", "folio_credito", "notes",
+)
+
+
+def create_client(org_id: str, created_by: str, source_ocr_extraction_id, fields: dict) -> dict:
+    created_at = now_iso()
+    values = {k: (fields.get(k) or None) for k in CLIENT_FIELDS}
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO clients (org_id, created_at, created_by, source_ocr_extraction_id, "
+            + ", ".join(CLIENT_FIELDS) +
+            ") VALUES (?,?,?,?," + ",".join(["?"] * len(CLIENT_FIELDS)) + ")",
+            (org_id, created_at, created_by, source_ocr_extraction_id, *[values[k] for k in CLIENT_FIELDS]),
+        )
+    return get_client(org_id, cur.lastrowid)
+
+
+def list_clients(org_id: str, limit: int = 200) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM clients WHERE org_id = ? ORDER BY id DESC LIMIT ?", (org_id, limit)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_client(org_id: str, client_id: int):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM clients WHERE org_id = ? AND id = ?", (org_id, client_id)
+        ).fetchone()
+    return dict(row) if row else None
 
 
 def export_rows(org_id: str, point_id: str = None) -> list:

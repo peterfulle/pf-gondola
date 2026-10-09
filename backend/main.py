@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 import auth
 import db
+import sii_lookup
 from ocr_client_form import extract_client_form
 from ocr_voucher import extract_voucher
 from vision import MAX_IMAGES, analyze_additional_display, analyze_bulk_display, analyze_shelf
@@ -96,6 +97,30 @@ class CreateAgreementPayload(BaseModel):
 
 class ReconcilePayload(BaseModel):
     reconciled: bool
+
+
+class ClientPayload(BaseModel):
+    source_ocr_extraction_id: Optional[int] = None
+    rut: Optional[str] = None
+    razon_social_o_nombre: str
+    nombre_fantasia: Optional[str] = None
+    direccion: Optional[str] = None
+    comuna: Optional[str] = None
+    giro: Optional[str] = None
+    telefono: Optional[str] = None
+    correo: Optional[str] = None
+    canal: Optional[str] = None
+    tipo_negocio: Optional[str] = None
+    condicion_pago: Optional[str] = None
+    plazo_pago: Optional[str] = None
+    monto_tope: Optional[str] = None
+    dias_atencion: Optional[str] = None
+    direccion_entrega: Optional[str] = None
+    contacto_nombre: Optional[str] = None
+    contacto_telefono: Optional[str] = None
+    contacto_correo: Optional[str] = None
+    folio_credito: Optional[str] = None
+    notes: Optional[str] = None
 
 
 ROLE_LABELS = {
@@ -795,3 +820,33 @@ def api_finance_vouchers_export(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=neuravision-finanzas-comprobantes.csv"},
     )
+
+
+# ---------- Clientes: alta vía wizard de OCR ----------
+
+@app.get("/api/sii/lookup")
+def api_sii_lookup(rut: str, user: dict = Depends(require_auth)):
+    try:
+        result = sii_lookup.lookup_rut(rut)
+    except sii_lookup.SiiNotConfigured:
+        raise HTTPException(status_code=503, detail="Integración con el SII no está configurada")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="RUT inválido")
+    if not result:
+        raise HTTPException(status_code=404, detail="No se encontró ese RUT en el SII")
+    return result
+
+
+@app.post("/api/clients")
+def api_create_client(payload: ClientPayload, user: dict = Depends(require_auth)):
+    if payload.source_ocr_extraction_id is not None:
+        extraction = db.get_ocr_extraction(user["org_id"], "client_form", payload.source_ocr_extraction_id)
+        if not extraction:
+            raise HTTPException(status_code=404, detail="Documento de origen no encontrado")
+    fields = payload.dict(exclude={"source_ocr_extraction_id"})
+    return db.create_client(user["org_id"], user["email"], payload.source_ocr_extraction_id, fields)
+
+
+@app.get("/api/clients")
+def api_list_clients(user: dict = Depends(require_auth)):
+    return db.list_clients(user["org_id"])

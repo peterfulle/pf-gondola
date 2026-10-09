@@ -343,6 +343,7 @@
   .poc-field-value { font-size: 13px; font-weight: 600; text-align: right; }
   .poc-field-value input { font: inherit; font-weight: 600; text-align: right; border: 1px solid var(--border-strong); border-radius: 6px; padding: 4px 7px; width: 200px; }
   .poc-review-banner { display: flex; align-items: center; gap: 8px; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; border-radius: 8px; padding: 8px 10px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+  .poc-review-banner svg { width: 16px; height: 16px; flex-shrink: 0; }
   .capture-hint { font-size: 11.5px; color: var(--ink-muted); margin: 10px 0 0; line-height: 1.5; }
   input[type="file"] { display: none; }
 
@@ -717,6 +718,51 @@
   .btn-reconcile svg { width: 13px; height: 13px; }
   .btn-reconcile.is-done { background: #ecfdf3; border-color: #b7e4c7; color: #16a34a; }
   .btn-reconcile.is-done:hover { border-color: #16a34a; }
+  .btn-reconcile:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-reconcile:disabled:hover { border-color: var(--border-strong); color: var(--ink-secondary); }
+
+  /* ---------- wizard: alta de clientes ---------- */
+  .wizard-steps { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 22px; }
+  .wizard-step-dot { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+  .wizard-step-dot::before {
+    content: ""; position: absolute; top: 13px; left: -50%; width: 100%; height: 2px; background: var(--border-strong); z-index: 0;
+  }
+  .wizard-step-dot:first-child::before { display: none; }
+  .wizard-step-dot .dot {
+    width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; background: #fff; border: 2px solid var(--border-strong); color: var(--ink-muted);
+    position: relative; z-index: 1; transition: all 0.15s ease;
+  }
+  .wizard-step-dot .lbl { font-size: 11px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .wizard-step-dot.active .dot { border-color: var(--ink); color: var(--ink); background: #fff; }
+  .wizard-step-dot.active .lbl { color: var(--ink); }
+  .wizard-step-dot.done .dot { border-color: var(--ink); background: var(--ink); color: #fff; }
+  .wizard-step-dot.done::before { background: var(--ink); }
+  .wizard-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; }
+  .btn-plain {
+    background: transparent; border: none; color: var(--ink-secondary); font-family: inherit; font-size: 13px;
+    font-weight: 700; cursor: pointer; padding: 10px 4px;
+  }
+  .btn-plain:hover { color: var(--ink); }
+  .field.field-warn input, .field.field-warn select { border-color: var(--chip-amber-ink); background: var(--chip-amber-bg); }
+  .field-warn-note { font-size: 11px; font-weight: 700; color: var(--chip-amber-ink); margin-top: 4px; }
+  .sii-suggestion-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--page);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-top: 8px; font-size: 12.5px;
+  }
+  .sii-suggestion-row button {
+    background: var(--ink); color: #fff; border: none; border-radius: 6px; padding: 5px 10px;
+    font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .wizard-done-icon {
+    width: 56px; height: 56px; border-radius: 50%; background: #ecfdf3; color: #16a34a; margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wizard-done-icon svg { width: 28px; height: 28px; }
+  .wiz-preview-section { margin-bottom: 16px; }
+  .wiz-preview-section h4 {
+    margin: 0 0 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted);
+  }
 
   .role-picker { display: flex; gap: 8px; }
   .role-card {
@@ -1005,7 +1051,7 @@
         <div class="sidebar-section-label">Clientes</div>
         <button class="sidebar-nav-item" id="ocrClientFormNavBtn" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-          <span>Alta de clientes</span>
+          <span>Clientes</span>
         </button>
 
         <div class="sidebar-section-label" id="adminSectionLabel" style="display:none;">Administración</div>
@@ -1685,57 +1731,194 @@
       </div>
     </section>
 
-    <section id="ocrClientFormView" style="display:none;">
+    <section id="clientsListView" style="display:none;">
       <div class="admin-hero">
         <div class="admin-hero-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         </div>
         <div>
-          <h1>Clientes · Alta de clientes nuevos</h1>
-          <p>Extrae RUT, razón social, dirección y otros datos desde boleta, factura, declaración SII o patente municipal, para prellenar la ficha de alta. Si un dato no está claro, lo deja marcado para que el vendedor lo confirme — nunca lo inventa.</p>
+          <h1>Clientes</h1>
+          <p>Da de alta clientes nuevos fotografiando boleta, factura, declaración SII o patente municipal — revisa y completa antes de confirmar.</p>
         </div>
+        <button class="primary" id="newClientBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo cliente
+        </button>
       </div>
       <div class="card">
-        <div class="stat-row" id="clientFormStatsRow"></div>
+        <div class="card-head-row">
+          <h2 style="margin:0; font-size:15px;">Clientes creados</h2>
+          <span class="hint" id="clientsListCount"></span>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Fecha</th><th>RUT</th><th>Razón social / nombre</th><th>Canal</th><th>Comuna</th></tr></thead>
+            <tbody id="clientsListTableBody"></tbody>
+          </table>
+        </div>
       </div>
-      <div class="detail-grid">
-        <div>
-          <div class="card capture">
-            <h3 class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-              Nuevo documento
-            </h3>
-            <label for="clientFormPhotoInput" id="clientFormCaptureLabel">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16.5v2A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
-              Subir foto del documento
-            </label>
-            <input type="file" id="clientFormPhotoInput" accept="image/*" multiple />
-            <div class="photo-strip" id="clientFormPhotoStrip" style="display:none;"></div>
-            <button class="primary" id="clientFormProcessBtn" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M3 12h18"/></svg>
-              <span>Procesar documento</span>
-            </button>
-            <div class="status" id="clientFormStatus"></div>
-          </div>
-          <div class="card">
-            <h3 class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
-              Historial
-            </h3>
-            <div class="history-list" id="clientFormHistoryList"></div>
-          </div>
+    </section>
+
+    <section id="clientWizardView" style="display:none;">
+      <div class="admin-hero">
+        <div class="admin-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         </div>
         <div>
-          <div class="card" id="clientFormPhotoCard" style="display:none;">
-            <h3 class="card-title">Foto del documento</h3>
-            <div class="reading-photo-main"><img id="clientFormPhoto" class="reading-photo" alt="Foto del documento" /></div>
+          <h1>Nuevo cliente</h1>
+          <p>Si un dato no está claro en la foto, lo dejamos marcado para que lo confirmes — nunca lo inventamos.</p>
+        </div>
+      </div>
+
+      <div class="wizard-steps" id="wizSteps">
+        <div class="wizard-step-dot" data-wizstep="1"><span class="dot">1</span><span class="lbl">Captura</span></div>
+        <div class="wizard-step-dot" data-wizstep="2"><span class="dot">2</span><span class="lbl">Revisión</span></div>
+        <div class="wizard-step-dot" data-wizstep="3"><span class="dot">3</span><span class="lbl">Vista previa</span></div>
+        <div class="wizard-step-dot" data-wizstep="4"><span class="dot">4</span><span class="lbl">Listo</span></div>
+      </div>
+
+      <!-- Paso 1 — Captura -->
+      <div class="wizard-panel" id="wizPanel1">
+        <div class="card capture">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Foto del documento
+          </h3>
+          <p class="hint" style="margin:-6px 0 12px;">Boleta, factura electrónica, declaración de inicio de actividades del SII o patente municipal.</p>
+          <label for="wizPhotoInput" id="wizCaptureLabel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16.5v2A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+            Subir foto del documento
+          </label>
+          <input type="file" id="wizPhotoInput" accept="image/*" multiple />
+          <div class="photo-strip" id="wizPhotoStrip" style="display:none;"></div>
+          <div class="status" id="wizStep1Status"></div>
+          <div class="wizard-actions">
+            <button class="btn-plain" id="wizCancelBtn" type="button">Cancelar</button>
+            <button class="primary" id="wizStep1NextBtn" type="button" disabled style="margin-top:0; width:auto;">Continuar</button>
           </div>
-          <div class="card" id="clientFormResultCard" style="display:none;">
-            <h3 class="card-title">Ficha prellenada — revisa y corrige antes de transmitir</h3>
-            <div id="clientFormNeedsReview"></div>
-            <div id="clientFormFields"></div>
+        </div>
+      </div>
+
+      <!-- Paso 2 — Procesando / Revisión y enriquecimiento -->
+      <div class="wizard-panel" id="wizPanel2" style="display:none;">
+        <div class="card" id="wizProcessing">
+          <div class="status" id="wizProcessingStatus"></div>
+        </div>
+        <div class="card" id="wizRejected" style="display:none;">
+          <h3 class="card-title">No se pudo leer el documento</h3>
+          <p id="wizRejectedReason" class="hint"></p>
+          <div class="wizard-actions">
+            <button class="btn-plain" id="wizRejectedCancelBtn" type="button">Cancelar</button>
+            <button class="primary" id="wizRejectedRetryBtn" type="button" style="margin-top:0; width:auto;">Reintentar con otra foto</button>
           </div>
-          <div id="clientFormEmpty" class="point-empty">Sube la foto de un documento para ver la ficha prellenada.</div>
+        </div>
+        <div id="wizReview" style="display:none;">
+          <div class="poc-review-banner" id="wizReviewBanner" style="display:none;"></div>
+
+          <div class="card">
+            <h3 class="card-title">Datos del documento</h3>
+            <div class="field-row">
+              <div class="field"><label for="wizRut">RUT</label><input type="text" id="wizRut" placeholder="12.345.678-9" /></div>
+              <div class="field"><label for="wizRazonSocial">Razón social / nombre *</label><input type="text" id="wizRazonSocial" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="wizNombreFantasia">Nombre de fantasía</label><input type="text" id="wizNombreFantasia" /></div>
+              <div class="field"><label for="wizGiro">Giro</label><input type="text" id="wizGiro" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="wizDireccion">Dirección</label><input type="text" id="wizDireccion" /></div>
+              <div class="field"><label for="wizComuna">Comuna</label><input type="text" id="wizComuna" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="wizTelefono">Teléfono</label><input type="text" id="wizTelefono" /></div>
+              <div class="field"><label for="wizCorreo">Correo</label><input type="email" id="wizCorreo" /></div>
+            </div>
+          </div>
+
+          <div class="card" id="wizSiiCard" style="display:none;">
+            <h3 class="card-title">Verificación SII</h3>
+            <button class="btn-reconcile" id="wizSiiBtn" type="button">Verificar en SII</button>
+            <div id="wizSiiResult"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Datos comerciales (completar a mano)</h3>
+            <div class="field-row">
+              <div class="field">
+                <label for="wizCanal">Canal</label>
+                <select id="wizCanal">
+                  <option value="">Seleccione canal</option>
+                  <option>Moderno</option>
+                  <option>Tradicional</option>
+                  <option>Mayorista</option>
+                  <option>Otro</option>
+                </select>
+              </div>
+              <div class="field"><label for="wizTipoNegocio">Tipo de negocio</label><input type="text" id="wizTipoNegocio" placeholder="Ej: minimarket" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="wizCondicionPago">Condición de pago</label>
+                <select id="wizCondicionPago">
+                  <option value="">Seleccione condición</option>
+                  <option>Contado</option>
+                  <option>Crédito</option>
+                </select>
+              </div>
+              <div class="field"><label for="wizPlazoPago">Plazo de pago</label><input type="text" id="wizPlazoPago" placeholder="Ej: 30 días" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="wizMontoTope">Monto tope</label><input type="text" id="wizMontoTope" placeholder="Ej: $350.000" /></div>
+              <div class="field"><label for="wizDiasAtencion">Días de atención</label><input type="text" id="wizDiasAtencion" placeholder="Ej: Lunes a Viernes" /></div>
+            </div>
+            <div class="field">
+              <label for="wizDireccionEntrega">Dirección de entrega</label>
+              <input type="text" id="wizDireccionEntrega" />
+              <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; text-transform:none; color:var(--ink-secondary); margin-top:6px;">
+                <input type="checkbox" id="wizDireccionEntregaSame" style="width:auto;" /> Es la misma dirección comercial
+              </label>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="wizContactoNombre">Contacto — nombre</label><input type="text" id="wizContactoNombre" /></div>
+              <div class="field"><label for="wizContactoTelefono">Contacto — teléfono</label><input type="text" id="wizContactoTelefono" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="wizContactoCorreo">Contacto — correo</label><input type="email" id="wizContactoCorreo" /></div>
+              <div class="field"><label for="wizFolioCredito">Folio de crédito</label><input type="text" id="wizFolioCredito" /></div>
+            </div>
+          </div>
+
+          <div class="status" id="wizStep2Status"></div>
+          <div class="wizard-actions">
+            <button class="btn-plain" id="wizStep2BackBtn" type="button">← Cambiar foto</button>
+            <button class="primary" id="wizStep2NextBtn" type="button" style="margin-top:0; width:auto;">Ver vista previa</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 3 — Vista previa -->
+      <div class="wizard-panel" id="wizPanel3" style="display:none;">
+        <div class="card">
+          <h3 class="card-title">Vista previa de la ficha</h3>
+          <div id="wizPreviewPhoto"></div>
+          <div id="wizPreviewBody"></div>
+        </div>
+        <div class="wizard-actions">
+          <button class="btn-plain" id="wizStep3BackBtn" type="button">← Editar</button>
+          <button class="primary" id="wizStep3ConfirmBtn" type="button" style="margin-top:0; width:auto;">Confirmar y crear cliente</button>
+        </div>
+      </div>
+
+      <!-- Paso 4 — Listo -->
+      <div class="wizard-panel" id="wizPanel4" style="display:none;">
+        <div class="card" style="text-align:center; padding:40px 24px;">
+          <div class="wizard-done-icon" id="wizDoneIcon"></div>
+          <h3 id="wizDoneTitle" style="margin:14px 0 4px;">Cliente creado</h3>
+          <p class="hint" id="wizDoneSubtitle"></p>
+          <div class="wizard-actions" style="justify-content:center; margin-top:18px;">
+            <button class="btn-plain" id="wizDoneListBtn" type="button">Ver en lista de clientes</button>
+            <button class="primary" id="wizDoneNewBtn" type="button" style="margin-top:0; width:auto;">Crear otro cliente</button>
+          </div>
         </div>
       </div>
     </section>
@@ -2381,7 +2564,8 @@
     document.getElementById("adminView").style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
     document.getElementById("ocrVoucherView").style.display = "none";
-    document.getElementById("ocrClientFormView").style.display = "none";
+    document.getElementById("clientsListView").style.display = "none";
+    document.getElementById("clientWizardView").style.display = "none";
     homeView.style.display = "block";
     homeView.classList.add("view-fade");
     backBtn.style.display = "none";
@@ -2414,7 +2598,8 @@
     homeView.style.display = "none";
     dashboardView.style.display = "none";
     document.getElementById("ocrVoucherView").style.display = "none";
-    document.getElementById("ocrClientFormView").style.display = "none";
+    document.getElementById("clientsListView").style.display = "none";
+    document.getElementById("clientWizardView").style.display = "none";
     detailView.style.display = "block";
     detailView.classList.add("view-fade");
     backBtn.style.display = "flex";
@@ -2431,7 +2616,8 @@
     document.getElementById("adminView").style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
     document.getElementById("ocrVoucherView").style.display = "none";
-    document.getElementById("ocrClientFormView").style.display = "none";
+    document.getElementById("clientsListView").style.display = "none";
+    document.getElementById("clientWizardView").style.display = "none";
     dashboardView.style.display = "block";
     dashboardView.classList.add("view-fade");
     backBtn.style.display = "none";
@@ -3484,7 +3670,8 @@
     detailView.style.display = "none";
     document.getElementById("analyticsView").style.display = "none";
     document.getElementById("ocrVoucherView").style.display = "none";
-    document.getElementById("ocrClientFormView").style.display = "none";
+    document.getElementById("clientsListView").style.display = "none";
+    document.getElementById("clientWizardView").style.display = "none";
     adminView.style.display = "block";
     adminView.classList.add("view-fade");
     backBtn.style.display = "flex";
@@ -4212,7 +4399,8 @@
     detailView.style.display = "none";
     document.getElementById("adminView").style.display = "none";
     document.getElementById("ocrVoucherView").style.display = "none";
-    document.getElementById("ocrClientFormView").style.display = "none";
+    document.getElementById("clientsListView").style.display = "none";
+    document.getElementById("clientWizardView").style.display = "none";
     const view = document.getElementById("analyticsView");
     view.style.display = "block";
     view.classList.add("view-fade");
@@ -4226,7 +4414,7 @@
   // ---------- Finanzas (comprobantes de depósito) y Clientes (alta de clientes): lectura automática con historial ----------
   function hideAllViewsExcept(viewId) {
     if (typeof closeCamera === "function") closeCamera();
-    ["homeView", "dashboardView", "detailView", "adminView", "analyticsView", "ocrVoucherView", "ocrClientFormView"]
+    ["homeView", "dashboardView", "detailView", "adminView", "analyticsView", "ocrVoucherView", "clientsListView", "clientWizardView"]
       .forEach((id) => { const el = document.getElementById(id); if (el) el.style.display = id === viewId ? "block" : "none"; });
     backBtn.style.display = "flex";
   }
@@ -4506,41 +4694,375 @@
   });
   document.getElementById("ocrVoucherNavBtn").addEventListener("click", voucherPoc.show);
 
-  const clientFormPoc = setupOcrPoc({
-    viewId: "ocrClientFormView", navId: "ocrClientFormNavBtn", endpoint: "/api/ocr/client-form", historyEndpoint: "/api/ocr/client-form/history",
-    validField: "is_valid_document", processLabel: "Procesar documento",
-    rejectedMsg: "No se pudo reconocer el documento.", emptyHistoryMsg: "Todavía no hay documentos procesados.",
-    inputId: "clientFormPhotoInput", captureLabelId: "clientFormCaptureLabel", stripId: "clientFormPhotoStrip",
-    btnId: "clientFormProcessBtn", statusId: "clientFormStatus", photoCardId: "clientFormPhotoCard", photoImgId: "clientFormPhoto",
-    resultCardId: "clientFormResultCard", reviewId: "clientFormNeedsReview", fieldsId: "clientFormFields",
-    emptyId: "clientFormEmpty", historyListId: "clientFormHistoryList", statsRowId: "clientFormStatsRow",
-    summary: (h) => h.is_valid_document
-      ? `${h.razon_social_o_nombre || "sin nombre"} · ${h.rut || "RUT no legible"}`
-      : "No reconocido como documento",
-    computeStats: (history) => {
-      const valid = history.filter((h) => h.is_valid_document);
-      const needsReview = valid.filter((h) => h.needs_review).length;
-      const types = new Set(valid.map((h) => h.document_type).filter(Boolean));
-      return [
-        { label: "Documentos procesados", value: history.length },
-        { label: "Fichas listas", value: valid.length - needsReview },
-        { label: "Pendientes de revisión", value: needsReview },
-        { label: "Tipos de documento distintos", value: types.size },
-      ];
-    },
-    fields: [
-      { key: "document_type", label: "Tipo de documento" },
-      { key: "rut", label: "RUT" },
-      { key: "razon_social_o_nombre", label: "Razón social / nombre" },
-      { key: "nombre_fantasia", label: "Nombre de fantasía" },
-      { key: "direccion", label: "Dirección" },
-      { key: "comuna", label: "Comuna" },
-      { key: "giro", label: "Giro" },
-      { key: "telefono", label: "Teléfono" },
-      { key: "correo", label: "Correo" },
-    ],
-  });
-  document.getElementById("ocrClientFormNavBtn").addEventListener("click", clientFormPoc.show);
+  // ---------- Clientes: wizard de alta (captura -> revisión -> vista previa -> listo) + lista ----------
+
+  const CLIENT_DOC_FIELDS = [
+    { id: "wizRut", key: "rut" },
+    { id: "wizRazonSocial", key: "razon_social_o_nombre" },
+    { id: "wizNombreFantasia", key: "nombre_fantasia" },
+    { id: "wizGiro", key: "giro" },
+    { id: "wizDireccion", key: "direccion" },
+    { id: "wizComuna", key: "comuna" },
+    { id: "wizTelefono", key: "telefono" },
+    { id: "wizCorreo", key: "correo" },
+  ];
+  const CLIENT_MANUAL_FIELDS = [
+    { id: "wizCanal", key: "canal" },
+    { id: "wizTipoNegocio", key: "tipo_negocio" },
+    { id: "wizCondicionPago", key: "condicion_pago" },
+    { id: "wizPlazoPago", key: "plazo_pago" },
+    { id: "wizMontoTope", key: "monto_tope" },
+    { id: "wizDiasAtencion", key: "dias_atencion" },
+    { id: "wizDireccionEntrega", key: "direccion_entrega" },
+    { id: "wizContactoNombre", key: "contacto_nombre" },
+    { id: "wizContactoTelefono", key: "contacto_telefono" },
+    { id: "wizContactoCorreo", key: "contacto_correo" },
+    { id: "wizFolioCredito", key: "folio_credito" },
+  ];
+
+  function isValidRut(rut) {
+    const clean = (rut || "").replace(/[^0-9kK]/g, "").toUpperCase();
+    if (clean.length < 2) return false;
+    const body = clean.slice(0, -1);
+    const dv = clean.slice(-1);
+    let sum = 0, mul = 2;
+    for (let i = body.length - 1; i >= 0; i--) {
+      sum += parseInt(body[i], 10) * mul;
+      mul = mul === 7 ? 2 : mul + 1;
+    }
+    const res = 11 - (sum % 11);
+    const computed = res === 11 ? "0" : res === 10 ? "K" : String(res);
+    return computed === dv;
+  }
+
+  function setupClientWizard() {
+    const steps = Array.from(document.querySelectorAll("#wizSteps .wizard-step-dot"));
+    const panels = { 1: document.getElementById("wizPanel1"), 2: document.getElementById("wizPanel2"), 3: document.getElementById("wizPanel3"), 4: document.getElementById("wizPanel4") };
+    const photoInput = document.getElementById("wizPhotoInput");
+    const captureLabel = document.getElementById("wizCaptureLabel");
+    const photoStrip = document.getElementById("wizPhotoStrip");
+    const step1Status = document.getElementById("wizStep1Status");
+    const step1NextBtn = document.getElementById("wizStep1NextBtn");
+    const processingCard = document.getElementById("wizProcessing");
+    const processingStatus = document.getElementById("wizProcessingStatus");
+    const rejectedCard = document.getElementById("wizRejected");
+    const reviewCard = document.getElementById("wizReview");
+    const reviewBanner = document.getElementById("wizReviewBanner");
+    const siiCard = document.getElementById("wizSiiCard");
+    const siiBtn = document.getElementById("wizSiiBtn");
+    const siiResult = document.getElementById("wizSiiResult");
+    const step2Status = document.getElementById("wizStep2Status");
+
+    let files = [];
+    let ocrResult = null; // respuesta cruda de /api/ocr/client-form, incluye id + confidence por campo
+
+    // Una vez que el vendedor corrige a mano un campo marcado de baja confianza, ya no
+    // tiene sentido seguir mostrándolo en ámbar — solo las sugerencias de SII sin aplicar
+    // deben quedar resaltadas.
+    CLIENT_DOC_FIELDS.forEach((f) => {
+      document.getElementById(f.id).addEventListener("input", (e) => {
+        e.target.closest(".field").classList.remove("field-warn");
+      });
+    });
+
+    function resetWizard() {
+      files = [];
+      ocrResult = null;
+      photoInput.value = "";
+      renderStrip();
+      step1Status.innerHTML = "";
+      CLIENT_DOC_FIELDS.forEach((f) => {
+        const el = document.getElementById(f.id);
+        el.value = "";
+        el.closest(".field").classList.remove("field-warn");
+      });
+      CLIENT_MANUAL_FIELDS.forEach((f) => { document.getElementById(f.id).value = ""; });
+      document.getElementById("wizDireccionEntregaSame").checked = false;
+      siiCard.style.display = "none";
+      siiResult.innerHTML = "";
+      siiBtn.disabled = false;
+      siiBtn.textContent = "Verificar en SII";
+      goToStep(1);
+    }
+
+    function goToStep(n) {
+      Object.keys(panels).forEach((k) => { panels[k].style.display = Number(k) === n ? "block" : "none"; });
+      steps.forEach((el) => {
+        const s = Number(el.dataset.wizstep);
+        el.classList.toggle("done", s < n);
+        el.classList.toggle("active", s === n);
+      });
+    }
+
+    function renderStrip() {
+      if (!files.length) {
+        photoStrip.style.display = "none";
+        captureLabel.style.display = "flex";
+        step1NextBtn.disabled = true;
+        return;
+      }
+      captureLabel.style.display = "none";
+      photoStrip.style.display = "flex";
+      photoStrip.innerHTML = "";
+      files.forEach((file, i) => {
+        const item = document.createElement("div");
+        item.className = "photo-strip-item";
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        item.appendChild(img);
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "remove-btn";
+        removeBtn.innerHTML = ICON_REMOVE;
+        removeBtn.addEventListener("click", (e) => { e.stopPropagation(); files.splice(i, 1); renderStrip(); });
+        item.appendChild(removeBtn);
+        photoStrip.appendChild(item);
+      });
+      step1NextBtn.disabled = false;
+    }
+    photoInput.addEventListener("change", () => {
+      files = files.concat(Array.from(photoInput.files || [])).slice(0, MAX_IMAGES);
+      photoInput.value = "";
+      renderStrip();
+    });
+
+    document.getElementById("wizCancelBtn").addEventListener("click", () => clientsList.show());
+    document.getElementById("wizRejectedCancelBtn").addEventListener("click", () => clientsList.show());
+    document.getElementById("wizRejectedRetryBtn").addEventListener("click", () => { rejectedCard.style.display = "none"; goToStep(1); });
+    document.getElementById("wizStep2BackBtn").addEventListener("click", () => goToStep(1));
+    document.getElementById("wizStep3BackBtn").addEventListener("click", () => goToStep(2));
+    document.getElementById("wizDoneListBtn").addEventListener("click", () => clientsList.show());
+    document.getElementById("wizDoneNewBtn").addEventListener("click", () => { resetWizard(); });
+
+    document.getElementById("wizDireccionEntregaSame").addEventListener("change", (e) => {
+      const entregaEl = document.getElementById("wizDireccionEntrega");
+      if (e.target.checked) { entregaEl.value = document.getElementById("wizDireccion").value; entregaEl.disabled = true; }
+      else { entregaEl.disabled = false; }
+    });
+
+    step1NextBtn.addEventListener("click", async () => {
+      if (!files.length) return;
+      goToStep(2);
+      processingCard.style.display = "block";
+      rejectedCard.style.display = "none";
+      reviewCard.style.display = "none";
+      processingStatus.innerHTML = `${ICON_SPINNER} Leyendo documento…`;
+      const formData = new FormData();
+      files.forEach((f) => formData.append("images", f));
+      try {
+        const res = await fetch("/api/ocr/client-form", { method: "POST", body: formData });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+        processingCard.style.display = "none";
+        ocrResult = data;
+        if (!data.is_valid_document) {
+          rejectedCard.style.display = "block";
+          document.getElementById("wizRejectedReason").textContent = data.rejection_reason || "No se pudo reconocer el documento.";
+          return;
+        }
+        populateReview(data);
+        reviewCard.style.display = "block";
+      } catch (e) {
+        processingCard.style.display = "none";
+        rejectedCard.style.display = "block";
+        document.getElementById("wizRejectedReason").textContent = e.message;
+      }
+    });
+
+    function populateReview(data) {
+      const conf = data.field_confidence || {};
+      CLIENT_DOC_FIELDS.forEach((f) => {
+        const el = document.getElementById(f.id);
+        el.value = data[f.key] || "";
+        const lowConf = conf[f.key] === "baja" || conf[f.key] === "no_legible";
+        el.closest(".field").classList.toggle("field-warn", lowConf);
+      });
+      reviewBanner.style.display = data.needs_review ? "flex" : "none";
+      reviewBanner.innerHTML = data.needs_review
+        ? `${ICON_WARNING} Hay campos con confianza baja o no legibles${data.ambiguous_party_note ? ": " + escapeHtml(data.ambiguous_party_note) : ""} — revísalos antes de confirmar.`
+        : "";
+      siiCard.style.display = data.rut ? "block" : "none";
+      siiResult.innerHTML = "";
+      siiBtn.disabled = false;
+      siiBtn.textContent = "Verificar en SII";
+      step2Status.innerHTML = "";
+    }
+
+    siiBtn.addEventListener("click", async () => {
+      const rut = document.getElementById("wizRut").value.trim();
+      if (!rut) return;
+      siiBtn.disabled = true;
+      siiResult.innerHTML = `<div class="status">${ICON_SPINNER} Consultando SII…</div>`;
+      try {
+        const res = await fetch(`/api/sii/lookup?rut=${encodeURIComponent(rut)}`);
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 503) {
+          siiResult.innerHTML = `<div class="status">${ICON_WARNING} Integración con el SII no está configurada.</div>`;
+          siiBtn.textContent = "SII no configurado";
+          return;
+        }
+        if (!res.ok) {
+          siiResult.innerHTML = `<div class="status">${ICON_WARNING} ${escapeHtml(data.detail || "No se pudo verificar en SII.")}</div>`;
+          siiBtn.disabled = false;
+          return;
+        }
+        const suggestions = [
+          { label: "Razón social", value: data.razon_social, targetId: "wizRazonSocial" },
+          { label: "Giro", value: data.giro, targetId: "wizGiro" },
+          { label: "Dirección", value: data.direccion, targetId: "wizDireccion" },
+        ].filter((s) => s.value);
+        if (!suggestions.length) {
+          siiResult.innerHTML = `<div class="status">${ICON_CHECK} RUT verificado en el SII, sin datos adicionales que sugerir.</div>`;
+        } else {
+          siiResult.innerHTML = suggestions.map((s, i) => `
+            <div class="sii-suggestion-row">
+              <span>Sugerido por SII — ${escapeHtml(s.label)}: <strong>${escapeHtml(s.value)}</strong></span>
+              <button type="button" data-sii-idx="${i}">Usar este dato</button>
+            </div>
+          `).join("");
+          suggestions.forEach((s, i) => {
+            siiResult.querySelector(`[data-sii-idx="${i}"]`).addEventListener("click", () => {
+              document.getElementById(s.targetId).value = s.value;
+              document.getElementById(s.targetId).closest(".field").classList.remove("field-warn");
+            });
+          });
+        }
+        siiBtn.disabled = false;
+      } catch (e) {
+        siiResult.innerHTML = `<div class="status">${ICON_WARNING} No se pudo verificar en SII.</div>`;
+        siiBtn.disabled = false;
+      }
+    });
+
+    function collectPayload() {
+      const payload = { source_ocr_extraction_id: ocrResult ? ocrResult.id : null };
+      CLIENT_DOC_FIELDS.forEach((f) => { payload[f.key] = document.getElementById(f.id).value.trim() || null; });
+      CLIENT_MANUAL_FIELDS.forEach((f) => { payload[f.key] = document.getElementById(f.id).value.trim() || null; });
+      return payload;
+    }
+
+    document.getElementById("wizStep2NextBtn").addEventListener("click", () => {
+      const rut = document.getElementById("wizRut").value.trim();
+      const razonSocial = document.getElementById("wizRazonSocial").value.trim();
+      step2Status.classList.remove("error");
+      if (!razonSocial) {
+        step2Status.classList.add("error");
+        step2Status.innerHTML = `${ICON_WARNING} La razón social / nombre es obligatoria.`;
+        return;
+      }
+      if (rut && !isValidRut(rut)) {
+        step2Status.classList.add("error");
+        step2Status.innerHTML = `${ICON_WARNING} El RUT no es válido — revisa el dígito verificador.`;
+        return;
+      }
+      renderPreview(collectPayload());
+      goToStep(3);
+    });
+
+    function renderPreview(payload) {
+      const photoUrl = ocrResult && ocrResult.image_urls && ocrResult.image_urls[0];
+      document.getElementById("wizPreviewPhoto").innerHTML = photoUrl
+        ? `<div class="reading-photo-main" style="max-width:220px; margin-bottom:14px;"><img class="reading-photo" src="${photoUrl}" alt="Documento de origen" /></div>`
+        : "";
+      const section = (title, rows) => `
+        <div class="wiz-preview-section">
+          <h4>${escapeHtml(title)}</h4>
+          ${rows.map(([label, v]) => `
+            <div class="poc-field-row"><span class="poc-field-label">${escapeHtml(label)}</span><span class="poc-field-value">${escapeHtml(v || "—")}</span></div>
+          `).join("")}
+        </div>
+      `;
+      document.getElementById("wizPreviewBody").innerHTML =
+        section("Datos del documento", [
+          ["RUT", payload.rut], ["Razón social / nombre", payload.razon_social_o_nombre],
+          ["Nombre de fantasía", payload.nombre_fantasia], ["Giro", payload.giro],
+          ["Dirección", payload.direccion], ["Comuna", payload.comuna],
+          ["Teléfono", payload.telefono], ["Correo", payload.correo],
+        ]) +
+        section("Datos comerciales", [
+          ["Canal", payload.canal], ["Tipo de negocio", payload.tipo_negocio],
+          ["Condición de pago", payload.condicion_pago], ["Plazo de pago", payload.plazo_pago],
+          ["Monto tope", payload.monto_tope], ["Días de atención", payload.dias_atencion],
+          ["Dirección de entrega", payload.direccion_entrega],
+        ]) +
+        section("Contacto", [
+          ["Nombre", payload.contacto_nombre], ["Teléfono", payload.contacto_telefono],
+          ["Correo", payload.contacto_correo], ["Folio de crédito", payload.folio_credito],
+        ]);
+    }
+
+    document.getElementById("wizStep3ConfirmBtn").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(collectPayload()),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+        document.getElementById("wizDoneIcon").innerHTML = ICON_CHECK;
+        document.getElementById("wizDoneTitle").textContent = "Cliente creado";
+        document.getElementById("wizDoneSubtitle").textContent = `${data.razon_social_o_nombre}${data.rut ? " · " + data.rut : ""}`;
+        goToStep(4);
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    return {
+      show() {
+        hideAllViewsExcept("clientWizardView");
+        setActiveNav("ocrClientFormNavBtn");
+        resetWizard();
+      },
+    };
+  }
+
+  function setupClientsList() {
+    const tbody = document.getElementById("clientsListTableBody");
+    const countEl = document.getElementById("clientsListCount");
+
+    async function load() {
+      tbody.innerHTML = `<tr><td colspan="5" class="point-empty">${ICON_SPINNER} Cargando…</td></tr>`;
+      try {
+        const res = await fetch("/api/clients");
+        const rows = res.ok ? await res.json() : [];
+        countEl.textContent = `${rows.length} cliente${rows.length === 1 ? "" : "s"}`;
+        if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="5" class="point-empty">Aún no has creado clientes. Usa "Nuevo cliente" para dar de alta el primero.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map((c) => `
+          <tr>
+            <td>${relativeTime(c.created_at)}</td>
+            <td>${escapeHtml(c.rut || "—")}</td>
+            <td>${escapeHtml(c.razon_social_o_nombre || "—")}</td>
+            <td>${escapeHtml(c.canal || "—")}</td>
+            <td>${escapeHtml(c.comuna || "—")}</td>
+          </tr>
+        `).join("");
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" class="point-empty">${ICON_WARNING} No se pudo cargar la lista de clientes.</td></tr>`;
+      }
+    }
+
+    return {
+      show() {
+        hideAllViewsExcept("clientsListView");
+        setActiveNav("ocrClientFormNavBtn");
+        load();
+      },
+      load,
+    };
+  }
+
+  const clientsList = setupClientsList();
+  const clientWizard = setupClientWizard();
+  document.getElementById("ocrClientFormNavBtn").addEventListener("click", clientsList.show);
+  document.getElementById("newClientBtn").addEventListener("click", clientWizard.show);
 
   // ---------- Finanzas: reportería filtrable + exportación CSV sobre los comprobantes ----------
   function setupFinanceReport() {

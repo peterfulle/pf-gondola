@@ -10,5 +10,7 @@ services:
         sync: false
       - key: ANTHROPIC_MODEL
         value: claude-sonnet-5
+      - key: SII_API_KEY
+        sync: false
       - key: PYTHON_VERSION
         value: 3.11.9
