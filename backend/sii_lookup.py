@@ -5,7 +5,7 @@ import re
 
 import httpx
 
-SIMPLEAPI_BASE_URL = "https://api.simpleapi.cl/api/v1/sii/contribuyentes/situacion_tributaria/tercero"
+SIMPLEAPI_RUT_URL = "https://rut.simpleapi.cl/v2"
 TIMEOUT_SECONDS = 5.0
 
 
@@ -36,8 +36,8 @@ def lookup_rut(rut: str) -> dict | None:
     normalized = _normalize_rut(rut)
     try:
         resp = httpx.get(
-            f"{SIMPLEAPI_BASE_URL}/{normalized}",
-            auth=("api", api_key),
+            f"{SIMPLEAPI_RUT_URL}/{normalized}",
+            headers={"Authorization": api_key},
             timeout=TIMEOUT_SECONDS,
         )
     except httpx.HTTPError:
@@ -51,9 +51,14 @@ def lookup_rut(rut: str) -> dict | None:
     except ValueError:
         return None
 
+    actividades = data.get("actividadesEconomicas") or []
+    domicilios = data.get("domicilios") or []
+    domicilio = domicilios[0] if domicilios else {}
+    direccion = ", ".join(p for p in (domicilio.get("direccion", "").strip(), domicilio.get("comuna")) if p) or None
+
     return {
-        "rut": normalized,
-        "razon_social": data.get("razonSocial") or data.get("razon_social"),
-        "giro": data.get("actividadEconomica") or data.get("giro"),
-        "direccion": data.get("direccion"),
+        "rut": data.get("rut") or normalized,
+        "razon_social": data.get("razonSocial"),
+        "giro": actividades[0].get("descripcion") if actividades else None,
+        "direccion": direccion,
     }
