@@ -234,7 +234,8 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list) -> dict
     content.append({"type": "text", "text": user_prompt})
 
     last_error = None
-    for attempt in range(2):  # el modelo ocasionalmente devuelve JSON mal formado; un reintento lo resuelve casi siempre
+    attempts = 3  # el modelo ocasionalmente devuelve JSON mal formado; reintentar casi siempre lo resuelve
+    for attempt in range(1, attempts + 1):
         message = client.messages.create(
             model=MODEL,
             max_tokens=MAX_OUTPUT_TOKENS,
@@ -246,6 +247,7 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list) -> dict
         raw_text = "".join(block.text for block in message.content if block.type == "text")
         if not raw_text:
             last_error = RuntimeError(f"Respuesta vacía del modelo (stop_reason={message.stop_reason})")
+            print(f"[vision] intento {attempt}/{attempts}: respuesta vacía, stop_reason={message.stop_reason}")
             continue
         if message.stop_reason == "max_tokens":
             raise RuntimeError(
@@ -256,6 +258,12 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list) -> dict
             return _parse_json(raw_text)
         except RuntimeError as exc:
             last_error = exc
+            # Se deja constancia en los logs del servidor para poder diagnosticar sin adivinar
+            # (cuántas fotos, qué tan larga fue la respuesta, cómo empezaba) si vuelve a pasar.
+            print(
+                f"[vision] intento {attempt}/{attempts}: JSON mal formado con {len(images)} foto(s), "
+                f"respuesta de {len(raw_text)} caracteres, empieza con: {raw_text[:200]!r}"
+            )
     raise last_error
 
 

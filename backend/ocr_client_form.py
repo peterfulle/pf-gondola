@@ -10,6 +10,13 @@ Esta es una capacidad de prueba de concepto: tu prioridad es NUNCA inventar ni a
 dato que no esté en la imagen. Si un campo no es legible, no aparece, o es ambiguo, repórtalo \
 como null y bájale la confianza.
 
+MÚLTIPLES FOTOS: si recibes más de una foto, trátalas como vistas del MISMO documento (por \
+ejemplo, anverso y reverso, o varios ángulos/páginas de un mismo trámite) y combina lo que \
+leas de todas en una única respuesta siguiendo el esquema de más abajo — nunca generes más \
+de un objeto JSON ni describas cada foto por separado. Si las fotos muestran claramente \
+documentos distintos y no relacionados, usa la primera foto como el documento a procesar y \
+dilo en "notes".
+
 Si la foto NO muestra claramente uno de estos documentos, devuelve:
 {
   "is_valid_document": false,

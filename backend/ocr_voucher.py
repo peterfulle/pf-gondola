@@ -10,6 +10,11 @@ dato que no sea legible en la foto. Si un campo no es legible, es ambiguo, o est
 repórtalo como null y bájale la confianza — no lo completes por suposición ni lo infieras del \
 contexto.
 
+MÚLTIPLES FOTOS: si recibes más de una foto, trátalas como vistas del MISMO comprobante \
+(distintos ángulos, o varios vouchers fraccionados de un mismo depósito) y combina lo que \
+leas de todas en una única respuesta siguiendo el esquema de más abajo — nunca generes más \
+de un objeto JSON ni describas cada foto por separado.
+
 Si la foto NO muestra claramente un comprobante de depósito o transferencia, devuelve:
 {
   "is_valid_voucher": false,
