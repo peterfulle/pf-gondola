@@ -178,6 +178,9 @@ def init_db():
             "ALTER TABLE readings ADD COLUMN shelf_id TEXT",
             "ALTER TABLE readings ADD COLUMN display_type TEXT",
             "ALTER TABLE readings ADD COLUMN display_payload_json TEXT",
+            "ALTER TABLE ocr_extractions ADD COLUMN reconciled INTEGER DEFAULT 0",
+            "ALTER TABLE ocr_extractions ADD COLUMN reconciled_at TEXT",
+            "ALTER TABLE ocr_extractions ADD COLUMN reconciled_by TEXT",
         ):
             try:
                 conn.execute(statement)
@@ -943,6 +946,7 @@ def add_ocr_extraction(org_id: str, kind: str, result: dict, image_paths: list, 
     return {
         "id": cur.lastrowid, "kind": kind, "created_at": created_at, "created_by": created_by,
         "image_urls": [f"/uploads/{p}" for p in (image_paths or [])],
+        "reconciled": False, "reconciled_at": None, "reconciled_by": None,
         **result,
     }
 
@@ -953,6 +957,7 @@ def _ocr_extraction_dict(row: sqlite3.Row) -> dict:
     return {
         "id": row["id"], "kind": row["kind"], "created_at": row["created_at"], "created_by": row["created_by"],
         "image_urls": [f"/uploads/{p}" for p in paths],
+        "reconciled": bool(row["reconciled"]), "reconciled_at": row["reconciled_at"], "reconciled_by": row["reconciled_by"],
         **result,
     }
 
@@ -981,6 +986,57 @@ def delete_ocr_extraction(org_id: str, kind: str, extraction_id: int) -> None:
             "DELETE FROM ocr_extractions WHERE org_id = ? AND kind = ? AND id = ?",
             (org_id, kind, extraction_id),
         )
+
+
+def set_ocr_reconciled(org_id: str, kind: str, extraction_id: int, reconciled: bool, by: str):
+    reconciled_at = now_iso() if reconciled else None
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE ocr_extractions SET reconciled = ?, reconciled_at = ?, reconciled_by = ? "
+            "WHERE org_id = ? AND kind = ? AND id = ?",
+            (1 if reconciled else 0, reconciled_at, by if reconciled else None, org_id, kind, extraction_id),
+        )
+    return get_ocr_extraction(org_id, kind, extraction_id)
+
+
+def _voucher_rows(org_id: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM ocr_extractions WHERE org_id = ? AND kind = 'voucher' ORDER BY id DESC",
+            (org_id,),
+        ).fetchall()
+    return [_ocr_extraction_dict(r) for r in rows]
+
+
+def finance_summary(org_id: str) -> dict:
+    vouchers = _voucher_rows(org_id)
+    valid = [v for v in vouchers if v.get("is_valid_voucher")]
+    needs_review = [v for v in valid if v.get("needs_review")]
+    reconciled = [v for v in valid if v.get("reconciled")]
+    total_amount = sum(v.get("monto_clp") or 0 for v in valid)
+    return {
+        "total_count": len(vouchers),
+        "valid_count": len(valid),
+        "total_amount_clp": total_amount,
+        "needs_review_count": len(needs_review),
+        "reconciled_count": len(reconciled),
+        "pending_reconciliation_count": len(valid) - len(reconciled),
+    }
+
+
+def list_finance_vouchers(org_id: str, date_from: str = None, date_to: str = None,
+                           bank: str = None, reconciled: bool = None, limit: int = 500) -> list:
+    vouchers = _voucher_rows(org_id)
+    if date_from:
+        vouchers = [v for v in vouchers if (v.get("fecha") or "") >= date_from]
+    if date_to:
+        vouchers = [v for v in vouchers if (v.get("fecha") or "") <= date_to]
+    if bank:
+        needle = bank.strip().lower()
+        vouchers = [v for v in vouchers if needle in (v.get("banco_o_servicio") or "").lower()]
+    if reconciled is not None:
+        vouchers = [v for v in vouchers if bool(v.get("reconciled")) == reconciled]
+    return vouchers[:limit]
 
 
 def export_rows(org_id: str, point_id: str = None) -> list:

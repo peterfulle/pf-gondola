@@ -94,6 +94,10 @@ class CreateAgreementPayload(BaseModel):
     committed_to: Optional[str] = None
 
 
+class ReconcilePayload(BaseModel):
+    reconciled: bool
+
+
 ROLE_LABELS = {
     "superusuario": "Superusuario",
     "admin": "Administrador",
@@ -734,3 +738,60 @@ def api_ocr_delete(url_kind: str, extraction_id: int, actor: dict = Depends(requ
         raise HTTPException(status_code=404, detail="Tipo de extracción inválido")
     db.delete_ocr_extraction(actor["org_id"], OCR_KINDS[url_kind], extraction_id)
     return {"deleted": extraction_id}
+
+
+@app.patch("/api/ocr/voucher/{extraction_id}/reconcile")
+def api_ocr_voucher_reconcile(
+    extraction_id: int, payload: ReconcilePayload, actor: dict = Depends(require_role(*db.ANALYST_ROLES))
+):
+    updated = db.set_ocr_reconciled(actor["org_id"], "voucher", extraction_id, payload.reconciled, actor["email"])
+    if not updated:
+        raise HTTPException(status_code=404, detail="Comprobante no encontrado")
+    return updated
+
+
+# ---------- Finanzas: dashboard, reportería y exportación sobre comprobantes de depósito ----------
+
+@app.get("/api/finance/summary")
+def api_finance_summary(user: dict = Depends(require_auth)):
+    return db.finance_summary(user["org_id"])
+
+
+def _finance_voucher_filters(
+    date_from: Optional[str] = None, date_to: Optional[str] = None,
+    bank: Optional[str] = None, reconciled: Optional[bool] = None,
+):
+    return {"date_from": date_from, "date_to": date_to, "bank": bank, "reconciled": reconciled}
+
+
+@app.get("/api/finance/vouchers")
+def api_finance_vouchers(
+    user: dict = Depends(require_auth), filters: dict = Depends(_finance_voucher_filters),
+):
+    return db.list_finance_vouchers(user["org_id"], **filters)
+
+
+def _finance_vouchers_csv(rows: list) -> str:
+    fieldnames = [
+        "id", "created_at", "banco_o_servicio", "monto_clp", "fecha", "hora",
+        "folio_o_referencia", "cuenta_depositada", "tipo_deposito", "needs_review",
+        "reconciled", "reconciled_at", "reconciled_by", "created_by",
+    ]
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    return buf.getvalue()
+
+
+@app.get("/api/finance/vouchers/export.csv")
+def api_finance_vouchers_export(
+    actor: dict = Depends(require_role(*db.ANALYST_ROLES)), filters: dict = Depends(_finance_voucher_filters),
+):
+    rows = db.list_finance_vouchers(actor["org_id"], **filters)
+    csv_text = _finance_vouchers_csv(rows)
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=neuravision-finanzas-comprobantes.csv"},
+    )

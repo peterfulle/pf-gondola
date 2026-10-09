@@ -20,9 +20,9 @@
     --border-strong: #cfcfcc;
     --track:         #ececea;
     --fill:          #0a0a0a;
-    --header-bg:     #0b2b30;
-    --accent:        #0f8577;
-    --chip-teal-bg:  #dcf3ee; --chip-teal-ink:  #0f8577;
+    --header-bg:     #ffffff;
+    --accent:        #0a0a0a;
+    --chip-teal-bg:  #ececea; --chip-teal-ink:  #55565a;
     --chip-blue-bg:  #e2ecfd; --chip-blue-ink:  #2563eb;
     --chip-amber-bg: #fdf0d4; --chip-amber-ink: #b45309;
   }
@@ -92,38 +92,39 @@
 
   /* ---------- app layout / sidebar ---------- */
   .app-layout { display: flex; min-height: 100vh; }
-  .main-col { flex: 1; min-width: 0; }
+  .main-col { flex: 1; min-width: 0; margin-left: 232px; }
   .sidebar {
-    width: 232px; flex-shrink: 0; position: sticky; top: 0; align-self: flex-start; height: 100vh;
-    overflow-y: auto; background: var(--header-bg); color: #fff;
+    width: 232px; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; height: 100vh;
+    overflow-y: auto; background: var(--header-bg); color: var(--ink);
     display: flex; flex-direction: column; gap: 4px; padding: 20px 16px;
+    border-right: 1px solid var(--border); z-index: 10;
   }
   .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 4px; }
   .sidebar-brand .mark { width: 26px; height: 26px; flex-shrink: 0; }
   .sidebar-brand-name { font-weight: 800; font-size: 15.5px; letter-spacing: -0.01em; }
-  .sidebar-brand-name .accent { color: #5eead4; }
+  .sidebar-brand-name .accent { color: var(--ink-muted); }
   .sidebar-org {
-    font-size: 11px; color: #8d8e92; font-weight: 600; padding: 0 6px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px;
+    font-size: 11px; color: var(--ink-muted); font-weight: 600; padding: 0 6px 16px;
+    border-bottom: 1px solid var(--border); margin-bottom: 10px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .sidebar-section-label {
     font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-    color: rgba(255,255,255,0.32); padding: 14px 10px 6px;
+    color: var(--ink-muted); padding: 14px 10px 6px;
   }
   .sidebar-section-label:first-of-type { padding-top: 2px; }
   .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
   .sidebar-nav-item {
     display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-    background: transparent; border: none; color: #c7c7c4; border-radius: 8px;
+    background: transparent; border: none; color: var(--ink-secondary); border-radius: 8px;
     padding: 9px 10px; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
     transition: background 0.12s ease, color 0.12s ease;
   }
   .sidebar-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
-  .sidebar-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .sidebar-nav-item:hover { background: var(--page); color: var(--ink); }
   .sidebar-nav-item.active { background: var(--accent); color: #fff; }
   .sidebar-footer {
-    margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);
+    margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border);
     display: flex; flex-direction: column; gap: 8px;
   }
   .sidebar-profile { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -135,16 +136,16 @@
   .sidebar-profile-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
   .sidebar-footer .role-pill { align-self: flex-start; padding: 2px 9px; font-size: 9.5px; }
   .sidebar-user {
-    font-size: 12px; color: #fff; font-weight: 600; word-break: break-all; padding: 0 2px;
+    font-size: 12px; color: var(--ink); font-weight: 600; word-break: break-all; padding: 0 2px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .sidebar-logout {
     display: flex; align-items: center; gap: 6px; justify-content: center;
-    background: transparent; border: 1px solid #313131; color: #fff; border-radius: 7px;
+    background: transparent; border: 1px solid var(--border-strong); color: var(--ink-secondary); border-radius: 7px;
     padding: 8px 10px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
-    transition: border-color 0.12s ease;
+    transition: border-color 0.12s ease, color 0.12s ease;
   }
-  .sidebar-logout:hover { border-color: #666; }
+  .sidebar-logout:hover { border-color: var(--ink-muted); color: var(--ink); }
   .sidebar-logout svg { width: 14px; height: 14px; }
 
   /* ---------- KPI row ---------- */
@@ -547,7 +548,7 @@
     opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
   }
   .camera-toast.active { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .camera-toast svg { width: 15px; height: 15px; color: #b1e227; flex-shrink: 0; }
+  .camera-toast svg { width: 15px; height: 15px; color: #fff; flex-shrink: 0; }
 
   .camera-controls { padding: 14px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
   .camera-shots-strip { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 2px; }
@@ -647,7 +648,7 @@
   .role-pill {
     display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 12px; border-radius: 100px;
-    background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.12);
+    background: var(--page); color: var(--ink-secondary); border: 1px solid var(--border);
   }
   .role-pill .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
@@ -657,15 +658,15 @@
     box-shadow: 0 20px 50px -20px rgba(0,0,0,0.35);
   }
   .admin-hero-icon {
-    width: 52px; height: 52px; border-radius: 14px; background: rgba(177,226,37,0.14);
-    border: 1px solid rgba(177,226,37,0.3); color: #B1E225; display: flex; align-items: center;
+    width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22); color: #fff; display: flex; align-items: center;
     justify-content: center; flex-shrink: 0;
   }
   .admin-hero-icon svg { width: 26px; height: 26px; }
   .admin-hero h1 { margin: 0 0 4px; font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
   .admin-hero p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.55); }
   .admin-hero .primary {
-    margin-left: auto; flex-shrink: 0; background: #B1E225; color: #0a0a0a; border: none;
+    width: auto; margin-left: auto; margin-top: 0; flex-shrink: 0; background: #fff; color: #0a0a0a; border: none;
     padding: 11px 18px; border-radius: 10px; font-weight: 800; font-size: 13.5px; cursor: pointer;
     display: flex; align-items: center; gap: 7px; white-space: nowrap;
   }
@@ -701,6 +702,21 @@
   }
   .btn-icon-delete:hover { background: #fef2f2; border-color: #fca5a5; }
   .btn-icon-delete svg { width: 14px; height: 14px; }
+  .btn-icon-toggle {
+    background: none; border: 1px solid var(--border-strong); color: var(--ink-secondary); border-radius: 7px;
+    padding: 6px 8px; cursor: pointer; display: flex; align-items: center;
+  }
+  .btn-icon-toggle:hover { background: var(--page); border-color: var(--ink-muted); }
+  .btn-icon-toggle svg { width: 14px; height: 14px; }
+  .btn-reconcile {
+    display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 12px; font-weight: 700;
+    padding: 7px 12px; border-radius: 100px; border: 1px solid var(--border-strong); background: #fff;
+    color: var(--ink-secondary); cursor: pointer; transition: all 0.12s ease; white-space: nowrap;
+  }
+  .btn-reconcile:hover { border-color: var(--ink); color: var(--ink); }
+  .btn-reconcile svg { width: 13px; height: 13px; }
+  .btn-reconcile.is-done { background: #ecfdf3; border-color: #b7e4c7; color: #16a34a; }
+  .btn-reconcile.is-done:hover { border-color: #16a34a; }
 
   .role-picker { display: flex; gap: 8px; }
   .role-card {
@@ -756,9 +772,10 @@
     .shell { padding: 16px 14px 40px; }
 
     .app-layout { flex-direction: column; }
+    .main-col { margin-left: 0; }
     .sidebar {
       position: static; height: auto; width: 100%; flex-direction: row; flex-wrap: wrap;
-      align-items: center; gap: 8px; padding: 10px 14px;
+      align-items: center; gap: 8px; padding: 10px 14px; border-right: none; border-bottom: 1px solid var(--border);
     }
     .sidebar-brand { padding: 0; }
     .sidebar-org { display: none; }
@@ -1458,7 +1475,7 @@
 
       <div class="role-legend">
         <div class="role-legend-item"><span class="role-dot" style="background:#f97316;"></span><strong>Superusuario</strong> — dueño de la organización: todo lo de Administrador, además de otorgar/quitar superusuarios.</div>
-        <div class="role-legend-item"><span class="role-dot" style="background:#B1E225;"></span><strong>Administrador</strong> — control total: usuarios, roles, eliminar puntos, marcas propias.</div>
+        <div class="role-legend-item"><span class="role-dot" style="background:#0a0a0a;"></span><strong>Administrador</strong> — control total: usuarios, roles, eliminar puntos, marcas propias.</div>
         <div class="role-legend-item"><span class="role-dot" style="background:#3b82f6;"></span><strong>Analista</strong> — dashboards, métricas, reposición, exportar CSV, marcas propias.</div>
         <div class="role-legend-item"><span class="role-dot" style="background:#9ca3af;"></span><strong>Reponedor</strong> — solo capturar y analizar fotos de góndola por punto.</div>
       </div>
@@ -1621,11 +1638,49 @@
             <div class="reading-photo-main"><img id="voucherPhoto" class="reading-photo" alt="Foto del comprobante" /></div>
           </div>
           <div class="card" id="voucherResultCard" style="display:none;">
-            <h3 class="card-title">Datos reconocidos — revisa y corrige antes de transmitir</h3>
+            <div class="card-head-row">
+              <h3 class="card-title" style="margin-bottom:0;">Datos reconocidos — revisa y corrige antes de transmitir</h3>
+              <div id="voucherReconcileBar"></div>
+            </div>
             <div id="voucherNeedsReview"></div>
             <div id="voucherFields"></div>
           </div>
           <div id="voucherEmpty" class="point-empty">Sube la foto de un comprobante para ver los datos reconocidos.</div>
+        </div>
+      </div>
+
+      <div class="card" id="financeReportCard">
+        <div class="section-head">
+          <h2>Reportería de comprobantes</h2>
+          <span class="hint" id="financeReportCount"></span>
+        </div>
+        <div class="viz-filters">
+          <div class="field-row" style="flex:1; min-width:280px;">
+            <div class="field" style="margin-bottom:0;"><label for="financeDateFrom">Desde</label><input type="date" id="financeDateFrom" /></div>
+            <div class="field" style="margin-bottom:0;"><label for="financeDateTo">Hasta</label><input type="date" id="financeDateTo" /></div>
+            <div class="field" style="margin-bottom:0;"><label for="financeBankFilter">Banco / servicio</label><input type="text" id="financeBankFilter" placeholder="Ej: Caja Vecina" /></div>
+          </div>
+          <div class="viz-filter-group">
+            <span class="viz-filter-label">Estado</span>
+            <div class="viz-chip-row" id="financeStatusChips">
+              <button type="button" class="viz-chip active" data-status="">Todos</button>
+              <button type="button" class="viz-chip" data-status="pending">Pendientes</button>
+              <button type="button" class="viz-chip" data-status="reconciled">Conciliados</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-head-row">
+          <span class="hint">Filtra por fecha, banco o estado de conciliación</span>
+          <a class="card-link" id="financeExportBtn" href="/api/finance/vouchers/export.csv" target="_blank" rel="noopener">
+            Exportar CSV
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 12 4-4m-4 4-4-4M4 16.5v2A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>
+          </a>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Fecha</th><th>Banco / servicio</th><th class="num">Monto</th><th>Folio</th><th>Cuenta depositada</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="financeReportTableBody"></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -1777,7 +1832,7 @@
             <span class="role-card-desc">Dueño de la organización</span>
           </button>
           <button type="button" class="role-card" data-role="admin">
-            <span class="role-card-dot" style="background:#B1E225;"></span>
+            <span class="role-card-dot" style="background:#0a0a0a;"></span>
             <span class="role-card-name">Administrador</span>
             <span class="role-card-desc">Control total</span>
           </button>
@@ -1953,7 +2008,7 @@
 
   const ROLE_META = {
     superusuario: { label: "Superusuario", color: "#f97316", bg: "rgba(249,115,22,0.14)", fg: "#c2410c" },
-    admin: { label: "Administrador", color: "#B1E225", bg: "rgba(177,226,37,0.14)", fg: "#5f7a0a" },
+    admin: { label: "Administrador", color: "#0a0a0a", bg: "#ececea", fg: "#3f3f3f" },
     analista: { label: "Analista", color: "#3b82f6", bg: "#eff6ff", fg: "#1d4ed8" },
     reponedor: { label: "Reponedor", color: "#9ca3af", bg: "#f3f4f6", fg: "#4b5563" },
   };
@@ -4176,6 +4231,22 @@
     backBtn.style.display = "flex";
   }
 
+  // Cualquier módulo que cambie el estado de conciliación de un comprobante (el panel de
+  // detalle o la tabla de reportería) registra aquí cómo refrescarse; así ambos quedan
+  // sincronizados sin que un módulo necesite conocer al otro directamente.
+  const financeRefreshHooks = [];
+  async function reconcileVoucher(id, reconciled) {
+    const res = await fetch(`/api/ocr/voucher/${id}/reconcile`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reconciled }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Error ${res.status}`);
+    financeRefreshHooks.forEach((fn) => fn(data));
+    return data;
+  }
+
   function setupOcrPoc(cfg) {
     const photoInput = document.getElementById(cfg.inputId);
     const captureLabel = document.getElementById(cfg.captureLabelId);
@@ -4248,6 +4319,33 @@
       }).join("");
     }
 
+    function renderReconcileBar(data) {
+      if (!cfg.reconcileBarId) return;
+      const bar = document.getElementById(cfg.reconcileBarId);
+      if (!bar) return;
+      if (!cfg.reconcilable || !data[cfg.validField]) { bar.innerHTML = ""; return; }
+      const isDone = !!data.reconciled;
+      const toggleId = `${cfg.reconcileBarId}Toggle`;
+      bar.innerHTML = `
+        <button type="button" class="btn-reconcile${isDone ? " is-done" : ""}" id="${toggleId}">
+          ${isDone ? ICON_CHECK + " Conciliado" : "Marcar conciliado"}
+        </button>
+      `;
+      document.getElementById(toggleId).addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        try {
+          const updated = await reconcileVoucher(data.id, !isDone);
+          const idx = history.findIndex((h) => h.id === updated.id);
+          if (idx !== -1) history[idx] = updated;
+          showResult(updated);
+        } catch (err) {
+          alert(err.message);
+          btn.disabled = false;
+        }
+      });
+    }
+
     function showResult(data) {
       selectedId = data.id;
       renderHistoryList();
@@ -4262,6 +4360,7 @@
         resultCard.style.display = "none";
         emptyEl.style.display = "block";
         emptyEl.innerHTML = `${ICON_WARNING} ${escapeHtml(data.rejection_reason || cfg.rejectedMsg)}`;
+        renderReconcileBar(data);
         return;
       }
       emptyEl.style.display = "none";
@@ -4269,6 +4368,7 @@
         ? `<div class="poc-review-banner">${ICON_WARNING} Hay campos con confianza baja o no legibles${data.ambiguous_party_note ? ": " + escapeHtml(data.ambiguous_party_note) : ""} — revísalos antes de confirmar.</div>`
         : "";
       renderFields(data);
+      renderReconcileBar(data);
       resultCard.style.display = "block";
     }
 
@@ -4288,12 +4388,15 @@
         const badge = !h[cfg.validField]
           ? `<span class="shelf-badge">rechazado</span>`
           : (h.needs_review ? `<span class="shelf-badge">revisar</span>` : "");
+        const reconcileBadge = (cfg.reconcilable && h[cfg.validField])
+          ? (h.reconciled ? `<span class="status-pill ok">Conciliado</span>` : `<span class="status-pill warn">Pendiente</span>`)
+          : "";
         item.innerHTML = `
           ${thumb}
           <div class="history-info">
             <span class="t">${relativeTime(h.created_at)}</span>
             <span class="n">${escapeHtml(cfg.summary(h))}</span>
-            ${badge}
+            ${badge}${reconcileBadge}
           </div>
         `;
         item.addEventListener("click", () => showResult(h));
@@ -4301,13 +4404,25 @@
       });
     }
 
-    function renderStats() {
+    async function renderStats() {
       const statsEl = document.getElementById(cfg.statsRowId);
       if (!statsEl) return;
-      statsEl.innerHTML = cfg.computeStats(history).map((s) => `
+      let stats;
+      if (cfg.summaryEndpoint) {
+        let summary = {};
+        try {
+          const res = await fetch(cfg.summaryEndpoint);
+          summary = res.ok ? await res.json() : {};
+        } catch (e) { /* deja summary vacío, summaryToStats debe tolerar campos undefined */ }
+        stats = cfg.summaryToStats(summary);
+      } else {
+        stats = cfg.computeStats(history);
+      }
+      statsEl.innerHTML = stats.map((s) => `
         <div class="stat-tile"><div class="stat-value">${escapeHtml(String(s.value))}</div><div class="stat-label">${escapeHtml(s.label)}</div></div>
       `).join("");
     }
+    if (cfg.summaryEndpoint) financeRefreshHooks.push(() => renderStats());
 
     async function loadHistory() {
       try {
@@ -4369,21 +4484,16 @@
     btnId: "voucherProcessBtn", statusId: "voucherStatus", photoCardId: "voucherPhotoCard", photoImgId: "voucherPhoto",
     resultCardId: "voucherResultCard", reviewId: "voucherNeedsReview", fieldsId: "voucherFields",
     emptyId: "voucherEmpty", historyListId: "voucherHistoryList", statsRowId: "voucherStatsRow",
+    reconcilable: true, reconcileBarId: "voucherReconcileBar", summaryEndpoint: "/api/finance/summary",
     summary: (h) => h.is_valid_voucher
       ? `${h.monto_clp != null ? "$" + Number(h.monto_clp).toLocaleString("es-CL") : "monto no legible"} · ${h.banco_o_servicio || "banco no identificado"}`
       : "No reconocido como comprobante",
-    computeStats: (history) => {
-      const valid = history.filter((h) => h.is_valid_voucher);
-      const total = valid.reduce((s, h) => s + (h.monto_clp || 0), 0);
-      const needsReview = valid.filter((h) => h.needs_review).length;
-      const banks = new Set(valid.map((h) => h.banco_o_servicio).filter(Boolean));
-      return [
-        { label: "Comprobantes procesados", value: history.length },
-        { label: "Monto total reconocido", value: "$" + total.toLocaleString("es-CL") },
-        { label: "Pendientes de revisión", value: needsReview },
-        { label: "Bancos / servicios distintos", value: banks.size },
-      ];
-    },
+    summaryToStats: (s) => [
+      { label: "Comprobantes procesados", value: s.total_count ?? 0 },
+      { label: "Monto total reconocido", value: "$" + (s.total_amount_clp ?? 0).toLocaleString("es-CL") },
+      { label: "Pendientes de revisión", value: s.needs_review_count ?? 0 },
+      { label: "Conciliados", value: `${s.reconciled_count ?? 0} / ${s.valid_count ?? 0}` },
+    ],
     fields: [
       { key: "banco_o_servicio", label: "Banco / servicio" },
       { key: "monto_clp", label: "Monto", format: (v) => (v != null ? `$${Number(v).toLocaleString("es-CL")}` : v) },
@@ -4431,6 +4541,98 @@
     ],
   });
   document.getElementById("ocrClientFormNavBtn").addEventListener("click", clientFormPoc.show);
+
+  // ---------- Finanzas: reportería filtrable + exportación CSV sobre los comprobantes ----------
+  function setupFinanceReport() {
+    const dateFromEl = document.getElementById("financeDateFrom");
+    const dateToEl = document.getElementById("financeDateTo");
+    const bankEl = document.getElementById("financeBankFilter");
+    const chipsEl = document.getElementById("financeStatusChips");
+    const tbody = document.getElementById("financeReportTableBody");
+    const countEl = document.getElementById("financeReportCount");
+    const exportBtn = document.getElementById("financeExportBtn");
+    let status = "";
+
+    function buildQuery() {
+      const params = new URLSearchParams();
+      if (dateFromEl.value) params.set("date_from", dateFromEl.value);
+      if (dateToEl.value) params.set("date_to", dateToEl.value);
+      if (bankEl.value.trim()) params.set("bank", bankEl.value.trim());
+      if (status === "reconciled") params.set("reconciled", "true");
+      if (status === "pending") params.set("reconciled", "false");
+      return params;
+    }
+
+    function statusCell(v) {
+      if (!v.is_valid_voucher) return `<span class="status-pill warn">Rechazado</span>`;
+      return v.reconciled
+        ? `<span class="status-pill ok">Conciliado</span>`
+        : `<span class="status-pill warn">Pendiente</span>`;
+    }
+
+    async function load() {
+      exportBtn.href = `/api/finance/vouchers/export.csv?${buildQuery().toString()}`;
+      tbody.innerHTML = `<tr><td colspan="7" class="point-empty">${ICON_SPINNER} Cargando…</td></tr>`;
+      try {
+        const res = await fetch(`/api/finance/vouchers?${buildQuery().toString()}`);
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        const rows = await res.json();
+        countEl.textContent = `${rows.length} comprobante${rows.length === 1 ? "" : "s"}`;
+        if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="7" class="point-empty">Sin comprobantes para estos filtros.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map((v) => `
+          <tr>
+            <td>${escapeHtml(v.fecha || "—")}</td>
+            <td>${escapeHtml(v.banco_o_servicio || "—")}</td>
+            <td class="num">${v.monto_clp != null ? "$" + Number(v.monto_clp).toLocaleString("es-CL") : "—"}</td>
+            <td>${escapeHtml(v.folio_o_referencia || "—")}</td>
+            <td>${escapeHtml(v.cuenta_depositada || "—")}</td>
+            <td>${statusCell(v)}</td>
+            <td>${v.is_valid_voucher ? `
+              <button class="btn-icon-toggle" data-action="toggle-reconcile" data-id="${v.id}" data-reconciled="${v.reconciled ? "1" : "0"}" title="${v.reconciled ? "Marcar pendiente" : "Marcar conciliado"}">
+                ${v.reconciled ? ICON_REMOVE : ICON_CHECK}
+              </button>` : ""}
+            </td>
+          </tr>
+        `).join("");
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" class="point-empty">${ICON_WARNING} No se pudo cargar la reportería.</td></tr>`;
+      }
+    }
+
+    [dateFromEl, dateToEl].forEach((el) => el.addEventListener("change", load));
+    let bankDebounce = null;
+    bankEl.addEventListener("input", () => {
+      clearTimeout(bankDebounce);
+      bankDebounce = setTimeout(load, 350);
+    });
+    chipsEl.addEventListener("click", (e) => {
+      const chip = e.target.closest(".viz-chip");
+      if (!chip) return;
+      chipsEl.querySelectorAll(".viz-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      status = chip.dataset.status || "";
+      load();
+    });
+    tbody.addEventListener("click", async (e) => {
+      const btn = e.target.closest('[data-action="toggle-reconcile"]');
+      if (!btn) return;
+      btn.disabled = true;
+      try {
+        await reconcileVoucher(Number(btn.dataset.id), btn.dataset.reconciled !== "1");
+      } catch (err) {
+        alert(err.message);
+        btn.disabled = false;
+      }
+    });
+
+    financeRefreshHooks.push(load);
+    return { load };
+  }
+  const financeReport = setupFinanceReport();
+  document.getElementById("ocrVoucherNavBtn").addEventListener("click", () => financeReport.load());
 
   document.getElementById("newUserBtn").addEventListener("click", () => {
     document.getElementById("newUserName").value = "";
