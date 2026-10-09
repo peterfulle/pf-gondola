@@ -233,23 +233,30 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list) -> dict
         )
     content.append({"type": "text", "text": user_prompt})
 
-    message = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_OUTPUT_TOKENS,
-        system=system_prompt,
-        thinking={"type": "disabled"},
-        messages=[{"role": "user", "content": content}],
-    )
-
-    raw_text = "".join(block.text for block in message.content if block.type == "text")
-    if not raw_text:
-        raise RuntimeError(f"Respuesta vacía del modelo (stop_reason={message.stop_reason})")
-    if message.stop_reason == "max_tokens":
-        raise RuntimeError(
-            "La exhibición tiene demasiados elementos para analizarla en una sola lectura. "
-            "Intenta con menos fotos por lectura y vuelve a intentar."
+    last_error = None
+    for attempt in range(2):  # el modelo ocasionalmente devuelve JSON mal formado; un reintento lo resuelve casi siempre
+        message = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_OUTPUT_TOKENS,
+            system=system_prompt,
+            thinking={"type": "disabled"},
+            messages=[{"role": "user", "content": content}],
         )
-    return _parse_json(raw_text)
+
+        raw_text = "".join(block.text for block in message.content if block.type == "text")
+        if not raw_text:
+            last_error = RuntimeError(f"Respuesta vacía del modelo (stop_reason={message.stop_reason})")
+            continue
+        if message.stop_reason == "max_tokens":
+            raise RuntimeError(
+                "La exhibición tiene demasiados elementos para analizarla en una sola lectura. "
+                "Intenta con menos fotos por lectura y vuelve a intentar."
+            )
+        try:
+            return _parse_json(raw_text)
+        except RuntimeError as exc:
+            last_error = exc
+    raise last_error
 
 
 def analyze_shelf(images: list) -> dict:
