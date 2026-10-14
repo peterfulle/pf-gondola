@@ -222,7 +222,10 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list,
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise RuntimeError("Falta ANTHROPIC_API_KEY en el entorno")
+        # No se expone el nombre de la variable de entorno ni del proveedor de IA en el
+        # mensaje que ve quien consume la API; el detalle queda solo en el log del servidor.
+        print("[vision] falta configurar la credencial del proveedor de IA en el entorno")
+        raise RuntimeError("El servicio de análisis con IA no está disponible en este momento.")
 
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -243,13 +246,21 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list,
     last_error = None
     attempts = 3  # el modelo ocasionalmente devuelve JSON mal formado; reintentar casi siempre lo resuelve
     for attempt in range(1, attempts + 1):
-        message = client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_OUTPUT_TOKENS,
-            system=system_prompt,
-            thinking={"type": "disabled"},
-            messages=[{"role": "user", "content": content}],
-        )
+        try:
+            message = client.messages.create(
+                model=MODEL,
+                max_tokens=MAX_OUTPUT_TOKENS,
+                system=system_prompt,
+                thinking={"type": "disabled"},
+                messages=[{"role": "user", "content": content}],
+            )
+        except anthropic.AnthropicError as exc:
+            # Los errores del SDK del proveedor (auth, rate limit, conexión) pueden traer
+            # texto crudo del proveedor (ej. menciones a "x-api-key"); nunca se reenvían
+            # tal cual a quien consume la API, solo quedan en el log del servidor.
+            print(f"[vision] intento {attempt}/{attempts}: error del proveedor de IA: {exc!r}")
+            last_error = RuntimeError("No se pudo completar el análisis en este momento. Intenta nuevamente en unos minutos.")
+            continue
 
         billing.record_call(
             org_id, user_email, endpoint, MODEL,

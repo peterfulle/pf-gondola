@@ -329,8 +329,8 @@ def api_usage_summary(
     date_to: Optional[str] = None,
     actor: dict = Depends(require_role(*db.ANALYST_ROLES)),
 ):
-    """Tokens, costo estimado (USD) y cantidad de llamadas a Claude, agregado por usuario,
-    endpoint y día. Disponible tanto por sesión de usuario como por API key."""
+    """Tokens, costo estimado (USD) y cantidad de llamadas de análisis con IA, agregado por
+    usuario, endpoint y día. Disponible tanto por sesión de usuario como por API key."""
     return db.usage_summary(actor["org_id"], date_from, date_to)
 
 
