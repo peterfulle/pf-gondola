@@ -15,10 +15,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import auth
+import billing
 import db
 import sii_lookup
 from ocr_client_form import extract_client_form
 from ocr_voucher import extract_voucher
+from security import MAX_UPLOAD_BYTES, RateLimitMiddleware, SecurityHeadersMiddleware
 from vision import MAX_IMAGES, analyze_additional_display, analyze_bulk_display, analyze_shelf
 
 load_dotenv()
@@ -26,12 +28,20 @@ db.init_db()
 
 app = FastAPI(title="Neuravision — Visión artificial para ejecución de punto de venta")
 
+# Orígenes de navegador permitidos para peticiones con cookies (el front propio y el/los
+# dominios del equipo de frontend). Server-to-server con X-API-Key no pasa por CORS, así que
+# no necesita estar aquí. Configurar vía env var ALLOWED_ORIGINS="https://app.ejemplo.com,..."
+ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -99,6 +109,14 @@ class ReconcilePayload(BaseModel):
     reconciled: bool
 
 
+class SetBudgetPayload(BaseModel):
+    monthly_budget_usd: Optional[float] = None
+
+
+class CreateApiKeyPayload(BaseModel):
+    label: Optional[str] = None
+
+
 class ClientPayload(BaseModel):
     source_ocr_extraction_id: Optional[int] = None
     rut: Optional[str] = None
@@ -135,9 +153,19 @@ def require_auth(request: Request) -> dict:
     token = request.cookies.get(auth.SESSION_COOKIE)
     email = auth.verify_session_token(token) if token else None
     user = db.get_user_by_email(email) if email else None
-    if not user:
-        raise HTTPException(status_code=401, detail="Sesión inválida o expirada")
-    return user
+    if user:
+        return user
+
+    # Acceso server-to-server (ej. equipo de frontend / integraciones externas): header
+    # X-API-Key en vez de cookie de sesión. Resuelve a un actor sintético con permisos de
+    # analista para su organización, nunca de administración (ver db.ANALYST_ROLES).
+    api_key = request.headers.get("x-api-key")
+    if api_key:
+        org = db.get_org_by_api_key(api_key)
+        if org:
+            return {"email": f"api-key@{org['id']}", "org_id": org["id"], "role": "integracion"}
+
+    raise HTTPException(status_code=401, detail="Sesión inválida o expirada")
 
 
 def require_role(*roles: str):
@@ -167,7 +195,21 @@ UPLOADS_DIR = db.DATA_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
-app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+
+
+@app.get("/uploads/{org_id}/{file_path:path}")
+def serve_upload(org_id: str, file_path: str, user: dict = Depends(require_auth)):
+    """Las fotos subidas son datos de la organización, no assets públicos: a diferencia del
+    mount estático anterior, esta ruta exige sesión/API key y verifica que el archivo pedido
+    pertenezca a la organización del actor antes de servirlo."""
+    if user["org_id"] != org_id:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    org_dir = (UPLOADS_DIR / org_id).resolve()
+    target = (UPLOADS_DIR / org_id / file_path).resolve()
+    if org_dir not in target.parents or not target.is_file():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(target)
 
 EXTENSION_BY_CONTENT_TYPE = {
     "image/jpeg": "jpg",
@@ -266,7 +308,49 @@ def api_me(user: dict = Depends(require_auth)):
 @app.get("/api/org")
 def api_get_org(actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
     org = db.get_organization(actor["org_id"])
-    return {**org, "member_count": len(db.list_users(actor["org_id"]))}
+    return {
+        **org,
+        "member_count": len(db.list_users(actor["org_id"])),
+        "current_month_spend_usd": round(db.get_org_spend_current_month(actor["org_id"]), 4),
+    }
+
+
+@app.put("/api/admin/org/budget")
+def api_set_org_budget(payload: SetBudgetPayload, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
+    if payload.monthly_budget_usd is not None and payload.monthly_budget_usd < 0:
+        raise HTTPException(status_code=400, detail="El presupuesto no puede ser negativo")
+    db.set_org_budget(actor["org_id"], payload.monthly_budget_usd)
+    return db.get_organization(actor["org_id"])
+
+
+@app.get("/api/usage/summary")
+def api_usage_summary(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    actor: dict = Depends(require_role(*db.ANALYST_ROLES)),
+):
+    """Tokens, costo estimado (USD) y cantidad de llamadas a Claude, agregado por usuario,
+    endpoint y día. Disponible tanto por sesión de usuario como por API key."""
+    return db.usage_summary(actor["org_id"], date_from, date_to)
+
+
+@app.get("/api/admin/api-keys")
+def api_list_api_keys(actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
+    return db.list_api_keys(actor["org_id"])
+
+
+@app.post("/api/admin/api-keys")
+def api_create_api_key(payload: CreateApiKeyPayload, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
+    """El valor completo de la API key solo se devuelve en esta respuesta; luego solo se
+    puede ver su prefijo (key_prefix). Guárdala de inmediato del lado del frontend."""
+    return db.create_api_key(actor["org_id"], (payload.label or "").strip() or None)
+
+
+@app.delete("/api/admin/api-keys/{key_id}")
+def api_revoke_api_key(key_id: int, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
+    if not db.revoke_api_key(actor["org_id"], key_id):
+        raise HTTPException(status_code=404, detail="API key no encontrada")
+    return {"revoked": key_id}
 
 
 @app.put("/api/org")
@@ -649,6 +733,8 @@ async def api_analyze(
         image_bytes = await image.read()
         if not image_bytes:
             raise HTTPException(status_code=400, detail="Una de las imágenes está vacía")
+        if len(image_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail=f"Cada imagen debe pesar menos de {MAX_UPLOAD_BYTES // (1024 * 1024)} MB")
         loaded.append((image_bytes, image.content_type))
 
     analyze_fn = {
@@ -658,7 +744,9 @@ async def api_analyze(
     }[reading_type]
 
     try:
-        analysis = analyze_fn(loaded)
+        analysis = analyze_fn(loaded, org_id, user["email"])
+    except billing.BudgetExceeded as exc:
+        raise HTTPException(status_code=402, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Error al analizar la imagen: {exc}") from exc
 
@@ -722,6 +810,8 @@ async def _load_ocr_images(images: List[UploadFile]) -> list:
         image_bytes = await image.read()
         if not image_bytes:
             raise HTTPException(status_code=400, detail="Una de las imágenes está vacía")
+        if len(image_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail=f"Cada imagen debe pesar menos de {MAX_UPLOAD_BYTES // (1024 * 1024)} MB")
         loaded.append((image_bytes, image.content_type))
     return loaded
 
@@ -730,7 +820,9 @@ async def _api_ocr_process(url_kind: str, images: List[UploadFile], user: dict) 
     kind = OCR_KINDS[url_kind]
     loaded = await _load_ocr_images(images)
     try:
-        result = OCR_EXTRACT_FN[url_kind](loaded)
+        result = OCR_EXTRACT_FN[url_kind](loaded, user["org_id"], user["email"])
+    except billing.BudgetExceeded as exc:
+        raise HTTPException(status_code=402, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Error al leer {OCR_ERROR_LABEL[url_kind]}: {exc}") from exc
 

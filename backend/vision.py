@@ -4,6 +4,8 @@ import os
 
 import anthropic
 
+import billing
+
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 MAX_IMAGES = 6
 # Góndolas reales con muchos productos (varias fotos) generan respuestas JSON largas;
@@ -206,12 +208,17 @@ BULK_DISPLAY_USER_PROMPT = (
 )
 
 
-def call_vision_json(system_prompt: str, user_prompt: str, images: list) -> dict:
-    """images: lista de tuplas (image_bytes, media_type), en orden izquierda a derecha."""
+def call_vision_json(system_prompt: str, user_prompt: str, images: list,
+                      org_id: str, user_email: str, endpoint: str) -> dict:
+    """images: lista de tuplas (image_bytes, media_type), en orden izquierda a derecha.
+    org_id/user_email/endpoint identifican quién hace la llamada, para registrar el costo
+    en billing.py y poder cortar el acceso si la organización supera su presupuesto mensual."""
     if not images:
         raise ValueError("Se requiere al menos una imagen")
     if len(images) > MAX_IMAGES:
         raise ValueError(f"Máximo {MAX_IMAGES} fotos por lectura")
+
+    billing.check_budget(org_id)
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -244,6 +251,11 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list) -> dict
             messages=[{"role": "user", "content": content}],
         )
 
+        billing.record_call(
+            org_id, user_email, endpoint, MODEL,
+            message.usage.input_tokens, message.usage.output_tokens,
+        )
+
         raw_text = "".join(block.text for block in message.content if block.type == "text")
         if not raw_text:
             last_error = RuntimeError(f"Respuesta vacía del modelo (stop_reason={message.stop_reason})")
@@ -267,21 +279,27 @@ def call_vision_json(system_prompt: str, user_prompt: str, images: list) -> dict
     raise last_error
 
 
-def analyze_shelf(images: list) -> dict:
+def analyze_shelf(images: list, org_id: str, user_email: str) -> dict:
     prompt = (
         SHELF_USER_PROMPT_SINGLE
         if len(images) == 1
         else SHELF_USER_PROMPT_MULTI.format(n=len(images))
     )
-    return call_vision_json(SHELF_SYSTEM_PROMPT, prompt, images)
+    return call_vision_json(SHELF_SYSTEM_PROMPT, prompt, images, org_id, user_email, "vision_gondola")
 
 
-def analyze_additional_display(images: list) -> dict:
-    return call_vision_json(ADDITIONAL_DISPLAY_SYSTEM_PROMPT, ADDITIONAL_DISPLAY_USER_PROMPT, images)
+def analyze_additional_display(images: list, org_id: str, user_email: str) -> dict:
+    return call_vision_json(
+        ADDITIONAL_DISPLAY_SYSTEM_PROMPT, ADDITIONAL_DISPLAY_USER_PROMPT, images,
+        org_id, user_email, "vision_exhibicion_adicional",
+    )
 
 
-def analyze_bulk_display(images: list) -> dict:
-    return call_vision_json(BULK_DISPLAY_SYSTEM_PROMPT, BULK_DISPLAY_USER_PROMPT, images)
+def analyze_bulk_display(images: list, org_id: str, user_email: str) -> dict:
+    return call_vision_json(
+        BULK_DISPLAY_SYSTEM_PROMPT, BULK_DISPLAY_USER_PROMPT, images,
+        org_id, user_email, "vision_vitrina_granel",
+    )
 
 
 def _parse_json(raw_text: str) -> dict:

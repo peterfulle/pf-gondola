@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import random
@@ -122,6 +123,27 @@ CREATE TABLE IF NOT EXISTS ocr_extractions (
   image_paths_json TEXT,
   result_json TEXT
 );
+CREATE TABLE IF NOT EXISTS api_usage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  user_email TEXT,
+  endpoint TEXT NOT NULL,
+  model TEXT NOT NULL,
+  input_tokens INTEGER NOT NULL,
+  output_tokens INTEGER NOT NULL,
+  cost_usd REAL NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS api_keys (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id TEXT NOT NULL,
+  key_hash TEXT NOT NULL UNIQUE,
+  key_prefix TEXT NOT NULL,
+  label TEXT,
+  created_at TEXT NOT NULL,
+  last_used_at TEXT,
+  revoked_at TEXT
+);
 CREATE TABLE IF NOT EXISTS clients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   org_id TEXT NOT NULL,
@@ -153,7 +175,10 @@ CREATE TABLE IF NOT EXISTS clients (
 
 VALID_ROLES = ("superusuario", "admin", "analista", "reponedor")
 ADMIN_ROLES = ("superusuario", "admin")
-ANALYST_ROLES = ("superusuario", "admin", "analista")
+# "integracion" no es un rol asignable a usuarios humanos (no está en VALID_ROLES): lo usan
+# únicamente las API keys de organización para acceso server-to-server (ver require_auth en
+# main.py). Tiene el mismo nivel que "analista" pero nunca acceso de administración.
+ANALYST_ROLES = ("superusuario", "admin", "analista", "integracion")
 
 
 @contextmanager
@@ -189,7 +214,7 @@ def init_db():
         # columnas no calzan (ej: planogram_items sin org_id). Si no tiene org_id, no es
         # nuestra, así que se reemplaza igual que el caso de users.
         for new_table in ("shelves", "planogram_items", "product_corrections", "point_assignments",
-                          "commercial_agreements", "ocr_extractions", "clients"):
+                          "commercial_agreements", "ocr_extractions", "clients", "api_usage", "api_keys"):
             if new_table in tables and not _has_column(conn, new_table, "org_id"):
                 conn.execute(f"DROP TABLE IF EXISTS {new_table}")
 
@@ -208,6 +233,7 @@ def init_db():
             "ALTER TABLE ocr_extractions ADD COLUMN reconciled INTEGER DEFAULT 0",
             "ALTER TABLE ocr_extractions ADD COLUMN reconciled_at TEXT",
             "ALTER TABLE ocr_extractions ADD COLUMN reconciled_by TEXT",
+            "ALTER TABLE organizations ADD COLUMN monthly_budget_usd REAL",
         ):
             try:
                 conn.execute(statement)
@@ -1103,6 +1129,134 @@ def get_client(org_id: str, client_id: int):
             "SELECT * FROM clients WHERE org_id = ? AND id = ?", (org_id, client_id)
         ).fetchone()
     return dict(row) if row else None
+
+
+# ---------- uso y costo de llamadas a Claude (NeuraVision) ----------
+
+def record_usage(org_id: str, user_email: str, endpoint: str, model: str,
+                  input_tokens: int, output_tokens: int, cost_usd: float) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO api_usage (org_id, user_email, endpoint, model, input_tokens, output_tokens, "
+            "cost_usd, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (org_id, user_email, endpoint, model, input_tokens, output_tokens, cost_usd, now_iso()),
+        )
+
+
+def get_org_spend_current_month(org_id: str) -> float:
+    month_prefix = datetime.now(timezone.utc).strftime("%Y-%m")
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(cost_usd), 0) AS total FROM api_usage "
+            "WHERE org_id = ? AND substr(created_at, 1, 7) = ?",
+            (org_id, month_prefix),
+        ).fetchone()
+    return row["total"]
+
+
+def set_org_budget(org_id: str, monthly_budget_usd) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE organizations SET monthly_budget_usd = ? WHERE id = ?", (monthly_budget_usd, org_id))
+
+
+def usage_summary(org_id: str, date_from: str = None, date_to: str = None) -> dict:
+    query = "SELECT * FROM api_usage WHERE org_id = ?"
+    params = [org_id]
+    if date_from:
+        query += " AND created_at >= ?"
+        params.append(date_from)
+    if date_to:
+        query += " AND created_at <= ?"
+        params.append(date_to)
+    with get_conn() as conn:
+        rows = [dict(r) for r in conn.execute(query + " ORDER BY created_at DESC", params).fetchall()]
+
+    by_user, by_endpoint, by_day = {}, {}, {}
+    for r in rows:
+        u = by_user.setdefault(
+            r["user_email"] or "desconocido",
+            {"user_email": r["user_email"], "calls": 0, "cost_usd": 0.0, "input_tokens": 0, "output_tokens": 0},
+        )
+        u["calls"] += 1
+        u["cost_usd"] += r["cost_usd"]
+        u["input_tokens"] += r["input_tokens"]
+        u["output_tokens"] += r["output_tokens"]
+
+        e = by_endpoint.setdefault(r["endpoint"], {"endpoint": r["endpoint"], "calls": 0, "cost_usd": 0.0})
+        e["calls"] += 1
+        e["cost_usd"] += r["cost_usd"]
+
+        day = r["created_at"][:10]
+        d = by_day.setdefault(day, {"date": day, "calls": 0, "cost_usd": 0.0})
+        d["calls"] += 1
+        d["cost_usd"] += r["cost_usd"]
+
+    for bucket in (*by_user.values(), *by_endpoint.values(), *by_day.values()):
+        bucket["cost_usd"] = round(bucket["cost_usd"], 4)
+
+    org = get_organization(org_id)
+    return {
+        "total_calls": len(rows),
+        "total_cost_usd": round(sum(r["cost_usd"] for r in rows), 4),
+        "total_input_tokens": sum(r["input_tokens"] for r in rows),
+        "total_output_tokens": sum(r["output_tokens"] for r in rows),
+        "monthly_budget_usd": org.get("monthly_budget_usd") if org else None,
+        "current_month_spend_usd": round(get_org_spend_current_month(org_id), 4),
+        "by_user": sorted(by_user.values(), key=lambda x: -x["cost_usd"]),
+        "by_endpoint": sorted(by_endpoint.values(), key=lambda x: -x["cost_usd"]),
+        "by_day": sorted(by_day.values(), key=lambda x: x["date"]),
+    }
+
+
+# ---------- API keys de organización (acceso server-to-server para integraciones) ----------
+
+def _hash_api_key(raw_key: str) -> str:
+    return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+
+
+def create_api_key(org_id: str, label: str = None) -> dict:
+    raw_key = "nv_" + secrets.token_urlsafe(32)
+    created_at = now_iso()
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO api_keys (org_id, key_hash, key_prefix, label, created_at) VALUES (?, ?, ?, ?, ?)",
+            (org_id, _hash_api_key(raw_key), raw_key[:10], label, created_at),
+        )
+    return {
+        "id": cur.lastrowid, "org_id": org_id, "label": label, "created_at": created_at,
+        "key_prefix": raw_key[:10], "api_key": raw_key,
+    }
+
+
+def list_api_keys(org_id: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, org_id, key_prefix, label, created_at, last_used_at, revoked_at FROM api_keys "
+            "WHERE org_id = ? ORDER BY created_at DESC",
+            (org_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def revoke_api_key(org_id: str, key_id: int) -> bool:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "UPDATE api_keys SET revoked_at = ? WHERE org_id = ? AND id = ? AND revoked_at IS NULL",
+            (now_iso(), org_id, key_id),
+        )
+    return cur.rowcount > 0
+
+
+def get_org_by_api_key(raw_key: str):
+    key_hash = _hash_api_key(raw_key)
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL", (key_hash,)
+        ).fetchone()
+        if not row:
+            return None
+        conn.execute("UPDATE api_keys SET last_used_at = ? WHERE id = ?", (now_iso(), row["id"]))
+    return get_organization(row["org_id"])
 
 
 def export_rows(org_id: str, point_id: str = None) -> list:

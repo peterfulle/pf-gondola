@@ -68,5 +68,5 @@ USER_PROMPT = (
 )
 
 
-def extract_client_form(images: list) -> dict:
-    return call_vision_json(SYSTEM_PROMPT, USER_PROMPT, images)
+def extract_client_form(images: list, org_id: str, user_email: str) -> dict:
+    return call_vision_json(SYSTEM_PROMPT, USER_PROMPT, images, org_id, user_email, "ocr_client_form")
