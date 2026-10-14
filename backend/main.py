@@ -157,13 +157,21 @@ def require_auth(request: Request) -> dict:
         return user
 
     # Acceso server-to-server (ej. equipo de frontend / integraciones externas): header
-    # X-API-Key en vez de cookie de sesión. Resuelve a un actor sintético con permisos de
-    # analista para su organización, nunca de administración (ver db.ANALYST_ROLES).
+    # X-API-Key en vez de cookie de sesión.
     api_key = request.headers.get("x-api-key")
     if api_key:
-        org = db.get_org_by_api_key(api_key)
-        if org:
-            return {"email": f"api-key@{org['id']}", "org_id": org["id"], "role": "integracion"}
+        resolved = db.resolve_api_key(api_key)
+        if resolved:
+            # Key personal (el propio usuario se la creó): actúa con su rol real, igual que
+            # si hubiera iniciado sesión — así no hace falta duplicar reglas de permiso. Si el
+            # usuario dueño ya no existe, la key no debe caer de vuelta a acceso de organización.
+            if resolved["owner_email"]:
+                owner = db.get_user_by_email(resolved["owner_email"])
+                if owner:
+                    return owner
+                raise HTTPException(status_code=401, detail="Sesión inválida o expirada")
+            # Key de organización (la creó un admin): nivel analista, nunca administración.
+            return {"email": f"api-key@{resolved['org']['id']}", "org_id": resolved["org"]["id"], "role": "integracion"}
 
     raise HTTPException(status_code=401, detail="Sesión inválida o expirada")
 
@@ -349,6 +357,27 @@ def api_create_api_key(payload: CreateApiKeyPayload, actor: dict = Depends(requi
 @app.delete("/api/admin/api-keys/{key_id}")
 def api_revoke_api_key(key_id: int, actor: dict = Depends(require_role(*db.ADMIN_ROLES))):
     if not db.revoke_api_key(actor["org_id"], key_id):
+        raise HTTPException(status_code=404, detail="API key no encontrada")
+    return {"revoked": key_id}
+
+
+# ---------- API keys personales (self-service): cualquier usuario autenticado se crea la suya ----------
+
+@app.get("/api/me/api-keys")
+def api_list_my_api_keys(user: dict = Depends(require_auth)):
+    return db.list_api_keys_for_user(user["org_id"], user["email"])
+
+
+@app.post("/api/me/api-keys")
+def api_create_my_api_key(payload: CreateApiKeyPayload, user: dict = Depends(require_auth)):
+    """El valor completo de la API key solo se devuelve en esta respuesta. Actúa con el mismo
+    rol que el usuario que la creó — revocarla no afecta su cuenta, solo esta credencial."""
+    return db.create_api_key(user["org_id"], (payload.label or "").strip() or None, owner_email=user["email"])
+
+
+@app.delete("/api/me/api-keys/{key_id}")
+def api_revoke_my_api_key(key_id: int, user: dict = Depends(require_auth)):
+    if not db.revoke_api_key_for_user(user["org_id"], user["email"], key_id):
         raise HTTPException(status_code=404, detail="API key no encontrada")
     return {"revoked": key_id}
 

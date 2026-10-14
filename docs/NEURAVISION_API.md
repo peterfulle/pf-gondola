@@ -14,7 +14,8 @@ Hay dos mecanismos, pensados para casos distintos:
 | Mecanismo | Uso recomendado | Cómo se obtiene |
 |---|---|---|
 | **Cookie de sesión** | Un frontend que sirve login/signup a usuarios finales (admins, analistas, reponedores) | `POST /api/auth/login` o `/api/auth/signup` — la API responde con una cookie `neuravision_session` (httpOnly, 30 días) |
-| **API Key** (header `X-API-Key`) | Integraciones server-to-server: un backend propio del equipo de frontend que consume NeuraVision sin manejar sesiones de usuario | Un administrador de la organización la genera desde `POST /api/admin/api-keys` |
+| **API Key de organización** (header `X-API-Key`) | Integraciones server-to-server a nombre de toda la organización | Un administrador la genera desde `POST /api/admin/api-keys`. Actúa con permisos de `analista`, nunca de administración. |
+| **API Key personal** (header `X-API-Key`) | Cada usuario individual se genera su propia credencial, sin depender de un admin | El propio usuario, ya logueado por cookie, llama a `POST /api/me/api-keys`. Actúa con **su rol real** (el mismo que tendría logueado); revocarla (`DELETE /api/me/api-keys/{id}`) no afecta su cuenta, solo esa credencial. Listar las propias: `GET /api/me/api-keys`. |
 
 Ambos mecanismos resuelven a un "actor" con `org_id` — **todos los datos están aislados por
 organización**, nunca se filtran entre clientes.

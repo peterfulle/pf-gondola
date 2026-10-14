@@ -234,6 +234,7 @@ def init_db():
             "ALTER TABLE ocr_extractions ADD COLUMN reconciled_at TEXT",
             "ALTER TABLE ocr_extractions ADD COLUMN reconciled_by TEXT",
             "ALTER TABLE organizations ADD COLUMN monthly_budget_usd REAL",
+            "ALTER TABLE api_keys ADD COLUMN owner_email TEXT",
         ):
             try:
                 conn.execute(statement)
@@ -1208,32 +1209,50 @@ def usage_summary(org_id: str, date_from: str = None, date_to: str = None) -> di
     }
 
 
-# ---------- API keys de organización (acceso server-to-server para integraciones) ----------
+# ---------- API keys (server-to-server, a nivel organización o personales por usuario) ----------
+#
+# owner_email NULL  -> key de organización: la crea un admin (POST /api/admin/api-keys), actúa
+#                      con el rol sintético "integracion" (nivel analista, nunca admin).
+# owner_email con valor -> key personal: el propio usuario se la crea (POST /api/me/api-keys) y
+#                      actúa con el rol real de ese usuario (se resuelve como si hubiera hecho
+#                      login), para no necesitar un rol nuevo ni duplicar reglas de permiso.
 
 def _hash_api_key(raw_key: str) -> str:
     return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
 
 
-def create_api_key(org_id: str, label: str = None) -> dict:
+def create_api_key(org_id: str, label: str = None, owner_email: str = None) -> dict:
     raw_key = "nv_" + secrets.token_urlsafe(32)
     created_at = now_iso()
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO api_keys (org_id, key_hash, key_prefix, label, created_at) VALUES (?, ?, ?, ?, ?)",
-            (org_id, _hash_api_key(raw_key), raw_key[:10], label, created_at),
+            "INSERT INTO api_keys (org_id, key_hash, key_prefix, label, created_at, owner_email) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (org_id, _hash_api_key(raw_key), raw_key[:10], label, created_at, owner_email),
         )
     return {
         "id": cur.lastrowid, "org_id": org_id, "label": label, "created_at": created_at,
-        "key_prefix": raw_key[:10], "api_key": raw_key,
+        "key_prefix": raw_key[:10], "owner_email": owner_email, "api_key": raw_key,
     }
 
 
 def list_api_keys(org_id: str) -> list:
+    """Todas las keys de la organización (de org y personales), para la vista de administración."""
     with get_conn() as conn:
         rows = conn.execute(
-            "SELECT id, org_id, key_prefix, label, created_at, last_used_at, revoked_at FROM api_keys "
-            "WHERE org_id = ? ORDER BY created_at DESC",
+            "SELECT id, org_id, key_prefix, label, created_at, last_used_at, revoked_at, owner_email "
+            "FROM api_keys WHERE org_id = ? ORDER BY created_at DESC",
             (org_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def list_api_keys_for_user(org_id: str, owner_email: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, org_id, key_prefix, label, created_at, last_used_at, revoked_at, owner_email "
+            "FROM api_keys WHERE org_id = ? AND owner_email = ? ORDER BY created_at DESC",
+            (org_id, owner_email),
         ).fetchall()
     return [dict(r) for r in rows]
 
@@ -1247,7 +1266,18 @@ def revoke_api_key(org_id: str, key_id: int) -> bool:
     return cur.rowcount > 0
 
 
-def get_org_by_api_key(raw_key: str):
+def revoke_api_key_for_user(org_id: str, owner_email: str, key_id: int) -> bool:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "UPDATE api_keys SET revoked_at = ? WHERE org_id = ? AND id = ? AND owner_email = ? "
+            "AND revoked_at IS NULL",
+            (now_iso(), org_id, key_id, owner_email),
+        )
+    return cur.rowcount > 0
+
+
+def resolve_api_key(raw_key: str):
+    """Devuelve {"org": {...}, "owner_email": str|None} o None si la key no existe/está revocada."""
     key_hash = _hash_api_key(raw_key)
     with get_conn() as conn:
         row = conn.execute(
@@ -1256,7 +1286,10 @@ def get_org_by_api_key(raw_key: str):
         if not row:
             return None
         conn.execute("UPDATE api_keys SET last_used_at = ? WHERE id = ?", (now_iso(), row["id"]))
-    return get_organization(row["org_id"])
+    org = get_organization(row["org_id"])
+    if not org:
+        return None
+    return {"org": org, "owner_email": row["owner_email"]}
 
 
 def export_rows(org_id: str, point_id: str = None) -> list:
